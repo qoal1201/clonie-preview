@@ -19,6 +19,22 @@
 
 ## 설치
 
+### 터미널에서 설치 — Homebrew
+
+Homebrew가 설치되어 있다면 다음 두 명령으로 앱을 설치합니다.
+이 저장소를 별도 tap으로 등록하고, 릴리스 ZIP을 받아 SHA-256을 확인한 뒤 앱을 설치합니다.
+
+```bash
+brew tap qoal1201/clonie-preview https://github.com/qoal1201/clonie-preview
+brew install --cask qoal1201/clonie-preview/clonie
+```
+
+설치 후 응용 프로그램의 `Ghostbar.app`을 엽니다.
+Homebrew 설치도 아래의 macOS 첫 실행 승인과 음성 권한 설정은 필요합니다.
+새 버전은 `brew update` 후 `brew upgrade --cask qoal1201/clonie-preview/clonie`로 받습니다.
+
+### 파일을 내려받아 설치
+
 이 저장소의 **Releases**에서 `Clonie-preview-날짜-arm64.zip`을 받습니다.
 
 1. ZIP을 풀고 `Ghostbar.app`을 응용 프로그램 폴더로 옮깁니다.
