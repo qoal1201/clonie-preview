@@ -6,6 +6,9 @@
 
 > 개발 중인 프로토타입입니다. 실제 작업에서 얻은 피드백을 모으고 있습니다.
 
+[설치 ZIP 다운로드](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910) ·
+[사용 피드백 남기기](https://github.com/qoal1201/clonie-preview/issues/new?template=feedback.yml)
+
 ## 실행 환경
 
 - macOS 26 이상, Apple Silicon Mac. Intel Mac과 Windows는 이번 설치 파일의 지원 대상이 아닙니다.
