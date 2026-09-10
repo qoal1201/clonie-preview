@@ -4,7 +4,7 @@ set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 
-VERSION="1.0.2"
+VERSION="1.0.3"
 APP="Ghostbar.app"
 DMG="Ghostbar-v${VERSION}.dmg"
 
@@ -54,7 +54,12 @@ MCP_BINARY=".build/release/clonie-mcp"
 [ -f "$MCP_BINARY" ] || { echo "✗ $MCP_BINARY 가 없다 — swift build 가 둘째 타깃을 안 만들었다" >&2; exit 1; }
 cp "$MCP_BINARY" "$APP/Contents/MacOS/clonie-mcp"
 
-[ -f "$DIR/Ghostbar.icns" ] && cp "$DIR/Ghostbar.icns" "$APP/Contents/Resources/Ghostbar.icns"
+if [ -f "$DIR/assets/branding/Clonie.icns" ]; then
+  cp "$DIR/assets/branding/Clonie.icns" "$APP/Contents/Resources/Ghostbar.icns"
+  cp "$DIR/assets/branding/ClonieMenuTemplate.png" "$APP/Contents/Resources/ClonieMenuTemplate.png"
+elif [ -f "$DIR/Ghostbar.icns" ]; then
+  cp "$DIR/Ghostbar.icns" "$APP/Contents/Resources/Ghostbar.icns"
+fi
 if [ -d "$DIR/ThirdPartyNotices" ]; then
   cp -R "$DIR/ThirdPartyNotices" "$APP/Contents/Resources/ThirdPartyNotices"
 fi
@@ -268,7 +273,7 @@ else
   MOUNT_DIR="$(mktemp -d)"
   hdiutil attach "$TMP_DMG" -mountpoint "$MOUNT_DIR" -nobrowse -quiet
 
-  [ -f "$DIR/Ghostbar.icns" ] && cp "$DIR/Ghostbar.icns" "$MOUNT_DIR/.VolumeIcon.icns"
+  [ -f "$APP/Contents/Resources/Ghostbar.icns" ] && cp "$APP/Contents/Resources/Ghostbar.icns" "$MOUNT_DIR/.VolumeIcon.icns"
 
   # Set custom icon flag on the volume
   python3 - "$MOUNT_DIR" << 'PYEOF'

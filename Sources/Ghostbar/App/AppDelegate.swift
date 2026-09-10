@@ -17,7 +17,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
-            button.title = QASession.isQABundle ? "⬡ QA" : "⬡"
+            if let image = Bundle.main.image(forResource: "ClonieMenuTemplate") {
+                image.size = NSSize(width: 18, height: 18)
+                image.isTemplate = true
+                button.image = image
+                button.imagePosition = QASession.isQABundle ? .imageLeft : .imageOnly
+                button.title = QASession.isQABundle ? " QA" : ""
+            } else {
+                // The bundled mark is optional during development; retain the established fallback.
+                button.title = QASession.isQABundle ? "⬡ QA" : "⬡"
+            }
         }
         buildMenu()
         addEditMenu()

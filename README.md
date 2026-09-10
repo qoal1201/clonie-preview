@@ -1,5 +1,7 @@
 # Clonie
 
+<img src="assets/branding/ClonieMark.png" width="96" alt="Clonie 로고">
+
 Clonie는 **내 Markdown 폴더를 연결해 찾고, 읽고, 고치는 macOS 로컬 작업 공간**입니다.
 현재는 공개 알파(preview)이며, 검색·편집·음성 연습 흐름을 실제 사용자 환경에서 확인하고 있습니다.
 
