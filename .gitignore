@@ -1,0 +1,11 @@
+.build/
+.DS_Store
+Ghostbar.app/
+GhostbarQA.app/
+*.zip
+*.dmg
+*.icns
+.env
+.clonie/
+.venv/
+__pycache__/

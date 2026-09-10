@@ -1,0 +1,33 @@
+name: 사용 피드백
+description: 설치, 실제 작업, 검색, 편집, 음성에서 겪은 일을 알려주세요.
+title: "[피드백] "
+body:
+  - type: markdown
+    attributes:
+      value: "공개 이슈입니다. API 키, 개인 문서 전체, 민감한 화면은 올리지 마세요. 잘된 사례도 환영합니다."
+  - type: textarea
+    id: task
+    attributes:
+      label: 하려던 일과 기대
+      placeholder: 어떤 자료로 무엇을 하려고 했나요?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 결과와 재현 순서
+      placeholder: 클릭·입력 순서, 나타난 결과, 다시 해도 같은지 적어주세요.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 앱 빌드 / macOS / Mac 모델
+      placeholder: "예: 20260910 / macOS 26.2 / MacBook Air M2"
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: 개인정보를 지운 예시 또는 화면 (선택)
+      description: 실제 자료 대신 같은 문제를 재현하는 짧은 예시를 권합니다.
