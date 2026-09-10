@@ -1,7 +1,7 @@
 # 설치 안내
 
 Clonie 공개 알파는 **macOS 26 이상, Apple Silicon Mac**에서 실행합니다. Windows와 Intel Mac은
-지원하지 않습니다. 앱 번들 파일 이름은 현재 `Ghostbar.app`입니다.
+지원하지 않습니다. 앱 번들 파일 이름은 `Clonie.app`입니다.
 
 ## 권장 설치: Homebrew
 
@@ -26,19 +26,21 @@ curl -fL https://raw.githubusercontent.com/qoal1201/clonie-preview/main/scripts/
 bash /tmp/clonie-install.sh
 ```
 
-스크립트는 `preview-20260910-logo1`으로 고정된 동봉 모델 앱과 SHA-256을 확인하고 기본 경로
-`~/Applications/Ghostbar.app`에 설치합니다. 같은 경로에 기존 앱이 있으면 덮어쓰지 않고 중단합니다.
+스크립트는 `preview-20260910-clonie1`으로 고정된 동봉 모델 앱과 SHA-256을 확인하고 기본 경로
+`~/Applications/Clonie.app`에 설치합니다. 같은 경로에 기존 `Clonie.app` 또는
+`Ghostbar.app`이 있으면 기존 앱을 보존한 채 중단합니다. 이전 앱에서 넘어올 때는
+`--app-dir`로 별도 폴더를 지정해 두 앱을 비교한 뒤, 기존 앱의 정리는 직접 결정합니다.
 설치 후 자동 실행도 하지 않습니다.
 
 ## ZIP으로 설치
 
-[preview-20260910-logo1 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910-logo1)에서
-Apple Silicon용 ZIP을 내려받아 압축을 풉니다. `Ghostbar.app`을 응용 프로그램 폴더로 옮긴 뒤 엽니다.
+[preview-20260910-clonie1 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910-clonie1)에서
+Apple Silicon용 ZIP을 내려받아 압축을 풉니다. `Clonie.app`을 응용 프로그램 폴더로 옮긴 뒤 엽니다.
 릴리스 앱에는 모델이 동봉되어 있어 Python이나 Xcode를 설치하지 않아도 기본 사용을 시작할 수 있습니다.
 
 ## 첫 실행
 
-1. `Ghostbar.app`을 엽니다.
+1. `Clonie.app`을 엽니다.
 2. macOS가 출처를 확인할 수 없다고 표시하면 시스템 설정 → 개인정보 보호 및 보안에서 앱을 확인하고
    **확인 없이 열기(Open Anyway)**를 직접 승인합니다.
 3. 앱에서 Markdown 폴더를 선택합니다. 중요한 자료는 복사본으로 먼저 연결하세요.
@@ -50,10 +52,10 @@ Gatekeeper 승인과 음성 권한·모델 준비는 사용자의 명시적인 �
 ## 문제가 생겼을 때
 
 - macOS 26 이상인지, Apple Silicon Mac인지 확인합니다.
-- 앱 이름이 `Ghostbar.app`인지 확인합니다. 새 앱 번들 이름은 아직 정하지 않았습니다.
+- 앱 이름이 `Clonie.app`인지 확인합니다.
 - Gatekeeper 메시지의 **확인 없이 열기**를 승인했는지 확인합니다.
-- 설치 위치에 기존 `Ghostbar.app`이 있으면 설치기는 덮어쓰지 않으므로, 기존 파일을 보존한 뒤 원하는
-  설치 경로를 정리해 다시 시도합니다.
+- 설치 위치에 기존 `Clonie.app` 또는 `Ghostbar.app`이 있으면 설치기는 덮어쓰지 않으므로, 기존 파일을
+  보존한 뒤 `--app-dir`로 원하는 별도 설치 경로를 지정해 다시 시도합니다.
 - 다른 Mac 설치는 아직 검증하지 않았습니다. Mac 모델, macOS 버전, 오류 문구를 [Issues](https://github.com/qoal1201/clonie-preview/issues)에 남겨 주세요.
 
 ## 개인정보

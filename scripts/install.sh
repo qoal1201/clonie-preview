@@ -2,9 +2,9 @@
 # Install a pinned preview without Homebrew, sudo, or changes to user documents.
 set -euo pipefail
 
-CLONIE_VERSION="20260910-logo1"
+CLONIE_VERSION="20260910-clonie1"
 CLONIE_ARCHIVE_NAME="Clonie-preview-${CLONIE_VERSION}-arm64.zip"
-CLONIE_SHA256="586d72e93d9e2f62a312a0ff9589ca4a0020e55b41bc910f6cf13d5da3ef741d"
+CLONIE_SHA256="99cdaaeb78d9b5c888b5823b91a0f35c703a3e401273d743eaa6213ece5eea47"
 CLONIE_URL="https://github.com/qoal1201/clonie-preview/releases/download/preview-${CLONIE_VERSION}/${CLONIE_ARCHIVE_NAME}"
 CLONIE_APP_DIR="$HOME/Applications"
 CLONIE_ARCHIVE=""
@@ -15,10 +15,11 @@ usage() {
   cat <<'TEXT'
 Usage: bash install.sh [--app-dir /absolute/path] [--archive /path/to/downloaded.zip]
 
-Default: ~/Applications/Ghostbar.app
+Default: ~/Applications/Clonie.app
 Requires: Apple Silicon, macOS 26 or later.
 The release checksum and app signature are verified. Existing apps are never
-overwritten. Installation does not launch the app or change security settings.
+overwritten, stopped, or deleted. Installation does not launch the app or
+change security settings.
 TEXT
 }
 
@@ -38,10 +39,13 @@ while [ "$#" -gt 0 ]; do
 done
 
 case "$CLONIE_APP_DIR" in /*) ;; *) fail "--app-dir must be an absolute path" ;; esac
-CLONIE_TARGET="${CLONIE_APP_DIR%/}/Ghostbar.app"
-if [ -e "$CLONIE_TARGET" ] || [ -L "$CLONIE_TARGET" ]; then
-  fail "Already exists: $CLONIE_TARGET. Choose another --app-dir or manage the existing installation first."
-fi
+CLONIE_TARGET="${CLONIE_APP_DIR%/}/Clonie.app"
+CLONIE_LEGACY_TARGET="${CLONIE_APP_DIR%/}/Ghostbar.app"
+for CLONIE_EXISTING in "$CLONIE_TARGET" "$CLONIE_LEGACY_TARGET"; do
+  if [ -e "$CLONIE_EXISTING" ] || [ -L "$CLONIE_EXISTING" ]; then
+    fail "Already exists: $CLONIE_EXISTING. Existing apps are preserved; choose another --app-dir or manage the existing installation first."
+  fi
+done
 [ "$(uname -s)" = Darwin ] || fail "This preview requires macOS."
 [ "$(uname -m)" = arm64 ] || fail "This preview requires Apple Silicon."
 CLONIE_OS="$(sw_vers -productVersion)"
@@ -65,18 +69,18 @@ CLONIE_ACTUAL="$(shasum -a 256 "$CLONIE_ARCHIVE")"
 [ "${CLONIE_ACTUAL%% *}" = "$CLONIE_SHA256" ] || fail "Archive SHA-256 mismatch; nothing was installed."
 
 ditto -x -k "$CLONIE_ARCHIVE" "$CLONIE_WORK/unpacked"
-CLONIE_BUNDLE="$CLONIE_WORK/unpacked/Clonie-preview-${CLONIE_VERSION}-arm64/Ghostbar.app"
+CLONIE_BUNDLE="$CLONIE_WORK/unpacked/Clonie-preview-${CLONIE_VERSION}-arm64/Clonie.app"
 [ -d "$CLONIE_BUNDLE" ] || fail "Expected app is missing from the archive."
 CLONIE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$CLONIE_BUNDLE/Contents/Info.plist")"
-[ "$CLONIE_ID" = com.local.ghostbar ] || fail "Unexpected app bundle identifier."
+[ "$CLONIE_ID" = com.local.clonie ] || fail "Unexpected app bundle identifier."
 codesign --verify --deep --strict "$CLONIE_BUNDLE"
 
 mkdir -p "$CLONIE_APP_DIR"
 CLONIE_STAGE="$(mktemp -d "${CLONIE_APP_DIR%/}/.clonie-install.XXXXXX")"
-ditto "$CLONIE_BUNDLE" "$CLONIE_STAGE/Ghostbar.app"
+ditto "$CLONIE_BUNDLE" "$CLONIE_STAGE/Clonie.app"
 # -n protects an installation created after the first existence check as well.
-mv -n "$CLONIE_STAGE/Ghostbar.app" "${CLONIE_APP_DIR%/}/"
-[ ! -e "$CLONIE_STAGE/Ghostbar.app" ] || fail "Destination appeared during installation; existing app preserved."
+mv -n "$CLONIE_STAGE/Clonie.app" "${CLONIE_APP_DIR%/}/"
+[ ! -e "$CLONIE_STAGE/Clonie.app" ] || fail "Destination appeared during installation; existing app preserved."
 printf '\nInstalled: %s\n' "$CLONIE_TARGET"
 printf 'Open this app in Finder. This preview is not notarized by Apple.\n'
 printf 'If macOS blocks it, review its entry in System Settings > Privacy & Security.\n'

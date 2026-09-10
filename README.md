@@ -24,8 +24,13 @@ bash /tmp/clonie-install.sh
 ```
 
 이 설치기는 동봉 모델이 포함된 릴리스 앱의 SHA-256을 확인하고, 기본적으로
-`~/Applications/Ghostbar.app`에 설치합니다. 같은 이름의 기존 앱을 덮어쓰지 않으며,
+`~/Applications/Clonie.app`에 설치합니다. 같은 위치에 기존 `Clonie.app` 또는
+`Ghostbar.app`이 있으면 중단하며, 기존 앱을 덮어쓰거나 종료·삭제하지 않습니다.
 설치가 끝난 뒤 앱을 자동으로 열지 않습니다.
+
+기존 Ghostbar에서 넘어올 때는 기존 `Ghostbar.app`을 그대로 보존한 채 Clonie를 별도
+위치에 설치해 확인하세요. 기본 위치에 기존 앱이 있으면 `--app-dir`로 다른 폴더를
+지정할 수 있으며, 기존 앱을 정리할지는 확인 후 직접 결정합니다.
 
 AI 에이전트에게 설치를 맡기려면 저장소 주소와 함께 다음처럼 요청하면 됩니다.
 
@@ -36,8 +41,8 @@ AI 에이전트에게 설치를 맡기려면 저장소 주소와 함께 다음�
 에이전트용 절차는 [AGENTS.md](AGENTS.md), 설치 위치·첫 실행·문제 해결은
 [INSTALL.md](INSTALL.md)에 있습니다.
 
-설치 스크립트나 Homebrew를 쓰지 않으려면 [preview-20260910-logo1 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910-logo1)에서
-Apple Silicon용 ZIP을 내려받아 압축을 풀고 `Ghostbar.app`을 응용 프로그램 폴더로 옮기면 됩니다.
+설치 스크립트나 Homebrew를 쓰지 않으려면 [preview-20260910-clonie1 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910-clonie1)에서
+Apple Silicon용 ZIP을 내려받아 압축을 풀고 `Clonie.app`을 응용 프로그램 폴더로 옮기면 됩니다.
 
 첫 실행 때 macOS가 앱을 막으면 시스템 설정의 개인정보 보호 및 보안에서 해당 앱을 확인한 뒤
 **확인 없이 열기(Open Anyway)**를 직접 승인해야 합니다. 음성 연습을 사용할 때도 마이크·화면 기록
@@ -45,13 +50,12 @@ Apple Silicon용 ZIP을 내려받아 압축을 풀고 `Ghostbar.app`을 응용 �
 
 ## 사용법
 
-1. `Ghostbar.app`을 열고 Markdown 폴더를 연결합니다. 처음에는 `sample-vault`나 복사해 둔 시험용 폴더를 권합니다.
+1. `Clonie.app`을 열고 Markdown 폴더를 연결합니다. 처음에는 `sample-vault`나 복사해 둔 시험용 폴더를 권합니다.
 2. 파일 탐색에서 문서를 열고 편집한 뒤 저장 표시를 확인합니다.
 3. 같은 자료를 질문으로 검색하고, 답이 없는 질문도 넣어 검색 경계를 확인합니다.
 4. 필요하면 파일 이름 변경·이동·되돌리기를 시험합니다.
 5. 음성 연습은 설정에서 필요한 권한과 Apple 음성 모델을 준비한 뒤 사용합니다.
 
-앱 파일 이름은 현재도 `Ghostbar.app`입니다. Clonie의 새 앱 번들 이름은 아직 정하지 않았습니다.
 원본 파일과 `.clonie` 검색 색인·입력 기록을 직접 다루므로 중요한 자료는 복사본으로 먼저 시험하세요.
 
 ## 개인정보와 외부 연결
@@ -90,7 +94,7 @@ Gatekeeper 승인, 개발자 신뢰 설정, TCC와 음성 권한은 아직 확�
 ```bash
 ./scripts/fetch-model.sh
 ./build.sh --app-only --include-model
-open Ghostbar.app
+open Clonie.app
 ```
 
 모델을 처음 준비할 때는 외부 다운로드와 변환 도구 설치로 수 GB가 필요할 수 있습니다.
@@ -114,7 +118,6 @@ open Ghostbar.app
 
 ## 라이선스와 출처
 
-Clonie의 변경분은 [MIT License](LICENSE)로 배포합니다. 프로젝트는
-[rbc33/Ghostbar](https://github.com/rbc33/Ghostbar)에서 출발했으며, 상류 README에 표시된 MIT
-고지와 상류 저장소 루트에 별도 LICENSE 파일이 없었던 사실은 [UPSTREAM.md](UPSTREAM.md)에 보존했습니다.
-모델·아이콘·Swift 의존성의 원문 고지는 [ThirdPartyNotices/](ThirdPartyNotices/)에 있습니다.
+Clonie는 [MIT License](LICENSE)로 배포합니다. 포함된 모델·아이콘·Swift 의존성의 원문 고지는
+[ThirdPartyNotices/](ThirdPartyNotices/)에 있습니다. 이전 버전에서 이어진 개발 경위는
+[개발 이력](HISTORY.md)에 기록했습니다.

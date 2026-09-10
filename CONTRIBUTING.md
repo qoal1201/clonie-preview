@@ -31,17 +31,17 @@ swift test
 변경 범위가 분명하면 관련 타깃만 먼저 확인할 수 있습니다.
 
 ```bash
-swift test --filter GhostbarCoreTests
-swift test --filter GhostbarDocumentsTests
-swift test --filter GhostbarIndexTests
-swift test --filter GhostbarCloudTests
+swift test --filter ClonieCoreTests
+swift test --filter ClonieDocumentsTests
+swift test --filter ClonieIndexTests
+swift test --filter ClonieCloudTests
 swift test --filter ClonieMCPTests
 ```
 
 임베딩 점수 일치 검사는 모델 산출물이 준비된 환경에서 실행합니다.
 
 ```bash
-GHOSTBAR_REQUIRE_EMBEDDING_MODEL=1 swift test --filter GhostbarEmbeddingTests
+CLONIE_REQUIRE_EMBEDDING_MODEL=1 swift test --filter ClonieEmbeddingTests
 ```
 
 모델이 없다면 먼저 `./scripts/fetch-model.sh`로 준비할 수 있습니다. 이 단계는 외부 다운로드와
@@ -77,5 +77,5 @@ python3 scripts/test-install.py
 
 ## 라이선스
 
-기여물은 프로젝트의 [MIT License](LICENSE)를 따릅니다. 상류 Ghostbar와 제3자 구성요소의 출처·고지는
-[UPSTREAM.md](UPSTREAM.md)와 [ThirdPartyNotices/](ThirdPartyNotices/)를 함께 보존합니다.
+기여물은 프로젝트의 [MIT License](LICENSE)를 따릅니다. 포함된 제3자 구성요소의 출처·고지는
+[ThirdPartyNotices/](ThirdPartyNotices/)에 보존합니다. 이전 버전의 출처는 [개발 이력](HISTORY.md)에 있습니다.

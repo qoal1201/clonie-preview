@@ -24,17 +24,18 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("never", result.stdout)
 
-    def test_existing_app_is_preserved_before_download(self):
-        with tempfile.TemporaryDirectory() as temp:
-            app = Path(temp) / "Ghostbar.app"
-            app.mkdir()
-            sentinel = app / "user-file"
-            sentinel.write_text("preserve me")
-            result = self.run_installer("--app-dir", temp)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Already exists", result.stderr)
-            self.assertEqual(sentinel.read_text(), "preserve me")
-            self.assertNotIn("Downloading", result.stdout)
+    def test_existing_apps_are_preserved_before_download(self):
+        for app_name in ("Ghostbar.app", "Clonie.app"):
+            with self.subTest(app_name=app_name), tempfile.TemporaryDirectory() as temp:
+                app = Path(temp) / app_name
+                app.mkdir()
+                sentinel = app / "user-file"
+                sentinel.write_text("preserve me")
+                result = self.run_installer("--app-dir", temp)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Already exists", result.stderr)
+                self.assertEqual(sentinel.read_text(), "preserve me")
+                self.assertNotIn("Downloading", result.stdout)
 
     @unittest.skipUnless(NATIVE, "macOS Apple Silicon installer")
     def test_bad_archive_is_rejected_without_creating_target(self):
@@ -55,8 +56,8 @@ class InstallerTests(unittest.TestCase):
             result = self.run_installer("--app-dir", dest, "--archive",
                                         os.environ["CLONIE_TEST_ARCHIVE"])
             self.assertEqual(result.returncode, 0, result.stderr)
-            app = dest / "Ghostbar.app"
-            self.assertTrue((app / "Contents/MacOS/Ghostbar").is_file())
+            app = dest / "Clonie.app"
+            self.assertTrue((app / "Contents/MacOS/Clonie").is_file())
             self.assertTrue((app / "Contents/Resources/EmbeddingModel/manifest.json").is_file())
             self.assertEqual(list(dest.glob(".clonie-install.*")), [])
 

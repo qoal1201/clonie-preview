@@ -1,6 +1,6 @@
 cask "clonie" do
-  version "20260910-logo1"
-  sha256 "586d72e93d9e2f62a312a0ff9589ca4a0020e55b41bc910f6cf13d5da3ef741d"
+  version "20260910-clonie1"
+  sha256 "99cdaaeb78d9b5c888b5823b91a0f35c703a3e401273d743eaa6213ece5eea47"
 
   url "https://github.com/qoal1201/clonie-preview/releases/download/preview-#{version}/Clonie-preview-#{version}-arm64.zip"
   name "Clonie"
@@ -14,11 +14,11 @@ cask "clonie" do
   depends_on arch: :arm64
   depends_on macos: :tahoe
 
-  app "Clonie-preview-#{version}-arm64/Ghostbar.app"
+  app "Clonie-preview-#{version}-arm64/Clonie.app"
 
   caveats <<~EOS
     This preview is not notarized by Apple. macOS may require approval in
     System Settings > Privacy & Security before the first launch.
-    The installed app is currently named Ghostbar.app.
+    The installed app is Clonie.app. An existing Ghostbar.app is left untouched.
   EOS
 end

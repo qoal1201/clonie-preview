@@ -9,12 +9,14 @@ does not authorize installation or reading the user's personal documents.
 
 1. Check `uname -s`, `uname -m`, and `sw_vers -productVersion`.
    The current binary requires Apple Silicon and macOS 26 or later.
-2. Check whether Ghostbar.app is already installed or running. Do not stop it,
-   overwrite it, or change its connected folder without the user's agreement.
+2. Check whether Ghostbar.app or Clonie.app is already installed or running.
+   Do not stop either app, overwrite it, delete it, or change its connected
+   folder without the user's agreement.
 3. If Homebrew is available, use the exact tap and cask commands in README.md.
    Otherwise read `scripts/install.sh`, then run it with Bash. It installs to
-   `~/Applications/Ghostbar.app`, checks the release SHA-256 and app signature,
-   and refuses to overwrite an existing app. `--app-dir` selects another folder.
+   `~/Applications/Clonie.app`, checks the release SHA-256 and app signature,
+   and refuses to overwrite an existing Clonie.app or Ghostbar.app in that
+   folder. `--app-dir` selects another folder.
 4. Confirm that the installed bundle exists and `codesign --verify --deep --strict`
    succeeds. This verifies its signature, not Apple notarization or first-launch success.
 5. Open the installed app if the user requested to start using it. Let the user
@@ -32,6 +34,6 @@ preparation is a separate first-use step. Do not silently enable external AI dra
 
 Follow CONTRIBUTING.md. Preserve other people's changes. Tests and builds are
 evidence of those checks only; do not claim a successful fresh-Mac install or
-human voice test unless it was performed. Keep upstream and dependency notices.
+human voice test unless it was performed. Keep the included dependency notices and the notices attached to existing published releases.
 New app releases must update the pinned version, URL, and SHA-256 in both
 `Casks/clonie.rb` and `scripts/install.sh`. Keep published assets immutable.
