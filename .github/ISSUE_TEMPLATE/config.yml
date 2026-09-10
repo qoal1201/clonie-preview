@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 설치 안내
+    url: https://github.com/qoal1201/clonie-preview/blob/main/INSTALL.md
+    about: 설치 요구사항과 첫 실행 문제를 먼저 확인해 주세요.
+  - name: 보안 문제 비공개 제보
+    url: https://github.com/qoal1201/clonie-preview/security/advisories/new
+    about: 개인 자료나 API 키가 드러나는 문제는 공개 이슈에 올리지 마세요.
