@@ -36,7 +36,7 @@ AI 에이전트에게 설치를 맡기려면 저장소 주소와 함께 다음�
 에이전트용 절차는 [AGENTS.md](AGENTS.md), 설치 위치·첫 실행·문제 해결은
 [INSTALL.md](INSTALL.md)에 있습니다.
 
-설치 스크립트나 Homebrew를 쓰지 않으려면 [preview-20260910 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910)에서
+설치 스크립트나 Homebrew를 쓰지 않으려면 [preview-20260910-logo1 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910-logo1)에서
 Apple Silicon용 ZIP을 내려받아 압축을 풀고 `Ghostbar.app`을 응용 프로그램 폴더로 옮기면 됩니다.
 
 첫 실행 때 macOS가 앱을 막으면 시스템 설정의 개인정보 보호 및 보안에서 해당 앱을 확인한 뒤

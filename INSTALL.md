@@ -26,13 +26,13 @@ curl -fL https://raw.githubusercontent.com/qoal1201/clonie-preview/main/scripts/
 bash /tmp/clonie-install.sh
 ```
 
-스크립트는 `preview-20260910`으로 고정된 동봉 모델 앱과 SHA-256을 확인하고 기본 경로
+스크립트는 `preview-20260910-logo1`으로 고정된 동봉 모델 앱과 SHA-256을 확인하고 기본 경로
 `~/Applications/Ghostbar.app`에 설치합니다. 같은 경로에 기존 앱이 있으면 덮어쓰지 않고 중단합니다.
 설치 후 자동 실행도 하지 않습니다.
 
 ## ZIP으로 설치
 
-[preview-20260910 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910)에서
+[preview-20260910-logo1 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260910-logo1)에서
 Apple Silicon용 ZIP을 내려받아 압축을 풉니다. `Ghostbar.app`을 응용 프로그램 폴더로 옮긴 뒤 엽니다.
 릴리스 앱에는 모델이 동봉되어 있어 Python이나 Xcode를 설치하지 않아도 기본 사용을 시작할 수 있습니다.
 

@@ -1,6 +1,6 @@
 cask "clonie" do
-  version "20260910"
-  sha256 "48336eac1f3ab07a99d4c515c2d143b1894d6cfbabfceb5e8af2797cec89d4dc"
+  version "20260910-logo1"
+  sha256 "586d72e93d9e2f62a312a0ff9589ca4a0020e55b41bc910f6cf13d5da3ef741d"
 
   url "https://github.com/qoal1201/clonie-preview/releases/download/preview-#{version}/Clonie-preview-#{version}-arm64.zip"
   name "Clonie"
