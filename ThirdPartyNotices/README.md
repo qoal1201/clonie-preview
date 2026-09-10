@@ -15,4 +15,4 @@ The original license and notice files below are preserved from the exact revisio
 File icons: material-icon-theme.md (original MIT notice preserved).
 Embedding model: embedding-model/NOTICE.md (Apache-2.0 model card declaration and conversion notice).
 
-The original Ghostbar source attribution is preserved in Ghostbar-UPSTREAM.md. Clonie contribution terms are in Clonie-LICENSE.txt.
+Clonie is distributed under the terms in Clonie-LICENSE.txt. This directory contains notices for components included in the current build.

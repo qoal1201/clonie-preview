@@ -21,7 +21,7 @@ MODEL_ID="dragonkue/multilingual-e5-small-ko-v2"
 # ★ 고정한 리비전. 기준면(tests/fixtures/embedding_reference.json)이 이 리비전으로 떠 있다 —
 #   여기를 올리면 기준면도 같이 다시 떠야 하고, 안 그러면 점수 일치 자물쇠가 빨개진다.
 REVISION="fcfc26bf355882620c48df58be112275bd756f50"
-OUT="${GHOSTBAR_MODEL_DIR:-$HOME/Library/Application Support/Ghostbar/models/multilingual-e5-small-ko-v2}"
+OUT="${CLONIE_MODEL_DIR:-$HOME/Library/Application Support/Clonie/models/multilingual-e5-small-ko-v2}"
 PRECISION="fp16"
 FORCE=0
 
@@ -63,7 +63,7 @@ FILES=(
   "model.safetensors 9794f247caf80caf54b5a04d391c932ba6260cf20bd16fba3892ce2d8f5784ec"
 )
 
-SNAP="${GHOSTBAR_MODEL_SNAPSHOT:-$HOME/.cache/ghostbar/hf/$MODEL_ID/$REVISION}"
+SNAP="${CLONIE_MODEL_SNAPSHOT:-$HOME/.cache/clonie/hf/$MODEL_ID/$REVISION}"
 mkdir -p "$SNAP/1_Pooling"
 
 echo "→ 원본 받는 중 (${MODEL_ID}@${REVISION:0:12})"
@@ -94,7 +94,7 @@ done
 # ⚠ 변환은 coremltools·torch 를 쓴다. **버전이 고정이다** — 자유롭게 두면 조용히 깨진다:
 #   transformers 5.x 는 `new_ones` 미구현으로 변환이 죽고, coremltools 9 가 확인한 torch 는 2.7 이다
 #   (`실측 2026-08-30`, #31).
-VENV="${GHOSTBAR_CONVERT_VENV:-$HOME/.cache/ghostbar/convert-venv}"
+VENV="${CLONIE_CONVERT_VENV:-$HOME/.cache/clonie/convert-venv}"
 PY="$VENV/bin/python"
 if [ ! -x "$PY" ]; then
   echo "→ 변환용 파이썬 환경을 만든다 — $VENV"
@@ -123,4 +123,4 @@ if [ ! -f "$OUT/manifest.json" ] || [ ! -d "$OUT/E5SmallKoV2.mlmodelc" ]; then
 fi
 echo
 echo "✓ 준비됐다 — $OUT"
-echo "  확인:  GHOSTBAR_REQUIRE_EMBEDDING_MODEL=1 swift test --filter GhostbarEmbeddingTests"
+echo "  확인:  CLONIE_REQUIRE_EMBEDDING_MODEL=1 swift test --filter ClonieEmbeddingTests"

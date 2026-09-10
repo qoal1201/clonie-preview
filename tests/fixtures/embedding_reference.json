@@ -12,7 +12,7 @@
  "tolerance": {
   "cosine_abs": 0.001,
   "embedding_component_abs": 0.001,
-  "why": "손으로 고른 값이 아니라 **재서 정했다** (실측 2026-08-30, #31, Apple Silicon). fp16 으로 구운 CoreML 대 fp32 파이썬의 실측 최대 편차: 성분 2.83e-4 (p_coreml), 코사인 1.38e-4. 1e-3 은 그중 큰 쪽(성분)의 약 3.5배 — 기계·OS 가 바뀌어도 견딜 여유는 주되, 진짜 회귀(토크나이저가 갈리거나 풀링이 틀리면 1e-2~1e-1 급으로 벌어진다)는 잡는 폭이다. 재는 법: GHOSTBAR_REQUIRE_EMBEDDING_MODEL=1 swift test --filter GhostbarEmbeddingTests 가 실측 최대 편차를 출력에 찍는다. ⚠ 이 값을 키워서 빨강을 끄지 마라 — 커져야 한다면 그건 모델이 바뀐 것이다"
+  "why": "손으로 고른 값이 아니라 **재서 정했다** (실측 2026-08-30, #31, Apple Silicon). fp16 으로 구운 CoreML 대 fp32 파이썬의 실측 최대 편차: 성분 2.83e-4 (p_coreml), 코사인 1.38e-4. 1e-3 은 그중 큰 쪽(성분)의 약 3.5배 — 기계·OS 가 바뀌어도 견딜 여유는 주되, 진짜 회귀(토크나이저가 갈리거나 풀링이 틀리면 1e-2~1e-1 급으로 벌어진다)는 잡는 폭이다. 재는 법: CLONIE_REQUIRE_EMBEDDING_MODEL=1 swift test --filter ClonieEmbeddingTests 가 실측 최대 편차를 출력에 찍는다. ⚠ 이 값을 키워서 빨강을 끄지 마라 — 커져야 한다면 그건 모델이 바뀐 것이다"
  },
  "environment": {
   "sentence_transformers": "4.1.0",

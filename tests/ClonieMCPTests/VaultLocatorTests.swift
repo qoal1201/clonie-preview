@@ -1,18 +1,24 @@
 import XCTest
 @testable import ClonieMCP
+@testable import ClonieCore
 
-/// 우선순위 = 인자 → 환경변수 → 앱 UserDefaults(`com.local.ghostbar` / `vaultPath`) → `~/Documents/Clonie`.
+/// 우선순위 = 인자 → 환경변수 → 새 앱 UserDefaults → (미이관일 때) 이전 앱 UserDefaults → 기본 볼트.
 /// 앱과 **같은 볼트**를 여는 것이 둘째 문의 전제라, 앱이 저장한 자리를 읽는 셋째 단이 핵심이다.
 final class VaultLocatorTests: XCTestCase {
     private var suite: UserDefaults!
     private var suiteName: String!
+    private var legacySuite: UserDefaults!
+    private var legacySuiteName: String!
 
     override func setUp() {
         suiteName = "clonie-mcp-test-\(UUID().uuidString)"
         suite = UserDefaults(suiteName: suiteName)
+        legacySuiteName = "ghostbar-mcp-test-\(UUID().uuidString)"
+        legacySuite = UserDefaults(suiteName: legacySuiteName)
     }
     override func tearDown() {
         suite.removePersistentDomain(forName: suiteName)
+        legacySuite.removePersistentDomain(forName: legacySuiteName)
     }
 
     func testArgumentWins() throws {
@@ -56,5 +62,52 @@ final class VaultLocatorTests: XCTestCase {
         let url = try VaultLocator.resolve(argument: "~/somewhere", environment: [:], defaults: suite)
         XCTAssertFalse(url.path.contains("~"))
         XCTAssertTrue(url.path.hasSuffix("/somewhere"))
+    }
+
+    func testLegacyDefaultsAreUsedOnlyAfterNewDefaults() throws {
+        legacySuite.set("/tmp/from-legacy", forKey: VaultLocator.appDefaultsKey)
+        let url = try VaultLocator.resolve(argument: nil,
+                                           environment: [:],
+                                           defaults: suite,
+                                           legacyDefaults: legacySuite)
+        XCTAssertEqual(url.path, "/tmp/from-legacy")
+    }
+
+    func testNewDefaultsBeatLegacyDefaults() throws {
+        suite.set("/tmp/from-new", forKey: VaultLocator.appDefaultsKey)
+        legacySuite.set("/tmp/from-legacy", forKey: VaultLocator.appDefaultsKey)
+        let url = try VaultLocator.resolve(argument: nil,
+                                           environment: [:],
+                                           defaults: suite,
+                                           legacyDefaults: legacySuite)
+        XCTAssertEqual(url.path, "/tmp/from-new")
+    }
+
+    func testMigrationMarkerDisablesLegacyFallback() throws {
+        legacySuite.set("/tmp/from-legacy", forKey: VaultLocator.appDefaultsKey)
+        suite.set(true, forKey: InstallationIdentity.migrationMarkerKey)
+        let url = try VaultLocator.resolve(argument: nil,
+                                           environment: [:],
+                                           defaults: suite,
+                                           legacyDefaults: legacySuite)
+        XCTAssertTrue(url.path.hasSuffix("/Documents/Clonie"), url.path)
+    }
+
+    func testLegacyFallbackIsReadOnly() throws {
+        legacySuite.set("/tmp/from-legacy", forKey: VaultLocator.appDefaultsKey)
+        let before = legacySuite.persistentDomain(forName: legacySuiteName)
+        _ = try VaultLocator.resolve(argument: nil,
+                                     environment: [:],
+                                     defaults: suite,
+                                     legacyDefaults: legacySuite)
+        let after = legacySuite.persistentDomain(forName: legacySuiteName) ?? [:]
+        XCTAssertEqual(after[VaultLocator.appDefaultsKey] as? String,
+                       before?[VaultLocator.appDefaultsKey] as? String)
+    }
+
+    func testDefaultLegacyArgumentDoesNotReadLegacySuite() throws {
+        legacySuite.set("/tmp/from-legacy", forKey: VaultLocator.appDefaultsKey)
+        let url = try VaultLocator.resolve(argument: nil, environment: [:], defaults: suite)
+        XCTAssertTrue(url.path.hasSuffix("/Documents/Clonie"), url.path)
     }
 }

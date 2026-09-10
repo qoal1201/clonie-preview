@@ -1,5 +1,5 @@
 import XCTest
-import GhostbarCore
+import ClonieCore
 @testable import ClonieMCP
 
 /// ★ 둘째 문의 핵심 자물쇠 — **앱(이 프로세스의 `VaultStore`)과 MCP 서버(빌드된 `clonie-mcp`,

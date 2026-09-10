@@ -38,7 +38,8 @@ while let a = it.next() {
 
 let vaultURL: URL
 do {
-    vaultURL = try VaultLocator.resolve(argument: vaultArgument)
+    vaultURL = try VaultLocator.resolve(argument: vaultArgument,
+                                       legacyDefaults: UserDefaults(suiteName: VaultLocator.legacyAppDefaultsSuite))
 } catch {
     stderr("볼트 자리를 못 정했다: \(error)")
     exit(1)

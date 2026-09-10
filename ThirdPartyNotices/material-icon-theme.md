@@ -1,6 +1,6 @@
 # Material Icon Theme provenance
 
-The inline file icons in `Sources/Ghostbar/Resources/ChatHTML.swift` are copied
+The inline file icons in `Sources/Clonie/Resources/ChatHTML.swift` are copied
 from [PKief/vscode-material-icon-theme](https://github.com/PKief/vscode-material-icon-theme)
 at commit
 [`db37396672f801195be1bf082cca76942deb8c24`](https://github.com/PKief/vscode-material-icon-theme/tree/db37396672f801195be1bf082cca76942deb8c24)

@@ -1,6 +1,6 @@
 import Foundation
 
-/// 검색 자 — **화면 JS 의 쌍둥이다** (`Sources/Ghostbar/Resources/ChatHTML.swift` 의
+/// 검색 자 — **화면 JS 의 쌍둥이다** (`Sources/Clonie/Resources/ChatHTML.swift` 의
 /// `SIM_G_DIRECT` · `SIM_A` · `escore` · `eris`).
 ///
 /// ## 왜 두 벌인가

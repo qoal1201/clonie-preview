@@ -1,8 +1,8 @@
 import Foundation
-import GhostbarCore
-import GhostbarEmbedding
-import GhostbarIndex
-import GhostbarDocuments
+import ClonieCore
+import ClonieEmbedding
+import ClonieIndex
+import ClonieDocuments
 
 // MARK: - 결과 타입 (Claude 가 받는 JSON 의 모양 — 키 이름이 곧 계약이다)
 

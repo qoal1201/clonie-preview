@@ -1,6 +1,6 @@
 import XCTest
 import MCP
-import GhostbarCore
+import ClonieCore
 @testable import ClonieMCP
 
 /// MCP 껍데기 — 상류 `Client` 가 `InMemoryTransport` 로 우리 `Server` 를 부른다.

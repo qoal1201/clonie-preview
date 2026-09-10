@@ -1,7 +1,7 @@
 import XCTest
-import GhostbarCore
-import GhostbarEmbedding
-@testable import GhostbarIndex
+import ClonieCore
+import ClonieEmbedding
+@testable import ClonieIndex
 @testable import ClonieMCP
 
 /// 도구 논리 — MCP 껍데기 없이 **actor 를 직접** 부른다. 껍데기는 `ToolServerTests` 가 잰다.

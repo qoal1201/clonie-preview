@@ -16,7 +16,7 @@
    "why": "자소서 **문항**은 조각이 아니라 물음이다. 물음↔물음은 대칭 과제라 양쪽 query: — 모델카드 §FAQ"
   }
  },
- "index_text_shape": "title + \"\\n\" + body  — Sources/GhostbarIndex/ContentIndexer.swift indexText 와 같아야 한다",
+ "index_text_shape": "title + \"\\n\" + body  — Sources/ClonieIndex/ContentIndexer.swift indexText 와 같아야 한다",
  "positive_control": {
   "self_cosine": 1.0,
   "question_selfsearch": "10/10"

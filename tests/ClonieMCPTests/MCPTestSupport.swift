@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
-import GhostbarCore
-import GhostbarEmbedding
+import ClonieCore
+import ClonieEmbedding
 @testable import ClonieMCP
 
 /// 둘째 문 시험의 공통 부품. **판정은 없다** — 자리·문서·환경만 만든다.
@@ -15,8 +15,8 @@ enum MCPTestSupport {
     }
 
     /// 모델을 **일부러 못 찾게** 하는 환경. 임베딩이 필요 없는 시험은 이걸로 돌아 빨라진다
-    /// (`EmbeddingModelStore.searchPaths` 가 `GHOSTBAR_MODEL_DIR` 을 먼저 본다).
-    static let noModelEnvironment: [String: String] = ["GHOSTBAR_MODEL_DIR": "/nonexistent/clonie-mcp-no-model"]
+    /// (`EmbeddingModelStore.searchPaths` 가 `CLONIE_MODEL_DIR` 을 먼저 본다).
+    static let noModelEnvironment: [String: String] = ["CLONIE_MODEL_DIR": "/nonexistent/clonie-mcp-no-model"]
 
     /// 조각 셋 + 질문 둘. 검색 시험이 「배포」 질의로 첫째를 찾을 수 있게 뜻이 갈린다.
     static func sampleDocument() -> CueDocument {
@@ -39,8 +39,8 @@ enum MCPTestSupport {
             ])
     }
 
-    /// 모델이 없으면 「안 쟀다」를 출력에 박고 `nil` — `tests/GhostbarIndexTests/IndexTestSupport.swift`
-    /// 의 정책 그대로(깨진 것은 빨강, `GHOSTBAR_REQUIRE_EMBEDDING_MODEL=1` 이면 없는 것도 빨강).
+    /// 모델이 없으면 「안 쟀다」를 출력에 박고 `nil` — `tests/ClonieIndexTests/IndexTestSupport.swift`
+    /// 의 정책 그대로(깨진 것은 빨강, `CLONIE_REQUIRE_EMBEDDING_MODEL=1` 이면 없는 것도 빨강).
     static func modelOrAnnounceMissing(_ function: String = #function) -> EmbeddingModelStore.Manifest? {
         let status = EmbeddingModelStore.status()
         switch status {
@@ -49,8 +49,8 @@ enum MCPTestSupport {
             XCTFail("모델이 있는데 못 읽는다. 이건 skip 이 아니라 빨강이다.\n\(status.explanation)")
             return nil
         case .missing(let searched):
-            if ProcessInfo.processInfo.environment["GHOSTBAR_REQUIRE_EMBEDDING_MODEL"] == "1" {
-                XCTFail("GHOSTBAR_REQUIRE_EMBEDDING_MODEL=1 인데 모델이 없다.\n\(status.explanation)")
+            if ProcessInfo.processInfo.environment["CLONIE_REQUIRE_EMBEDDING_MODEL"] == "1" {
+                XCTFail("CLONIE_REQUIRE_EMBEDDING_MODEL=1 인데 모델이 없다.\n\(status.explanation)")
                 return nil
             }
             print("""
