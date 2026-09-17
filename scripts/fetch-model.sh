@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Prepare the pinned embedding model for a local source build.
 # Release apps may already include this model. Normal app builds do not download it.
 # This script requires network access; document conversion setup and optional AI
@@ -24,7 +24,7 @@ while [ $# -gt 0 ]; do
     --force) FORCE=1; shift ;;
     --out) OUT="$2"; shift 2 ;;
     --precision) PRECISION="$2"; shift 2 ;;
-    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
     *) echo "모르는 인자: $1" >&2; exit 2 ;;
   esac
 done
