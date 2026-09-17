@@ -2,7 +2,7 @@
 
 <img src="assets/branding/ClonieDock.png" width="88" alt="Clonie 로고">
 
-**나만의 맥락 저장소로 가꿉니다.**
+**나만의 맥락 저장소.**
 
 흩어진 생각과 자료를 내 저장소에 쌓고, 필요한 순간 나와 AI가 함께 꺼내 씁니다.
 Clonie는 내 Markdown 폴더를 연결해 자료를 찾고, 읽고, 고치는 macOS 앱입니다.
