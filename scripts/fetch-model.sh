@@ -1,18 +1,12 @@
-#!/bin/bash
-# 임베딩 모델을 받아 **CoreML 로 구워 캐시에 앉힌다** (#31, ADR 0003 §5).
+#!/usr/bin/env bash
+# Prepare the pinned embedding model for a local source build.
+# Release apps may already include this model. Normal app builds do not download it.
+# This script requires network access; document conversion setup and optional AI
+# integrations have separate network requirements.
 #
-# ⚠ **`build.sh` 는 이 스크립트를 안 부른다. 일부러다.**
-#   `.app` 빌드는 12초인데 이건 470MB 를 받고 변환까지 한다 — 묶으면 빌드가 그 비용을 늘 문다.
-#   그리고 앱은 모델이 없어도 **명확한 상태를 내며** 뜬다(`EmbeddingModelStore`). 그러니
-#   받는 것은 별도 행위다. `정관 9조`(작업 자체인 것만 산다) 를 어기는 것처럼 보이는데,
-#   여기서 「작업」은 **앱 빌드가 아니라 임베딩을 쓰는 것**이고, 그건 이 스크립트가 곧 그 작업이다.
-#
-# ⚠ **네트워크를 타는 것은 이 레포에서 여기뿐이다.** 앱 런타임 코드에 URLSession 이 없다 —
-#   `tests/check_interview_offline.py` 가 그 판정선을 잰다.
-#
-#     ./scripts/fetch-model.sh              # 없으면 받고, 있으면 아무것도 안 한다
-#     ./scripts/fetch-model.sh --force      # 다시 받고 다시 굽는다
-#     ./scripts/fetch-model.sh --precision fp32
+# ./scripts/fetch-model.sh
+# ./scripts/fetch-model.sh --force
+# ./scripts/fetch-model.sh --precision fp32
 set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,7 +24,7 @@ while [ $# -gt 0 ]; do
     --force) FORCE=1; shift ;;
     --out) OUT="$2"; shift 2 ;;
     --precision) PRECISION="$2"; shift 2 ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
     *) echo "모르는 인자: $1" >&2; exit 2 ;;
   esac
 done

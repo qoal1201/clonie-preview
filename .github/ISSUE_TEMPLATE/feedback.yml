@@ -22,8 +22,8 @@ body:
   - type: input
     id: environment
     attributes:
-      label: 앱 빌드 / macOS / Mac 모델
-      placeholder: "예: 20260910 / macOS 26.2 / MacBook Air M2"
+      label: 앱 버전 / macOS / Mac 모델
+      placeholder: "예: 1.0.5 / macOS 26.2 / MacBook Air M2"
     validations:
       required: true
   - type: textarea

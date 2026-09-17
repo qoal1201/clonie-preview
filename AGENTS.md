@@ -2,7 +2,7 @@
 
 This repository contains a macOS alpha app. If a user supplies this URL and asks
 to try Clonie, help them install the release rather than starting a source build.
-Read README.md and INSTALL.md first. A request to inspect the repository alone
+Read README.md, INSTALL.md, and PRIVACY.md first. A request to inspect the repository alone
 does not authorize installation or reading the user's personal documents.
 
 ## Install when the user asks to use the app
@@ -12,7 +12,7 @@ does not authorize installation or reading the user's personal documents.
 2. Check whether Ghostbar.app or Clonie.app is already installed or running.
    Do not stop either app, overwrite it, delete it, or change its connected
    folder without the user's agreement.
-3. If Homebrew is available, use the exact tap and cask commands in README.md.
+3. If Homebrew is available, use the exact tap and cask commands in INSTALL.md.
    Otherwise read `scripts/install.sh`, then run it with Bash. It installs to
    `~/Applications/Clonie.app`, checks the release SHA-256 and app signature,
    and refuses to overwrite an existing Clonie.app or Ghostbar.app in that

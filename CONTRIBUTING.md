@@ -1,81 +1,61 @@
 # 기여 안내
 
-Clonie는 공개 알파입니다. 작은 코드·문서 수정, 재현 가능한 버그 제보, 사용성 피드백을 환영합니다.
-방향이 큰 변경은 먼저 [Issue](https://github.com/qoal1201/clonie-preview/issues)에서 문제와 제안을
-나눠 주세요.
+Clonie의 공개 소스, 설치 파일, 사용 피드백을 이 저장소에서 관리합니다.
+작은 코드·문서 수정과 재현 가능한 버그 제보를 환영합니다. 큰 기능 변경은 먼저 Issue로 문제와 제안을 나눠 주세요.
 
-## 시작하기
+## 문제를 알리거나 수정하려면
 
-1. 현재 Issue와 README의 지원 범위를 확인합니다.
-2. macOS 26 이상 Apple Silicon 환경에서 문제를 재현합니다.
-3. 한 Pull Request에는 한 가지 목적만 담고, 변경 이유와 재현·확인 방법을 적습니다.
-4. 화면 문구나 동작을 바꾸면 사용자가 따라 할 수 있는 전후 절차를 함께 적습니다.
+1. 기존 Issues와 현재 지원 환경을 확인합니다.
+2. 앱 버전·재현 순서·기대한 결과·실제 결과를 적습니다.
+3. 직접 수정한다면 한 PR에 한 가지 목적을 담고, 실행한 검사와 확인하지 못한 내용을 구분합니다.
 
-작은 수정은 기존 구조와 파일 분류를 따릅니다. 새 의존성이나 공개 API를 추가하기 전에 Issue에서
-그 필요성과 유지 비용을 설명해 주세요.
+외부 제보는 이 저장소에서 해결 상태와 반영 버전을 안내합니다.
+기여를 반영할 때 저자와 출처를 보존합니다. 개인 자료, 계정 정보, API 키는 이슈·PR·첨부물에 넣지 마세요.
+보안 문제는 [SECURITY.md](SECURITY.md)의 비공개 경로로 제보해 주세요.
 
-## 자료와 비밀정보
+## 소스에서 빌드
 
-개인 Markdown, 이력서, 음성 기록, API 키, 계정 정보, 사내 문서와 개인 경로는 커밋하지 않습니다.
-재현 자료가 필요하면 `sample-vault`처럼 공개 가능한 최소 예시를 만들고, 원본의 이름·내용·식별자를
-지운 뒤 올립니다. 실제 사용자 자료나 외부 서비스 응답을 저장소에 업로드하지 마세요.
+Apple Silicon Mac, macOS 26 SDK가 포함된 Xcode 또는 Command Line Tools와 Swift 6.1 이상이 필요합니다.
+앱 사용만 원하는 경우에는 README의 [배포 앱 설치](INSTALL.md)를 이용하세요.
 
-## 테스트
+```bash
+./scripts/fetch-model.sh
+./build.sh --app-only --include-model
+open Clonie.app
+```
 
-Swift 테스트는 macOS 26 SDK와 Swift 6.1 이상이 필요합니다.
+첫 모델 준비에는 외부 다운로드와 변환 도구 설치로 수 GB가 필요할 수 있습니다.
+앱 빌드는 로컬 서명 설정을 사용합니다. 여러 인증서가 있다면 `CLONIE_SIGN_ID`로 지정할 수 있습니다.
+이 개발 빌드가 Apple 공증을 받은 배포판이 되는 것은 아닙니다.
+
+## 검사
 
 ```bash
 swift test
+python3 scripts/test-install.py
+python3 scripts/check-public-repo.py --root .
 ```
 
-변경 범위가 분명하면 관련 타깃만 먼저 확인할 수 있습니다.
-
-```bash
-swift test --filter ClonieCoreTests
-swift test --filter ClonieDocumentsTests
-swift test --filter ClonieIndexTests
-swift test --filter ClonieCloudTests
-swift test --filter ClonieMCPTests
-```
-
-임베딩 점수 일치 검사는 모델 산출물이 준비된 환경에서 실행합니다.
+특정 기능만 수정했다면 관련 Swift 타깃을 먼저 검사할 수 있습니다.
+모델을 사용하는 임베딩 검사는 `./scripts/fetch-model.sh`로 준비한 뒤 다음과 같이 실행합니다.
 
 ```bash
 CLONIE_REQUIRE_EMBEDDING_MODEL=1 swift test --filter ClonieEmbeddingTests
 ```
 
-모델이 없다면 먼저 `./scripts/fetch-model.sh`로 준비할 수 있습니다. 이 단계는 외부 다운로드와
-변환 도구 설치를 포함할 수 있습니다. 공개 릴리스 사용자는 동봉 모델이 있는 앱을 사용하므로 이 준비가
-필수는 아닙니다.
+공개 CI는 문서 링크·민감한 파일명·내부 문구와 비밀정보 패턴을 검사합니다.
+앱 실행·실제 음성·다른 Mac 설치를 검증하는 CI는 아닙니다. PR에는 실제로 수행한 검사를 적어 주세요.
 
-설치기를 바꾼 경우에는 앱을 실행하지 않는 회귀 검사를 별도로 확인합니다.
+## 릴리스와 문서
 
-```bash
-python3 scripts/test-install.py
-```
+기능이 바뀌면 사용법·지원 범위·알려진 문제·CHANGELOG도 함께 확인합니다. 화면이 달라졌다면 README 이미지가 맞는지 검토합니다.
+앱 릴리스에서는 다운로드 버전·URL·SHA-256을 설치기와 Cask에 함께 반영합니다. 이미 공개한 파일과 태그는 바꾸지 않습니다.
 
-실제 릴리스 ZIP을 사용한 설치 검증은 별도 임시 디렉터리에서 수행하며, Gatekeeper 승인·개발자 신뢰
-설정·TCC·음성 권한과 다른 Mac의 첫 실행을 자동 테스트의 성공으로 기록하지 않습니다.
-
-화면 검증 자료와 개발용 원본 검사는 개발 저장소의 별도 범위입니다. 이 공개 저장소에는 CI 상태 배지를
-두지 않으며, 배지나 로컬 결과를 공개 CI의 성공으로 표현하지 않습니다. Pull Request에는 실제로 실행한
-명령과 생략한 검사를 구분해 적어 주세요.
-
-## Pull Request
-
-제목과 본문에 다음을 간단히 적습니다.
-
-- 어떤 사용자 문제를 해결하는가
-- 재현 단계와 기대·실제 결과
-- 어떤 파일을 바꿨는가
-- 실행한 테스트와 실행하지 못한 테스트
-- 개인정보나 외부 서비스 접근이 필요한지
-
-기능 수정은 가능하면 실패하던 재현 사례를 검증에 포함합니다. 문서 수정은 사용자가 그대로 따라 할
-수 있는 명령과 지원 범위를 확인합니다. 릴리스 파일, Homebrew 배포, 라이선스와 외부 공개 범위를
-바꾸는 변경은 먼저 Issue에서 논의해 주세요.
+소스의 커밋, 사용자용 변경 기록, 공개 릴리스를 통해 개선 과정을 확인할 수 있도록 유지합니다.
+테스트 숫자만으로 검색 정확도나 실사용 효과를 주장하지 않습니다.
 
 ## 라이선스
 
-신규 자체 코드의 기여물은 [PolyForm Perimeter 1.0.1](LICENSE)을 따릅니다. 기존 MIT 권리와 적용 범위는 [LICENSING.md](LICENSING.md)를 참고하세요. 포함된 제3자 구성요소의 출처·고지는
-[ThirdPartyNotices/](ThirdPartyNotices/)에 보존합니다. 이전 버전의 출처는 [개발 이력](HISTORY.md)에 있습니다.
+신규 자체 코드의 기여물은 [PolyForm Perimeter 1.0.1](LICENSE)을 따릅니다.
+권한이 없는 코드를 제출하지 말고, 제3자 코드는 원래 출처·라이선스·고지를 보존하세요.
+기존 MIT 권리와 적용 범위는 [LICENSING.md](LICENSING.md), 프로젝트의 출처는 [HISTORY.md](HISTORY.md)를 따릅니다.

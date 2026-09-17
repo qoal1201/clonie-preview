@@ -8,3 +8,14 @@
 .clonie/
 .venv/
 __pycache__/
+
+# Local credentials, recordings and documents are never source assets.
+.env.*
+!.env.example
+*.p12
+*.p8
+*.pem
+*.key
+*.keychain*
+*.mobileprovision
+*.dSYM/
