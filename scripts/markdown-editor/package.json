@@ -1,0 +1,22 @@
+{
+  "name": "clonie-markdown-editor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "pretest": "npm run build",
+    "test": "node --test editor.test.mjs"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.11.0",
+    "@codemirror/lang-markdown": "6.5.2",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/state": "6.7.4",
+    "@codemirror/view": "6.43.11"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "jsdom": "27.0.0"
+  }
+}

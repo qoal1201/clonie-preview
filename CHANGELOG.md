@@ -4,7 +4,15 @@
 
 ## [Unreleased]
 
-- 다음 공개 알파에서 확인할 설치·사용 피드백을 수집 중입니다.
+- 다음 변경은 아직 정하지 않았습니다.
+
+## [preview-20260917-clonie1] — 2026-09-17
+
+- Clonie 1.0.5: 편집·문서 가져오기·대화 기록·MCP 변경 확인을 포함한 최신 개발판입니다.
+- 기록을 한 번 누르면 본문을 바로 열고, 마이크 단독 질문도 저장소 검색과 기록에 연결합니다.
+- 사용 시작에서 준비된 권한·모델은 숨기고 범위·입력 선택을 저장소별로 기억합니다.
+- 신규 자체 변경에는 PolyForm Perimeter 1.0.1을 적용합니다. 기존 MIT 및 제3자 권리는 유지합니다.
+- 개발 Mac 자동 검사와 설치 파일 검증 범위는 RELEASE-NOTES.md에 기록합니다. 다른 Mac 첫 실행과 사람 음성 효용은 아직 검증하지 않았습니다.
 
 ## [preview-20260910-clonie1] — 2026-09-10
 
@@ -40,4 +48,4 @@
 - Gatekeeper의 **확인 없이 열기**, 마이크·화면 기록 권한과 음성 모델 준비는 사용자가 직접 승인해야 합니다.
 - 검색 관련도와 음성 흐름은 공개 알파에서 계속 확인 중입니다.
 
-[Unreleased]: https://github.com/qoal1201/clonie-preview/compare/preview-20260910-clonie1...main
+[Unreleased]: https://github.com/qoal1201/clonie-preview/compare/preview-20260917-clonie1...main

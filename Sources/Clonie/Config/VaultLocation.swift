@@ -32,6 +32,12 @@ enum VaultLocation {
                 NSLocalizedDescriptionKey: "QA 자료 폴더 안에서 선택해 주세요."])
         }
         UserDefaults.standard.set(canonical.path, forKey: key)
+        // A launch-time -vaultPath is only an initial selection. NSArgumentDomain
+        // otherwise shadows every later choice saved by the native folder picker.
+        var arguments = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+        if arguments.removeValue(forKey: key) != nil {
+            UserDefaults.standard.setVolatileDomain(arguments, forName: UserDefaults.argumentDomain)
+        }
     }
 
     private static func isWithin(_ url: URL, root: URL) -> Bool {
@@ -43,14 +49,18 @@ enum VaultLocation {
     /// Legacy JSON stays under Ghostbar so an install rename can still read it.
     /// QA has its own vault/session and must never cross this production boundary.
     static var legacyDocument: URL? {
-        guard !QASession.isQABundle else { return nil }
+        guard Bundle.main.bundleIdentifier == InstallationIdentity.productionBundleIdentifier else { return nil }
         return URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
             .appendingPathComponent("Library/Application Support/Ghostbar/cue.json")
     }
 
     /// Preserve an older implicit default vault, without filesystem work on the UI thread.
     static func restorePreviousDefault(completion: @escaping () -> Void) {
-        guard selected == nil, !QASession.isQABundle else { completion(); return }
+        // Legacy discovery belongs only to the installed product. A separately
+        // identified first-use build must not silently attach the user's old vault.
+        guard selected == nil,
+              Bundle.main.bundleIdentifier == InstallationIdentity.productionBundleIdentifier
+        else { completion(); return }
         let candidate = current, legacy = legacyDocument
         DispatchQueue.global(qos: .userInitiated).async {
             let fm = FileManager.default

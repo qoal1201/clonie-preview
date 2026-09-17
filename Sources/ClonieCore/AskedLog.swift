@@ -24,13 +24,21 @@ public struct AskedEntry: Codable, Equatable, Sendable, Identifiable {
     public var count: Int?         // 같은 질문이 몇 번 왔나 (병합 시 +1)
     public var practiceColor: String?   // 연습에서 마지막으로 받은 색
     public var practicedAt: Date?       // 그 시각
+    /// 사용자가 보완 목록에 넣은 검색만 갖는다. nil은 미등록, "open"/"done"은 확인 상태다.
+    public var reviewStatus: String?
+    public var reviewScope: String?     // "" = 전체 저장소
+    public var reviewRetrieval: SessionRetrieval?   // 등록 당시 후보와 검색 상태
 
     public init(id: String, text: String, source: AskedSource, at: Date,
                 color: String? = nil, score: Double? = nil, how: String? = nil,
-                count: Int? = nil, practiceColor: String? = nil, practicedAt: Date? = nil) {
+                count: Int? = nil, practiceColor: String? = nil, practicedAt: Date? = nil,
+                reviewStatus: String? = nil, reviewScope: String? = nil,
+                reviewRetrieval: SessionRetrieval? = nil) {
         self.id = id; self.text = text; self.source = source; self.at = at
         self.color = color; self.score = score; self.how = how
         self.count = count; self.practiceColor = practiceColor; self.practicedAt = practicedAt
+        self.reviewStatus = reviewStatus; self.reviewScope = reviewScope
+        self.reviewRetrieval = reviewRetrieval
     }
 }
 

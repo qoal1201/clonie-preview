@@ -249,29 +249,85 @@ public final class ContentIndexer {
         return result
     }
 
-    /// 디스크의 새 passage 벡터 또는 현재 문서에서 즉석 계산한 벡터로 검색한다. 이 함수는
-    /// sidecar를 쓰지 않아 MCP의 읽기 경계를 지킨다.
-    public func search(query: String, fragments: [Fragment], limit: Int = 5) throws -> [PassageHit] {
+    /// MCP actor가 보관하는 검색 전용 메모리 캐시. 디스크에는 쓰지 않는다.
+    /// 모델 신원 + 실제 임베딩 문자열 해시만 벡터를 재사용하는 근거다. 문서 ID·경로·범위는
+    /// 캐시하지 않아 이름 변경이나 이동 뒤에도 결과가 현재 문서를 가리킨다.
+    /// 기본 상한은 2048벡터(384차 Float 기준 약 3MiB + 관리 정보)다. 매 검색이 모든 문단을
+    /// 훑으므로 가득 차면 신규 저장을 건너뛴다. 순차 스캔이 앞선 캐시를 계속 밀어내지 않는다.
+    /// TextEmbedder처럼 동시 호출을 지원하지 않는다. 소유한 actor/직렬 큐에서만 쓴다.
+    public final class SearchCache {
+        private let maximumEntries: Int
+        private var model: ContentIndexStore.ModelIdentity?
+        private var entries: [String: [Float]] = [:]
+
+        public init(maximumEntries: Int = 2048) {
+            self.maximumEntries = max(0, maximumEntries)
+        }
+
+        func prepare(model: ContentIndexStore.ModelIdentity, activeHashes: Set<String>) {
+            if self.model != model {
+                entries.removeAll(keepingCapacity: true)
+                self.model = model
+            } else {
+                entries = entries.filter { activeHashes.contains($0.key) }
+            }
+        }
+
+        func vector(hash: String, preferred: [Float]?, compute: () throws -> [Float]) rethrows -> [Float] {
+            // 현재 sidecar를 먼저 본다. 같은 해시의 벡터가 갱신돼도 이전 메모리가 가리지 않는다.
+            // 이미 디스크에서 재사용하는 문단은 캐시 자리를 새로 차지할 필요가 없다.
+            if let preferred {
+                if entries[hash] != nil { remember(preferred, hash: hash) }
+                return preferred
+            }
+            if let vector = entries[hash] { return vector }
+            let vector = try compute()
+            remember(vector, hash: hash)
+            return vector
+        }
+
+        private func remember(_ vector: [Float], hash: String) {
+            guard maximumEntries > 0, vector.count == model?.dimensions,
+                  vector.allSatisfy(\.isFinite) else {
+                entries.removeValue(forKey: hash)
+                return
+            }
+            if entries[hash] != nil || entries.count < maximumEntries {
+                entries[hash] = vector
+            }
+        }
+    }
+
+    /// 디스크의 새 passage 벡터 또는 현재 문서에서 즉석 계산한 벡터로 검색한다. 선택적으로
+    /// 전달한 캐시도 현재 모델·본문과 대조한다. sidecar를 쓰지 않아 MCP의 읽기 경계를 지킨다.
+    public func search(query: String, fragments: [Fragment], limit: Int = 5,
+                       cache: SearchCache? = nil) throws -> [PassageHit] {
         let q = try embedder.embed(query: query)
         let plans = Dictionary(uniqueKeysWithValues: fragments.map { ($0.id, passages(for: $0)) })
+        cache?.prepare(model: model, activeHashes: Set(plans.values.flatMap { $0.map(\.hash) }))
         let stored = store.loadPassages(for: model) ?? [:]
         var values: [String: [PassageVector]] = [:]
         for (fragmentID, passages) in plans {
             let byID = Dictionary(uniqueKeysWithValues: (stored[fragmentID] ?? []).map { ($0.id, $0) })
             values[fragmentID] = try passages.map { passage in
-                if let old = byID[passage.id], old.hash == passage.hash,
-                   let vector = ContentIndexStore.decode(vector: old.vector, dimensions: model.dimensions) {
-                    return PassageVector(passage: passage, vector: vector)
+                let preferred: [Float]?
+                if let old = byID[passage.id], old.hash == passage.hash {
+                    preferred = ContentIndexStore.decode(vector: old.vector, dimensions: model.dimensions)
+                } else {
+                    preferred = nil
                 }
-                return PassageVector(passage: passage, vector: try embedder.embed(passage: passage.text))
+                let compute = { try self.embedder.embed(passage: passage.text) }
+                let vector = try cache?.vector(hash: passage.hash, preferred: preferred, compute: compute)
+                    ?? preferred ?? compute()
+                return PassageVector(passage: passage, vector: vector)
             }
         }
-        return Self.rank(queryVector: q, passageVectors: values, limit: limit)
+        return Self.rank(queryVector: q, passageVectors: values, query: query, limit: limit)
     }
 
     /// 순수 집계 함수. 호출자는 저장된 passage·즉석 passage 어느 쪽이든 넣을 수 있다.
     public static func rank(queryVector: [Float], passageVectors: [String: [PassageVector]],
-                            limit: Int = 5) -> [PassageHit] {
+                            query: String = "", limit: Int = 5) -> [PassageHit] {
         let hits = passageVectors.compactMap { fragmentID, values -> PassageHit? in
             values.compactMap { value -> PassageHit? in
                 let score = Double(TextEmbedder.cosine(queryVector, value.vector))
@@ -281,8 +337,12 @@ public final class ContentIndexer {
                 a.score == b.score ? a.passage.id > b.passage.id : a.score < b.score
             }
         }
+        let order = Dictionary(uniqueKeysWithValues: hits.map {
+            ($0.fragmentID, RetrievalAnchors.orderScore(cosine: $0.score, query: query, source: $0.passage.text))
+        })
         return Array(hits.sorted {
-            $0.score == $1.score ? $0.fragmentID < $1.fragmentID : $0.score > $1.score
+            let a = order[$0.fragmentID]!, b = order[$1.fragmentID]!
+            return a == b ? $0.fragmentID < $1.fragmentID : a > b
         }.prefix(max(0, limit)))
     }
 
@@ -569,7 +629,8 @@ public final class ContentIndexer {
     ///
     /// 규칙 셋:
     /// - **id 가 아니라 제목으로 부른다.** `f-1750…` 을 보여주면 사람은 그게 뭔지 모른다.
-    /// - **여러 건이면 가장 가까운 것 하나만 이름을 대고 나머지는 수로 센다.** 띠는 한 줄이다.
+    /// - **가장 가까운 문서 쌍을 밝히고 나머지는 쌍으로 센다.** 문서 개수와 구별한다.
+    /// - 코사인 점수는 내용 일치율이나 중복 확률이 아니므로 퍼센트로 표시하지 않는다.
     /// - **명령하지 않는다.** 「합쳐라」가 아니라 「있다」 — 지울지 합칠지는 사람이 정한다
     ///   (문턱 간격이 0.037 뿐이라 이 알림은 **틀릴 수 있다**).
     ///
@@ -581,15 +642,15 @@ public final class ContentIndexer {
         var titles: [String: String] = [:]
         for f in fragments {
             let t = f.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            titles[f.id] = t.isEmpty ? "제목 없는 조각" : t
+            titles[f.id] = t.isEmpty ? "제목 없는 문서" : t
         }
-        let other = titles[top.otherID] ?? "이름을 잃은 조각"
-        let percent = Int((top.score * 100).rounded())
-        var line = "이미 비슷한 조각이 있다 — 「\(other)」 와 \(percent)% 닮았다"
-        // 같은 조각을 가리키는 여러 쌍을 다 부르지 않는다. **몇 건 더 있다**까지만.
+        let current = titles[top.id] ?? "이름을 확인할 수 없는 문서"
+        let other = titles[top.otherID] ?? "이름을 확인할 수 없는 문서"
+        var line = "「\(current)」과 「\(other)」에 비슷한 내용이 있습니다."
+        // 같은 문서가 여러 쌍에 포함될 수 있다. 문서 수로 표현하지 않는다.
         let more = hits.count - 1
-        if more > 0 { line += " (그 밖에 \(more)건 더)" }
-        return line + ". 겹치면 하나로 합치는 편이 낫다"
+        if more > 0 { line += " 그 밖에 \(more)쌍" }
+        return line
     }
 
     // MARK: - ★ 증분 색인

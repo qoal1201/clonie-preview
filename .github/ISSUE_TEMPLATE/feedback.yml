@@ -27,6 +27,16 @@ body:
     validations:
       required: true
   - type: textarea
+    id: retrieval
+    attributes:
+      label: 검색에서 기대한 자료 (선택)
+      description: 검색·음성 문제라면 입력한 질문, 찾고 싶었던 문서나 문단, 실제로 나온 자료를 알려주세요. 저장소에 답이 없던 질문도 도움이 됩니다.
+  - type: textarea
+    id: usefulness
+    attributes:
+      label: 실제 작업에 도움이 되었나요? (선택)
+      description: 찾은 자료로 무엇을 할 수 있었는지, 결국 다른 도구를 썼다면 무엇이 부족했는지 알려주세요. 며칠 뒤 다시 사용한 경험도 환영합니다.
+  - type: textarea
     id: sample
     attributes:
       label: 개인정보를 지운 예시 또는 화면 (선택)

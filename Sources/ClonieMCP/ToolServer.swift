@@ -44,7 +44,7 @@ public enum ToolServer {
                 "required": .array([.string("path")])
              ])),
         Tool(name: "vault_search",
-             description: "내 저장소(md 볼트)에서 뜻으로 가까운 조각을 찾는다. score 는 초록선 눈금(1.0 = 초록선), light 는 g(답이 있다)/a(애매)/r(무반응). 모델이 없으면 mode=text 로 글자 검색.",
+             description: "내 저장소(md 볼트)에서 뜻으로 가까운 조각을 찾는다. score 는 초록선 눈금(1.0 = 초록선), light 는 관련도 점수 구간 g(높은 관련도)/a(중간 관련도)/r(낮은 관련도). 답의 존재·사실·숫자 일치는 원문 확인이 필요하다. 모델이 없으면 mode=text 로 글자 검색.",
              inputSchema: .object([
                 "type": .string("object"),
                 "properties": .object([
@@ -69,7 +69,7 @@ public enum ToolServer {
                 ]),
              ])),
         Tool(name: "vault_write",
-             description: "조각을 새로 쓰거나(id 없음) 고친다(id 있음). 새로 쓸 때 비슷한 조각이 이미 있으면 written=false 와 duplicates 를 돌려준다 — 그것을 고치거나 force=true 로 강행. md 파일 하나가 생긴다.",
+             description: "Markdown 문서를 새로 쓰거나(id 없음), 별도로 요청받은 기존 문서를 고친다(id 있음, 먼저 vault_read 필요). 새 문서는 기존 주제 폴더에 path를 지정할 수 있다. 임베딩 모델이 사용 가능하면 비슷한 문서를 written=false와 duplicates로 알린다. 중복 안내가 없다는 사실만으로 중복이 없다고 판단하지 않는다.",
              inputSchema: .object([
                 "type": .string("object"),
                 "properties": .object([
@@ -77,10 +77,10 @@ public enum ToolServer {
                     "body": .object(["type": .string("string")]),
                     "question_ids": .object(["type": .string("array"), "items": .object(["type": .string("string")]),
                                              "description": .string("이 조각이 답하는 질문 id 들 (vault_read 가 보여주는 값). 모르는 id 는 버린다")]),
-                    "id": .object(["type": .string("string"), "description": .string("있으면 그 조각을 고친다")]),
-                    "path": .object(["type": .string("string"), "description": .string("새 문서의 wiki/ 아래 Markdown 상대 경로. 생략하면 자동 생성. 기존 문서 경로는 유지한다.")]),
+                    "id": .object(["type": .string("string"), "description": .string("기존 문서 수정을 별도로 요청받았을 때 해당 문서의 id. 먼저 vault_read로 읽는다.")]),
+                    "path": .object(["type": .string("string"), "description": .string("새 문서의 볼트 내 Markdown 상대 경로. 기존 주제 폴더에 맞춰 지정한다. raw/ 원본·숨김 폴더는 제외. 생략하면 제목으로 루트에 생성. 기존 파일을 덮거나 경로를 옮기지 않는다.")]),
                     "revision": .object(["type": .string("string"), "description": .string("기존 문서를 고칠 때 vault_read가 반환한 읽은 버전. 충돌하면 다시 읽어 조정한다. force도 충돌을 덮어쓰지 않는다.")]),
-                    "force": .object(["type": .string("boolean"), "default": .bool(false)]),
+                    "force": .object(["type": .string("boolean"), "default": .bool(false), "description": .string("비슷한 내용의 문서가 있어도 별도 새 문서를 만들 필요를 대조한 뒤 중복 유사도 경고만 건너뛴다. 기존 path의 파일을 덮어쓰지 않으며, 기존 문서 수정의 id·revision 검사나 경로 제한도 우회하지 않는다.")]),
                 ]),
                 "required": .array([.string("title"), .string("body")]),
              ])),

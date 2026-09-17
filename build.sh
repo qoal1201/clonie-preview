@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
-VERSION="1.0.4"
+VERSION="1.0.5"
 APP_NAME="Clonie"
 APP_BUNDLE="Clonie.app"
 BUNDLE_ID="com.local.clonie"
@@ -54,6 +54,35 @@ RELEASE_DIR="$ROOT_DIR/.build/release"
 APP_BINARY="$RELEASE_DIR/Clonie"
 MCP_BINARY="$RELEASE_DIR/clonie-mcp"
 
+# Keep the signing identity stable between local updates. Selecting an arbitrary
+# new identity (or silently falling back to ad-hoc) can lose privacy permissions.
+SIGN_ID="${CLONIE_SIGN_ID:-}"
+if [ -z "$SIGN_ID" ]; then
+  SIGN_ID="$(python3 - "$APP_PATH" <<'PY'
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+existing = Path(sys.argv[1])
+result = subprocess.run(['security', 'find-identity', '-v', '-p', 'codesigning'],
+                        capture_output=True, text=True, check=True)
+identities = re.findall(r'\)\s+([0-9A-F]{40})\s+"([^"]+)"', result.stdout)
+authority = None
+if existing.exists():
+    signature = subprocess.run(['codesign', '-dv', '--verbose=2', str(existing)],
+                               capture_output=True, text=True)
+    authority = next((line.removeprefix('Authority=') for line in signature.stderr.splitlines()
+                      if line.startswith('Authority=')), None)
+if authority:
+    identities = [(key, name) for key, name in identities if name == authority]
+if len(identities) != 1:
+    sys.exit('서명 인증서를 하나로 확정할 수 없습니다. 기존 서명을 유지하거나 CLONIE_SIGN_ID를 명시하세요. 앱은 교체하지 않았습니다.')
+print(identities[0][0])
+PY
+)"
+fi
+
 # The QA visibility gate belongs to WindowPrivacy. This build never exports it.
 # The script only writes the repository-local bundle named above; it does not
 # terminate, install, or remove an app from /Applications.
@@ -69,6 +98,10 @@ swift build -c release --product clonie-mcp
 echo "→ Creating $APP_BUNDLE..."
 rm -rf "$APP_PATH"
 mkdir -p "$APP_PATH/Contents/MacOS" "$APP_PATH/Contents/Resources"
+cp -R scripts/document-conversion "$APP_PATH/Contents/Resources/"
+mkdir -p "$APP_PATH/Contents/Resources/skills"
+cp -R .agents/skills/clonie-session-record "$APP_PATH/Contents/Resources/skills/"
+cp -R .agents/skills/clonie "$APP_PATH/Contents/Resources/skills/"
 cp "$APP_BINARY" "$APP_PATH/Contents/MacOS/$APP_NAME"
 cp "$MCP_BINARY" "$APP_PATH/Contents/MacOS/clonie-mcp"
 
@@ -87,6 +120,9 @@ copy_if_present "$ROOT_DIR/assets/branding/ClonieMenuTemplate.png" \
   "$APP_PATH/Contents/Resources/ClonieMenuTemplate.png"
 copy_if_present "$ROOT_DIR/ThirdPartyNotices" \
   "$APP_PATH/Contents/Resources/ThirdPartyNotices"
+
+cp "$ROOT_DIR/LICENSE" "$ROOT_DIR/LICENSING.md" "$APP_PATH/Contents/Resources/"
+cp "$ROOT_DIR/LICENSING.md" "$APP_PATH/Contents/Resources/ThirdPartyNotices/"
 
 if [ "$INCLUDE_MODEL" -eq 1 ]; then
   MODEL_SOURCE="${CLONIE_MODEL_DIR:-$HOME/Library/Application Support/Clonie/models/multilingual-e5-small-ko-v2}"
@@ -227,11 +263,6 @@ cat > "$APP_PATH/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-SIGN_ID="${CLONIE_SIGN_ID:-}"
-if [ -z "$SIGN_ID" ]; then
-  SIGN_ID="$(security find-identity -v -p codesigning 2>/dev/null | awk '/\)/ {print $2; exit}')"
-fi
-SIGN_ID="${SIGN_ID:--}"
 echo "→ Signing $APP_BUNDLE as $SIGN_ID..."
 ENTITLEMENTS="$ROOT_DIR/.build/clonie.entitlements.plist"
 mkdir -p "$(dirname "$ENTITLEMENTS")"

@@ -74,9 +74,11 @@ final class ToolServerTests: XCTestCase {
     func testWriteThenReadRoundTripsThroughProtocol() async throws {
         let w = try await callJSON("vault_write", ["title": .string("프로토콜로 쓴 조각"),
                                                    "body": .string("본문"),
+                                                   "path": .string("프로젝트/세션 기록.md"),
                                                    "question_ids": .array([.string("q-1")]),
                                                    "force": .bool(true)])
         XCTAssertEqual(w.json["written"] as? Bool, true)
+        XCTAssertEqual(w.json["path"] as? String, "프로젝트/세션 기록.md")
         let id = w.json["id"] as! String
         let r = try await callJSON("vault_read", ["id": .string(id)])
         XCTAssertEqual(r.json["title"] as? String, "프로토콜로 쓴 조각")

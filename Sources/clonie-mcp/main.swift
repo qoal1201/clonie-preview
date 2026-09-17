@@ -50,7 +50,7 @@ let server = await ToolServer.make(tools: tools)
 stderr("[clonie-mcp \(ClonieMCPVersion.string)] 볼트: \(vaultURL.path)")
 
 do {
-    try await server.start(transport: StdioTransport())
+    try await server.start(transport: CompatibleStdioTransport())
     await server.waitUntilCompleted()
 } catch {
     stderr("[clonie-mcp] 서버가 죽었다: \(error)")

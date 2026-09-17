@@ -17,18 +17,18 @@ does not authorize installation or reading the user's personal documents.
    `~/Applications/Clonie.app`, checks the release SHA-256 and app signature,
    and refuses to overwrite an existing Clonie.app or Ghostbar.app in that
    folder. `--app-dir` selects another folder.
-4. Confirm that the installed bundle exists and `codesign --verify --deep --strict`
+4. Read the release version from README and check the installed bundle version (`CFBundleShortVersionString`); the current release is 1.0.5. Confirm that the installed bundle exists and `codesign --verify --deep --strict`
    succeeds. This verifies its signature, not Apple notarization or first-launch success.
 5. Open the installed app if the user requested to start using it. Let the user
    handle macOS first-launch approval and microphone/screen recording permissions.
    Never disable Gatekeeper or strip quarantine as an automatic workaround.
-6. Offer the included sample-vault or let the user choose their own Markdown folder.
+6. Offer the included sample-vault or let the user choose their own Markdown folder. Verify one search and document-open action if app control is available; otherwise hand those steps to the user and say they remain unverified.
    Editing changes actual files. Never upload their vault, API keys, or screenshots
    to a public issue without explicit approval.
 
 No API key, AI subscription, Python, Xcode, or source build is required for the
 bundled app's basic exploration, editing, and local search. Apple speech model
-preparation is a separate first-use step. Do not silently enable external AI drafting.
+preparation is a separate first-use step. Microphone-only use searches with the user’s speech; including system audio searches with the other speaker’s speech. Do not start voice collection just to finish installation. PDF/Word import can require a first-use download of conversion tools and models. External AI access is an optional MCP connection, not a prerequisite for installation.
 
 ## Repository changes
 

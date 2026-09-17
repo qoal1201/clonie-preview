@@ -2,9 +2,9 @@
 # Install a pinned preview without Homebrew, sudo, or changes to user documents.
 set -euo pipefail
 
-CLONIE_VERSION="20260910-clonie1"
+CLONIE_VERSION="20260917-clonie1"
 CLONIE_ARCHIVE_NAME="Clonie-preview-${CLONIE_VERSION}-arm64.zip"
-CLONIE_SHA256="99cdaaeb78d9b5c888b5823b91a0f35c703a3e401273d743eaa6213ece5eea47"
+CLONIE_SHA256="221d12730bd7ae669dfb594cf5e6be1e4ebbf08b197532d4f6ba45d0d9cbac79"
 CLONIE_URL="https://github.com/qoal1201/clonie-preview/releases/download/preview-${CLONIE_VERSION}/${CLONIE_ARCHIVE_NAME}"
 CLONIE_APP_DIR="$HOME/Applications"
 CLONIE_ARCHIVE=""

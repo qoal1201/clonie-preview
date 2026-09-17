@@ -476,7 +476,9 @@ final class ContentIndexerTests: XCTestCase {
         // ★ **id 가 아니라 제목으로 부른다.** `deploy-1` 을 보여주면 사람은 그게 뭔지 모른다.
         XCTAssertTrue(one.contains(NeighborCorpus.fragment(a).title), "짝의 제목을 안 불렀다: \(one)")
         XCTAssertFalse(one.contains(a), "id 가 그대로 새어나왔다: \(one)")
-        XCTAssertTrue(one.contains("84%"), "닮은 정도를 안 말한다: \(one)")
+        XCTAssertTrue(one.contains(NeighborCorpus.fragment(b).title), "현재 문서도 밝혀야 한다: \(one)")
+        XCTAssertFalse(one.contains("%"), "코사인 점수를 내용 일치율로 표시하면 안 된다: \(one)")
+        XCTAssertFalse(one.contains("합치"), "관련성만으로 합치기를 권하지 않는다: \(one)")
         XCTAssertFalse(one.contains("그 밖에"), "한 건인데 나머지를 셌다: \(one)")
         print("알림 한 줄 — \(one)")
 
@@ -484,7 +486,7 @@ final class ContentIndexerTests: XCTestCase {
         let many = try XCTUnwrap(ContentIndexer.duplicateNotice(
             [.init(id: b, otherID: a, score: 0.835),
              .init(id: b, otherID: "conflict-1", score: 0.71)], fragments: frs))
-        XCTAssertTrue(many.contains("그 밖에 1건"), "나머지를 안 셌다: \(many)")
+        XCTAssertTrue(many.contains("그 밖에 1쌍"), "문서 수가 아닌 쌍으로 세어야 한다: \(many)")
         XCTAssertFalse(many.contains(NeighborCorpus.fragment("conflict-1").title),
                        "두 번째 제목까지 띠에 넣었다 — 한 줄을 넘긴다: \(many)")
 
@@ -496,7 +498,7 @@ final class ContentIndexerTests: XCTestCase {
                                 questionIds: [], createdAt: t, updatedAt: t)
         let blank = try XCTUnwrap(ContentIndexer.duplicateNotice(
             [.init(id: "x", otherID: "u", score: 0.9)], fragments: [untitled]))
-        XCTAssertTrue(blank.contains("제목 없는 조각"), "빈 제목이 「」 로 새어나왔다: \(blank)")
+        XCTAssertTrue(blank.contains("제목 없는 문서"), "빈 제목이 「」 로 새어나왔다: \(blank)")
     }
 
     // MARK: - 07 색인 시간 실측 — 콜드/웜

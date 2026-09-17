@@ -73,8 +73,8 @@ public enum VaultToolError: Error, CustomStringConvertible, Equatable {
         case .emptyTitle: return "title 이 비었다"
         case .emptyBody: return "body 가 비었다"
         case .invalidRevision: return "읽은 버전이 만료됐거나 다른 파일의 버전이다. vault_read로 다시 읽고 변경을 검토한다."
-        case .invalidOutputPath: return "새 정리 문서의 path는 wiki/ 안의 Markdown 상대 경로여야 한다."
-        case .readOnlySource(let path): return "원본은 읽기 전용이다: \(path). 해석은 wiki/ 정리 문서에 쓴다."
+        case .invalidOutputPath: return "path는 볼트 안의 Markdown 상대 경로여야 한다. 원본(raw/ 및 원본 폴더)·숨김 폴더에는 새 문서를 쓸 수 없고 기존 문서 경로는 변경할 수 없다."
+        case .readOnlySource(let path): return "원본은 읽기 전용이다: \(path). 새 기록은 다른 주제 폴더의 Markdown으로 남긴다."
         }
     }
 }
@@ -85,7 +85,7 @@ public enum VaultToolError: Error, CustomStringConvertible, Equatable {
 ///
 /// ## 규칙 (ADR 0007)
 ///
-/// - **md 만 쓴다.** `.clonie/embeddings.json`·`links.json` 은 읽기만. 벡터는 이 actor 안 메모리에만 산다.
+/// - **문서와 변경 기록만 쓴다.** `.clonie/embeddings.json`·`links.json` 은 읽기만. 벡터는 이 actor 안 메모리에만 산다.
 /// - 씨앗(`seed == true`)은 사람이 쓴 것이 아니다 — 목록·검색에 안 낸다.
 /// - 임베더는 **첫 검색 때** 연다(모델 로드는 초 단위) — 목록·읽기는 그 값을 안 문다.
 ///
@@ -98,6 +98,8 @@ public actor VaultTools {
     private var embedderState: EmbedderState = .unknown
     /// 해시 → 벡터. 프로세스 수명 동안만 산다 — 디스크에 안 내린다 (ADR 0007).
     private var vectorCache: [String: [Float]] = [:]
+    /// 검색은 문단 단위로 재사용한다. 새 indexer를 만들더라도 캐시는 actor 수명 동안 유지한다.
+    private let searchCache = ContentIndexer.SearchCache()
     private var readVersions: [String: (id: String, load: VersionedLoadResult)] = [:]
     private var readOrder: [String] = []
     private var lastRead: [String: String] = [:]
@@ -180,7 +182,7 @@ public actor VaultTools {
         }
 
         let indexer = ContentIndexer(sidecarURL: store.sidecarURL, embedder: embedder)
-        let ranked = try indexer.search(query: q, fragments: frags, limit: lim)
+        let ranked = try indexer.search(query: q, fragments: frags, limit: lim, cache: searchCache)
         let byID = Dictionary(uniqueKeysWithValues: frags.map { ($0.id, $0) })
         let hits = ranked.compactMap { hit -> SearchHit? in
             guard let fragment = byID[hit.fragmentID] else { return nil }
@@ -280,21 +282,25 @@ public actor VaultTools {
 
         if let id = id, let i = doc.fragments.firstIndex(where: { $0.id == id }) {
             let existingPath = load.paths[id] ?? ""
-            if existingPath.hasPrefix("wiki/"), revision == nil, lastRead[id] == nil {
+            if SourceCatalog.isOriginalPath(existingPath) { throw VaultToolError.readOnlySource(existingPath) }
+            // 주제 폴더를 어디로 골랐든 기존 문서 수정은 읽은 버전을 기준으로 한다.
+            if revision == nil, lastRead[id] == nil {
                 throw VaultToolError.invalidRevision
             }
-            if existingPath.lowercased().hasPrefix("raw/") { throw VaultToolError.readOnlySource(existingPath) }
             if let path, path != existingPath { throw VaultToolError.invalidOutputPath }
+            let oldFragment = doc.fragments[i]
             doc.fragments[i].title = t
             doc.fragments[i].body = b
             // 빈 목록이거나 전부 모르는 id 면 칩은 그대로 둔다 — 지우는 통로가 아니다.
             if !chips.isEmpty { doc.fragments[i].questionIds = chips }
-            doc.fragments[i].updatedAt = now
+            let contentChanged = oldFragment.title != t || oldFragment.body != b
+                || oldFragment.questionIds != doc.fragments[i].questionIds || oldFragment.seed == true
+            if contentChanged { doc.fragments[i].updatedAt = now }
             doc.fragments[i].seed = nil      // 사람이(Claude 가) 고쳤다 — 이제 보통 조각이다
             let saved = try store.saveFragments(doc, expecting: baseline.revision)
             lastRead.removeValue(forKey: id)
             return WriteResult(written: true, id: id, path: saved.paths[id],
-                               duplicates: [], note: "updated")
+                               duplicates: [], note: saved.changeWarning ?? (contentChanged ? "updated" : "unchanged"))
         }
 
         // ⚠ id 를 줬는데 없다 — 조용히 새로 만들지 않는다. `read` 와 같은 낱말로 거절하고,
@@ -302,9 +308,10 @@ public actor VaultTools {
         if let id = id { throw VaultToolError.notFound(id) }
 
         if let path {
-            guard path.hasPrefix("wiki/"), path.lowercased().hasSuffix(".md"),
+            guard !SourceCatalog.isOriginalPath(path), path.lowercased().hasSuffix(".md"),
                   !path.split(separator: "/", omittingEmptySubsequences: false).contains(where: { $0.isEmpty || $0.hasPrefix(".") })
             else { throw VaultToolError.invalidOutputPath }
+            // 경로 탈출·심볼릭 링크·기존 파일 충돌은 VaultStore의 새 파일 검증을 그대로 지난다.
         }
 
         // 정리본은 원본과 의도적으로 내용이 겹친다. wiki 출력의 중복 후보는 기존 wiki 문서다.
@@ -320,7 +327,7 @@ public actor VaultTools {
             if !dups.isEmpty {
                 let hits = dups.map { Self.makeHit($0.0, cosine: $0.1, paths: load.paths, withLight: false) }
                 return WriteResult(written: false, id: "", path: nil, duplicates: hits,
-                                   note: "이미 비슷한 조각이 있다. 그것을 고치려면 id 를 주고, 그래도 새로 쓰려면 force: true.")
+                                   note: "이미 비슷한 문서가 있다. 새 파일이 필요한지 대조한 뒤 생성하려면 force: true. 기존 문서 수정은 별도 요청을 받고 vault_read의 버전으로 진행한다.")
             }
         }
 
@@ -329,7 +336,7 @@ public actor VaultTools {
                                       createdAt: now, updatedAt: now))
         let saved = try store.saveFragments(doc, expecting: baseline.revision, newPaths: path.map { [newID: $0] } ?? [:])
         return WriteResult(written: true, id: newID, path: saved.paths[newID],
-                           duplicates: [], note: "created")
+                           duplicates: [], note: saved.changeWarning ?? "created")
     }
 
     /// `mcp-<밀리초 base36>-<4자>`. 화면의 `uid()` 와 같은 결을 — 시각이 앞이라 정렬이 되고, 꼬리가 충돌을 막는다.

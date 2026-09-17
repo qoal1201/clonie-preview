@@ -6,7 +6,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var chatWindow: ChatWindow?
     var globalHotKey: GlobalHotKey?
     private var settingsItem: NSMenuItem?
+    private var mainSettingsItem: NSMenuItem?
     private var preparingToQuit = false
+    private var vaultPicker: NSOpenPanel?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !QASession.isQABundle || QASession.current != nil else {
@@ -37,9 +39,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem = item
         if let mark = Bundle.main.image(forResource: "ClonieMenuTemplate") {
-            mark.size = NSSize(width: 18, height: 18)
+            let menuMarkWidth: CGFloat = 18
+            let aspectRatio = mark.size.width > 0 ? mark.size.height / mark.size.width : 1
+            mark.size = NSSize(width: menuMarkWidth, height: menuMarkWidth * aspectRatio)
             mark.isTemplate = true
             item.button?.image = mark
+            item.button?.imageScaling = .scaleProportionallyDown
             item.button?.imagePosition = QASession.isQABundle ? .imageLeft : .imageOnly
             item.button?.title = QASession.isQABundle ? " QA" : ""
         } else {
@@ -59,8 +64,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let main = NSMenu()
         let appMenu = NSMenu(title: "Clonie")
+        appMenu.autoenablesItems = false
+        let mainSettings = menuItem("설정…", action: #selector(configureBackend), key: ",")
+        mainSettingsItem = mainSettings
+        appMenu.addItem(mainSettings)
+        appMenu.addItem(.separator())
         appMenu.addItem(menuItem("Clonie 종료", action: #selector(quit), key: "q"))
         let editMenu = NSMenu(title: "편집")
+        editMenu.addItem(menuItem("실행 취소", action: #selector(undoEditor), key: "z"))
+        let redo = menuItem("다시 실행", action: #selector(redoEditor), key: "z")
+        redo.keyEquivalentModifierMask = [.command, .shift]
+        editMenu.addItem(redo)
+        editMenu.addItem(.separator())
         for (title, action, key) in [
             ("오려두기", #selector(NSText.cut(_:)), "x"),
             ("복사하기", #selector(NSText.copy(_:)), "c"),
@@ -75,6 +90,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             main.addItem(parent)
         }
         NSApp.mainMenu = main
+    }
+
+    @objc private func undoEditor() { performEditorHistory("undo") }
+    @objc private func redoEditor() { performEditorHistory("redo") }
+
+    private func performEditorHistory(_ direction: String) {
+        guard let web = chatWindow?.webView.view,
+              let host = web.window,
+              (NSApp.keyWindow ?? host) === host,
+              host.attachedSheet == nil else {
+            NSApp.sendAction(NSSelectorFromString(direction + ":"), to: nil, from: self)
+            return
+        }
+        // An inactive window has no NSApp.keyWindow. Its DOM still owns the focused
+        // field and history. Let the page choose CM versus ordinary input history;
+        // a separate native window or sheet keeps the AppKit responder chain.
+        web.evaluateJavaScript("performEditorHistory('\(direction)')", completionHandler: nil)
     }
 
     private func menuItem(_ title: String, action: Selector, key: String = "") -> NSMenuItem {
@@ -110,7 +142,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func setSettingsEnabled(forMode mode: String) { settingsItem?.isEnabled = mode == "stack" }
+    func setSettingsEnabled(forMode mode: String) {
+        settingsItem?.isEnabled = mode == "stack"
+        mainSettingsItem?.isEnabled = mode == "stack"
+    }
 
     /// A shortcut becomes persistent only after Carbon accepts it.
     func applyShortcut(_ slot: GlobalHotKey.Slot, _ shortcut: RecordingShortcut) -> Bool {
@@ -130,24 +165,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func pickVaultFolder(_ done: @escaping (URL?) -> Void) {
         DispatchQueue.main.async { [weak self] in
+            guard let self else { done(nil); return }
+            // A visible workspace may be behind another app. Bring its picker back
+            // instead of queuing another sheet when a connection request is repeated.
+            NSApp.activate()
+            if let existing = self.vaultPicker {
+                self.chatWindow?.window.makeKeyAndOrderFront(nil)
+                existing.makeKeyAndOrderFront(nil)
+                done(nil)
+                return
+            }
             let picker = NSOpenPanel()
+            self.vaultPicker = picker
             picker.canChooseFiles = false
             picker.canChooseDirectories = true
             picker.canCreateDirectories = true
             picker.allowsMultipleSelection = false
             picker.prompt = "연결"
-            picker.message = "조각이 .md 파일로 살 폴더를 고른다. 이미 쓰던 볼트를 골라도 된다."
             picker.directoryURL = VaultLocation.current
             WindowPrivacy.apply(to: picker)
-            let finish: (NSApplication.ModalResponse) -> Void = { response in
+            let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+                self?.vaultPicker = nil
                 done(response == .OK ? picker.url : nil)
             }
-            if let host = self?.chatWindow?.window {
-                if !host.isVisible {
-                    NSApp.activate()
-                    host.makeKeyAndOrderFront(nil)
-                }
+            if let host = self.chatWindow?.window {
+                host.makeKeyAndOrderFront(nil)
                 picker.beginSheetModal(for: host, completionHandler: finish)
+                picker.makeKeyAndOrderFront(nil)
             } else {
                 NSApp.activate()
                 picker.level = .modalPanel

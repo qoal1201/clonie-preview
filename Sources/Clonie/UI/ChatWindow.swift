@@ -1,9 +1,12 @@
 import AppKit
+import ClonieCore
 
 final class ChatWindow: NSObject, NSWindowDelegate {
     let window: MovableWindow
     let webView: WKWebViewWrapper
     private let backdrop: NSVisualEffectView
+    private var accessibilityObserver: NSObjectProtocol?
+    private var fullScreenChanging = false
 
     override init() {
         let stored = UserDefaults.standard.string(forKey: Self.frameKey("stack"))
@@ -24,8 +27,8 @@ final class ChatWindow: NSObject, NSWindowDelegate {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
-        window.level = .floating
-        Self.setWindowButtons(window, on: false)
+        window.level = .normal
+        Self.setWindowButtons(window, on: true)
         if restored == nil { window.center() }
         backdrop.material = .hudWindow
         backdrop.blendingMode = .behindWindow
@@ -41,20 +44,60 @@ final class ChatWindow: NSObject, NSWindowDelegate {
         WindowPrivacy.apply(to: window)
         window.delegate = self
         applyWindowStyle()
+        accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            let preferences = AccessibilityPreferences.current
+            self.applyWindowStyle(preferences: preferences)
+            self.webView.sendAccessibilityPreferences(preferences)
+        }
+    }
+
+    deinit {
+        if let accessibilityObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(accessibilityObserver)
+        }
     }
 
     func showAndFocus() {
+        webView.reapplyLatestWindowMode()
         NSApp.activate()
+        if window.isMiniaturized {
+            window.deminiaturize(nil)
+        }
         window.makeKeyAndOrderFront(nil)
         WindowPrivacy.apply(to: window)
     }
 
-    func applyWindowStyle() {
-        backdrop.alphaValue = WindowStyle.blur
+    func applyWindowStyle(preferences: AccessibilityPreferences = .current) {
+        let transparent = WindowStyle.usesTransparentBackground(
+            mode: window.modeKey, reduceTransparency: preferences.reduceTransparency)
+        // Stack includes settings, preparation and import, including the initial WebKit load.
+        window.isOpaque = !transparent
+        window.backgroundColor = transparent
+            ? .clear
+            : NSColor(calibratedRed: 23 / 255, green: 23 / 255, blue: 26 / 255, alpha: 1)
+        backdrop.alphaValue = transparent ? WindowStyle.blur : 0
         backdrop.isHidden = backdrop.alphaValue <= 0.001
     }
 
     static func frameKey(_ mode: String) -> String { "windowFrame.\(mode)" }
+
+    /// Stack keeps the user's size. Overlay modes keep only their last position and use the
+    /// size requested by the current screen.
+    static func frameForMode(current: NSRect, remembered: NSRect?, defaultFrame: NSRect,
+                             sameMode: Bool, keepsRememberedSize: Bool) -> NSRect {
+        WindowFramePolicy.frame(
+            current: current, remembered: remembered, defaultFrame: defaultFrame,
+            sameMode: sameMode, keepsRememberedSize: keepsRememberedSize)
+    }
+
+    /// A frame saved on a disconnected display must still leave the whole window reachable.
+    static func frameOnScreen(_ frame: NSRect, visibleFrames: [NSRect], preferred: NSRect?) -> NSRect {
+        WindowFramePolicy.frameOnScreen(frame, visibleFrames: visibleFrames, preferred: preferred)
+    }
 
     static func setWindowButtons(_ window: NSWindow, on: Bool) {
         for button: NSWindow.ButtonType in [.closeButton, .miniaturizeButton, .zoomButton] {
@@ -67,12 +110,28 @@ final class ChatWindow: NSObject, NSWindowDelegate {
         return false
     }
 
-    func windowDidExitFullScreen(_ notification: Notification) { webView.finishHideAfterFullScreen() }
+    func windowWillEnterFullScreen(_ notification: Notification) {
+        fullScreenChanging = true
+        webView.windowWillEnterFullScreen()
+    }
+    func windowDidEnterFullScreen(_ notification: Notification) {
+        webView.windowDidEnterFullScreen()
+        fullScreenChanging = false
+    }
+    func windowWillExitFullScreen(_ notification: Notification) {
+        fullScreenChanging = true
+        webView.windowWillExitFullScreen()
+    }
+    func windowDidExitFullScreen(_ notification: Notification) {
+        webView.windowDidExitFullScreen()
+        fullScreenChanging = false
+    }
     func windowDidResize(_ notification: Notification) { saveFrame() }
     func windowDidMove(_ notification: Notification) { saveFrame() }
 
     private func saveFrame() {
-        guard !window.styleMask.contains(.fullScreen) else { return }
+        guard !fullScreenChanging, webView.canPersistWindowFrame,
+              !window.styleMask.contains(.fullScreen) else { return }
         UserDefaults.standard.set(NSStringFromRect(window.frame), forKey: Self.frameKey(window.modeKey))
     }
 }

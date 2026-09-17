@@ -7,8 +7,19 @@ import ClonieDocuments
 
 class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     let view: WKWebView
+    private var appliedWindowMode: String?
+    private var windowTransition = WindowTransitionPolicy()
+    private var applyingWindowFrame = false
+    private var windowFrameApplicationID = 0
+    var canPersistWindowFrame: Bool {
+        windowTransition.canPersistFrame && !applyingWindowFrame
+    }
     /// 면접 모드에서만 산다 (#17). 처음 면접에 들어갈 때 만들어지고 그 뒤로는 켜고 끄기만 한다.
     var ears: InterviewEars?
+    private var sessions: SessionController?
+    private var importer: DocumentImporter?
+    private var importBusy = false
+    private var lastQuestionID: String?
     /// 조각 저장소 — **md 볼트 폴더 하나**다 (ADR 0003 §1, #30).
     ///
     /// ⚠ 뒤가 JSON 한 장에서 폴더로 바뀌었지만 **화면은 모른다** — `load()`/`save()` 모양이
@@ -44,7 +55,8 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     private var graph: ContentGraph?
     /// 면접관 관의 **굳은 글자**가 마지막으로 어디까지였나 (#34). 질의 벡터를 언제 만들지
     /// 가르는 데만 쓴다 — 어절마다 만들면 큐가 밀린다.
-    private var lastConfirmedThem = ""
+    private var lastConfirmedQuery = ""
+    private var queryUsesSystemAudio = true
     private let speechSetup = InterviewEars()
     private var speechPreparing = false
 
@@ -55,13 +67,14 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         view.setValue(false, forKey: "drawsBackground")
         view.navigationDelegate = self
         // Every registered message has a consumer in the current Clonie workspace.
-        for name in ["loadModels", "copyText", "closeWindow", "probeSystem", "saveShortcut", "openSystem", "resizeWindow", "saveDocument", "vaultAction", "terminationReady", "prepareSpeechModel", "pinVaultRevisions", "startListening", "stopListening", "embedDraft", "pickIngestFiles", "draftFragment", "tidyQuestion", "detectCli", "saveCliConfig", "saveBackend", "setWindowStyle"] {
+        for name in ["loadModels", "copyText", "closeWindow", "probeSystem", "saveShortcut", "openSystem", "resizeWindow", "saveDocument", "vaultAction", "changeAction", "terminationReady", "prepareSpeechModel", "pinVaultRevisions", "startListening", "stopListening", "sessionAction", "importDocuments", "embedDraft", "pickIngestFiles", "draftFragment", "tidyQuestion", "detectCli", "saveCliConfig", "saveBackend", "setWindowStyle"] {
             configuration.userContentController.add(self, name: name)
         }
         vault = store.map { VaultIO(store: $0, requireExistingRoot: true) }
         graph = store.map { ContentGraph(sidecarURL: $0.sidecarURL) }
         view.loadHTMLString(chatHTML(), baseURL: nil)
         startVaultWatch()
+        setupSessions()
     }
 
     // MARK: - 내용 그래프 (#32)
@@ -108,6 +121,7 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
 
     /// 사용자가 설정창에서 **다른 폴더를 연결**했다. 저장소와 감시를 그리로 옮기고 화면을 새로 채운다.
     func rebindVault() {
+        importer = nil
         watcher?.stop()
         watcher = nil
         // ⚠ **옛 볼트의 밀린 저장을 먼저 흘려보낸다** (블로커 F1). 안 그러면 방금 쓴 조각이
@@ -129,7 +143,36 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         }
         vaultChangedOutside = false
         startVaultWatch()
+        setupSessions()
         sendDocument(kind: "load")
+    }
+
+    private var changingSessionVault = false
+    private func changeSessionVault(to url: URL) {
+        guard !changingSessionVault, !importBusy, savingSessionDrafts.isEmpty else {
+            sendSessionError("진행 중인 저장이나 가져오기가 끝난 뒤 저장소를 바꿔 주세요.")
+            return
+        }
+        changingSessionVault = true
+        Task { @MainActor in
+            defer { self.changingSessionVault = false; self.sendSystemState() }
+            if let controller = self.sessions {
+                // Read the focused field too: the user may quit without triggering blur/change.
+                do {
+                    let payload = try await self.view.evaluateJavaScript("sessionPendingDrafts()")
+                    if let values = payload as? [Any] {
+                        for value in values {
+                            let data = try JSONSerialization.data(withJSONObject: value)
+                            controller.editDraft(try JSONDecoder().decode(SessionDraft.self, from: data))
+                        }
+                    }
+                } catch { self.sendSessionError("보완 초안을 확인하지 못했습니다. 창을 다시 열고 시도해 주세요."); return }
+                if controller.capturing, !(await controller.finish(ears: self.ears)) { return }
+                guard await controller.flush() else { return }
+            }
+            do { try VaultLocation.set(url); self.rebindVault() }
+            catch { self.sendSessionError(error.localizedDescription) }
+        }
     }
 
     /// 창을 다시 띄울 때 부른다. 밀린 변경이 있으면 그때 문서를 다시 읽는다.
@@ -148,6 +191,10 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                   let h = (b["h"] as? NSNumber)?.doubleValue else { return }
             applyMode((b["mode"] as? String) ?? "stack",
                       content: NSSize(width: w, height: h))
+        case "sessionAction":
+            if let body = message.body as? [String: Any] { handleSessionAction(body) }
+        case "importDocuments":
+            if let body = message.body as? [String: Any] { handleImportDocuments(body) }
         case "startListening":
             // ⚠ **통로를 안 늘렸다** — 기존 이름에 「어느 관을 열까」를 얹었다 (#36,
             //   `resizeWindow` 가 크기 옆에 `mode` 를 얹은 것과 같은 모양). 연습 모드는
@@ -156,7 +203,7 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             let earsBody = message.body as? [String: Any]
             startInterviewEars(system: (earsBody?["system"] as? NSNumber)?.boolValue ?? true)
         case "stopListening":
-            stopInterviewEars()
+            if sessions?.capturing != true { stopInterviewEars(); view.evaluateJavaScript("onPreviewStopped()", completionHandler: nil) }
         case "prepareSpeechModel":
             guard !speechPreparing else { return }
             speechPreparing = true
@@ -170,6 +217,8 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             }
         case "vaultAction":
             if let body = message.body as? [String: Any] { handleVaultAction(body) }
+        case "changeAction":
+            if let body = message.body as? [String: Any] { handleChangeAction(body) }
         case "saveDocument":
             // 화면이 리비전 표와 문서 전체 JSON을 보낸다. 조각 규모(5,000장 순회 2.58ms, #4)에선
             // 통째로 쓰는 것이 부분 갱신보다 싸고, 무엇보다 **부분 실패가 없다.**
@@ -283,10 +332,8 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                                              completionHandler: nil)
             }
         case "pickIngestFiles":
-            // ★ **파일 고르기 창은 화면이 못 연다** (#40). WebView 의 `<input type=file>` 은
-            //   `loadHTMLString(baseURL: nil)` 아래에서 안 뜨고, 뜬다 해도 hwpx·docx 를
-            //   평문으로 바꾸는 것은 브라우저가 못 한다. 그래서 통로가 하나 늘었다.
-            pickAndExtractDocuments()
+            view.evaluateJavaScript("openDocumentImport()", completionHandler: nil)
+            handleImportDocuments(["action": "pick"])
         case "draftFragment":
             // ★ 온디바이스 모델로 **이야기 0~3장** (#40 2판). **상관 id 를 그대로 되돌려준다** —
             //   화면이 창을 줄지어 던지고, 응답 순서는 보장되지 않는다.
@@ -438,6 +485,8 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             guard let b = message.body as? [String: Any] else { return }
             if let v = (b["blur"] as? NSNumber)?.doubleValue { WindowStyle.blur = v }
             if let v = (b["opacity"] as? NSNumber)?.doubleValue { WindowStyle.opacity = v }
+            if let v = (b["textScale"] as? NSNumber)?.doubleValue { WindowStyle.textScale = v }
+            if let v = b["universeStyle"] as? String { WindowStyle.universeStyle = v }
             DispatchQueue.main.async {
                 (NSApp.delegate as? AppDelegate)?.chatWindow?.applyWindowStyle()
             }
@@ -460,6 +509,40 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             //   Core 문지기가 실제 파일과 symlink 경계를 다시 확인한다.
             guard let body = message.body as? [String: Any],
                   let what = body["what"] as? String else { return }
+            if what == "mcpSetup" || what == "mcpRecord" {
+                var copied = false
+                defer {
+                    view.evaluateJavaScript("onMCPAction(\(copied ? "true" : "false"))", completionHandler: nil)
+                }
+                guard let root = store?.vaultURL else { return }
+                let text: String
+                if what == "mcpSetup" {
+                    guard body["client"] == nil || body["client"] is String else { return }
+                    let command = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/clonie-mcp").path
+                    guard let setup = try? MCPConnectionSetup.text(
+                        client: body["client"] as? String, command: command, vaultPath: root.path
+                    ) else { return }
+                    text = setup
+                } else {
+                    guard let resource = Bundle.main.resourceURL?.appendingPathComponent("skills/clonie-session-record/SKILL.md"),
+                          let skill = try? String(contentsOf: resource, encoding: .utf8) else { return }
+                    text = "현재 대화에서 다음에 다시 쓸 내용을 연결된 Clonie 저장소에 기록해 주세요. 아래 작업 규칙을 적용해 주세요.\n\n" + skill
+                }
+                NSPasteboard.general.clearContents()
+                copied = NSPasteboard.general.setString(text, forType: .string)
+                return
+            }
+            if what == "webLink" {
+                guard let raw = body["url"] as? String,
+                      let url = URL(string: raw),
+                      ["https", "http"].contains(url.scheme?.lowercased() ?? ""),
+                      let host = url.host, !host.isEmpty,
+                      url.user == nil, url.password == nil else { return }
+                if !NSWorkspace.shared.open(url) {
+                    view.evaluateJavaScript("onIndexNotice('링크를 열지 못했습니다.')", completionHandler: nil)
+                }
+                return
+            }
             if what == "source" {
                 guard let fromPath = body["fromPath"] as? String,
                       let reference = body["reference"] as? String,
@@ -467,9 +550,12 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                 do {
                     let url = try VaultReferenceResolver(vaultURL: store.vaultURL)
                         .resolve(reference: reference, from: fromPath)
-                    NSWorkspace.shared.open(url)
+                    if !NSWorkspace.shared.open(url) {
+                        view.evaluateJavaScript("onIndexNotice('연결된 파일을 열지 못했습니다.')", completionHandler: nil)
+                    }
                 } catch {
                     FileHandle.standardError.write(Data("[cue] 출처 열기 거부: \(error)\n".utf8))
+                    view.evaluateJavaScript("onIndexNotice('연결된 파일을 찾거나 열 수 없습니다.')", completionHandler: nil)
                 }
                 return
             }
@@ -478,12 +564,7 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                 app.pickVaultFolder { [weak self] url in
                     defer { self?.sendSystemState() }
                     guard let url else { return }
-                    do {
-                        try VaultLocation.set(url)
-                        self?.rebindVault()
-                    } catch {
-                        self?.view.evaluateJavaScript("onIndexNotice(\(jsLiteral(error.localizedDescription)))", completionHandler: nil)
-                    }
+                    self?.changeSessionVault(to: url)
                 }
             } else {
                 app.openSystemPrivacy(what)
@@ -522,7 +603,6 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             panel.canChooseDirectories = false
             panel.canChooseFiles = true
             panel.allowedContentTypes = DocumentExtractor.contentTypes
-            panel.message = "자기소개서·이력서를 고른다 (pdf · docx · hwpx · md · txt)"
             panel.prompt = "가져오기"
             // 면접 중에 열릴 수 있는 창이다 — 은신을 여기도 박는다 (#80 ②, `pickVaultFolder` 와 같은 줄).
             WindowPrivacy.apply(to: panel)
@@ -769,56 +849,101 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         //   메뉴는 창과 무관하게 살아 있으므로 아래 `guard` 위에 있어야 한다.
         (NSApp.delegate as? AppDelegate)?.setSettingsEnabled(forMode: mode)
         guard let win = view.window else { return }
+        let request = WindowModeRequest(
+            mode: mode, width: Double(content.width), height: Double(content.height))
+        let currentMode = appliedWindowMode ?? (win as? MovableWindow)?.modeKey ?? "stack"
+        performWindowEffect(windowTransition.request(
+            request, isFullScreen: win.styleMask.contains(.fullScreen), currentMode: currentMode),
+            window: win)
+    }
+
+    /// 메뉴·Dock·단축키 어느 길로 다시 열어도 JS가 마지막으로 요청한 창 껍데기를 먼저 복원한다.
+    func reapplyLatestWindowMode() {
+        guard let win = view.window else { return }
+        let currentMode = appliedWindowMode ?? (win as? MovableWindow)?.modeKey ?? "stack"
+        performWindowEffect(windowTransition.reapplyLatest(
+            isFullScreen: win.styleMask.contains(.fullScreen), currentMode: currentMode),
+            window: win)
+    }
+
+    private func applyWindowMode(_ request: WindowModeRequest, to win: NSWindow) {
+        let mode = request.mode
         let live = mode == "live"
-        let want: NSApplication.ActivationPolicy = live ? .accessory : .regular
-        // Background QA must never acquire focus when the web view reports its mode.
-        let backgroundQA = QASession.current != nil && !WindowPrivacy.isQAVisible
+        reconcileWindowShell(mode, window: win)
+
+        // ★ 자리는 **그 모드가 마지막에 있던 자리**로 돌아간다. 없으면 지금 창의 중심에 맞춘다.
+        //   쌓기는 사용자가 키운 크기를 보존한다. live/practice는 위치만 기억하고 현재 화면이
+        //   요청한 콘텐츠 크기를 사용해 전체화면 저장소 크기를 물려받지 않는다.
+        let old = win.frame
+        var defaultFrame = win.frameRect(forContentRect: NSRect(
+            x: 0, y: 0, width: CGFloat(request.width), height: CGFloat(request.height)))
+        defaultFrame.origin.x = old.midX - defaultFrame.width / 2
+        defaultFrame.origin.y = old.midY - defaultFrame.height / 2
+        let key = ChatWindow.frameKey(mode)
+        let remembered = UserDefaults.standard.string(forKey: key).map(NSRectFromString)
+        let proposed = ChatWindow.frameForMode(
+            current: old, remembered: remembered, defaultFrame: defaultFrame,
+            sameMode: appliedWindowMode == mode, keepsRememberedSize: mode == "stack")
+        let frame = ChatWindow.frameOnScreen(
+            proposed, visibleFrames: NSScreen.screens.map(\.visibleFrame),
+            preferred: win.screen?.visibleFrame ?? NSScreen.main?.visibleFrame)
+        appliedWindowMode = mode
+        if !win.styleMask.contains(.fullScreen), win.frame != frame {
+            let animate = !AccessibilityPreferences.current.reduceMotion
+            windowFrameApplicationID += 1
+            let applicationID = windowFrameApplicationID
+            applyingWindowFrame = true
+            let animationTime = animate ? win.animationResizeTime(frame) : 0
+            win.setFrame(frame, display: true, animate: animate)
+            UserDefaults.standard.set(NSStringFromRect(frame), forKey: key)
+            if animationTime > 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + animationTime) { [weak self] in
+                    guard let self, self.windowFrameApplicationID == applicationID else { return }
+                    self.applyingWindowFrame = false
+                }
+            } else {
+                applyingWindowFrame = false
+            }
+        }
+
+        performWindowEffect(windowTransition.didApply(
+            request, isFullScreen: win.styleMask.contains(.fullScreen)), window: win)
+    }
+
+    private func performWindowEffect(_ effect: WindowTransitionPolicy.Effect, window win: NSWindow) {
+        switch effect {
+        case .none:
+            return
+        case .apply(let request):
+            applyWindowMode(request, to: win)
+        case .toggleFullScreen:
+            win.toggleFullScreen(nil)
+        case .hide:
+            DispatchQueue.main.async { [weak win] in win?.orderOut(nil) }
+        }
+    }
+
+    /// AppKit can rebuild the title bar while entering or leaving full screen, so all native
+    /// mode properties are reconciled together after those transitions as well as on render.
+    private func reconcileWindowShell(_ mode: String, window win: NSWindow) {
+        // Preview and actual use share the same overlay shell. Only input/session
+        // behavior differs; preview must exercise the window users will actually use.
+        let overlay = mode == "live" || mode == "practice"
+        let want: NSApplication.ActivationPolicy = overlay ? .accessory : .regular
+        let backgroundQA = QASession.current != nil && !WindowPrivacy.wasCaptureTestingRequested
         if !backgroundQA && NSApp.activationPolicy() != want {
             NSApp.setActivationPolicy(want)
             NSApp.activate(ignoringOtherApps: true)
             win.makeKeyAndOrderFront(nil)
         }
-        // ★ 창 층위도 모드를 따른다 (박선호 2026-08-28: *"일반적인 상하계층 ui가 작동을 안하고 무조건
-        //   제일 상위로 보이나?"*). 상류 Ghostbar 는 **떠 있는 오버레이 바**라 `.floating` 을 기동에 한 번
-        //   걸고 끝냈다. 우리 쌓기 모드는 「일반 앱」이라 다른 창 뒤로 갈 수 있어야 한다.
-        //   ⚠ 면접 모드는 `.floating` 이 필수다 — 면접관 얼굴 위에 떠 있는 것이 자리 결정(Q5)의 전제다.
-        win.level = live ? .floating : .normal
-        // ★ 창 단추 셋도 모드를 따른다 (#67 재편). 쌓기·연습은 「일반 앱」이라 단추가 있어야
-        //   하고(확대가 곧 **캔버스 확대**의 첫 걸음이다 — #67 스펙 3), 면접 오버레이는
-        //   그 단추가 뜨는 순간 「이건 앱 창이다」를 화면 위에 광고한다.
-        // ⚠ **연습도 켜진다.** 스펙(#67)이 말한 것은 「저장소에 보임 · 면접에 숨김」 둘뿐인데,
-        //   여기서 새 축을 만들지 않고 **이 파일이 이미 쓰는 `live` 갈림**을 그대로 탔다 —
-        //   연습 창은 층위도 독 아이콘도 쌓기와 같은 「일반 창」이라 단추만 없으면 그게 어긋난다.
-        ChatWindow.setWindowButtons(win, on: !live)
-        // 끌 수 있는 띠를 화면의 머리 높이에 맞춘다 — 면접은 지난 발화 + 현재 발화(≈92pt),
-        // 쌓기는 위 막대(≈44pt). 그 아래는 눌러야 하는 것들이라 안 준다.
-        (win as? MovableWindow)?.headerHeight = live ? 92 : 44
+        win.level = overlay ? .floating : .normal
+        ChatWindow.setWindowButtons(win, on: !overlay)
+        (win as? MovableWindow)?.headerHeight = overlay ? 92 : 44
         (win as? MovableWindow)?.modeKey = mode
-        // ★ **스페이스**도 모드를 따른다. `실측 2026-08-28`: `collectionBehavior` 가 기본값(0) 이었다 —
-        //   그러면 창이 **한 스페이스에만 산다.** 전체화면 앱(Zoom·Meet 을 전체화면으로 쓰는 것이 흔하다)은
-        //   자기 스페이스를 갖는데, 거기엔 이 창이 **안 따라간다.** 브라우저 탭 전환은 같은 스페이스라 되고,
-        //   전체화면 회의는 다른 스페이스라 안 되는 것이다 (박선호 2026-08-28 이 물은 자리).
-        //   ⚠ 쌓기 모드는 기본값으로 돌려놓는다 — 「일반 앱」이 모든 스페이스를 따라다니면 그게 이상하다.
-        win.collectionBehavior = live
+        (win.delegate as? ChatWindow)?.applyWindowStyle()
+        win.collectionBehavior = overlay
             ? [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
             : []
-        // ★ 자리는 **그 모드가 마지막에 있던 자리**로 돌아간다. 없으면 지금 창의 중심에 맞춘다.
-        //   ⚠ 전엔 기억이 하나뿐이라 모드를 오갈 때마다 서로의 자리를 덮어썼고,
-        //   그래서 켤 때마다 창이 다른 데 떴다 (박선호 2026-08-28).
-        let old = win.frame
-        var f = win.frameRect(forContentRect: NSRect(x: 0, y: 0, width: content.width, height: content.height))
-        let key = ChatWindow.frameKey(mode)
-        let remembered = (UserDefaults.standard.string(forKey: key).map(NSRectFromString)) ?? .zero
-        if remembered.width > 100, remembered.height > 100 {
-            f.origin = remembered.origin
-        } else {
-            f.origin.x = old.midX - f.width / 2
-            f.origin.y = old.midY - f.height / 2
-        }
-        win.setFrame(f, display: true, animate: true)   // 줄며 바뀌는 것 자체가 전환 신호다 (라운드 9)
-        // ⚠ 공유 노출은 **두 모드 다** 은신이다 — 박선호 Q6: *"어느 모드에서도 안 잡힌다.
-        //   그게 우리 특성이야"*. 이건 층위와 **무관한 별개의 줄**이고, 층위를 낮춰도 안 잡히는 건 그대로다.
-        //   값을 정하는 것은 `WindowPrivacy` 하나다 (#24 C 층) — 여기서 직접 대입하지 않는다.
         WindowPrivacy.apply(to: win)
     }
 
@@ -829,12 +954,15 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     /// - Parameter system: 시스템 오디오(상대 목소리) 관도 열까. 연습 모드는 `false` —
     ///   묻는 것이 앱이라 상대가 없다 (#36). 마이크 관은 **언제나** 연다.
     func startInterviewEars(system: Bool = true) {
+        queryUsesSystemAudio = system
+        lastConfirmedQuery = ""
         if ears == nil {
             let e = InterviewEars()
             e.onUpdate = { [weak self] who, confirmed, volatileTail, query, ended in
                 guard let self = self else { return }
-                let payload: [String: Any] = ["who": who.rawValue, "confirmed": confirmed,
+                var payload: [String: Any] = ["who": who.rawValue, "confirmed": confirmed,
                                               "volatile": volatileTail, "query": query, "ended": ended]
+                if let questionID = self.lastQuestionID { payload["questionID"] = questionID }
                 if let data = try? JSONSerialization.data(withJSONObject: payload),
                    let json = String(data: data, encoding: .utf8) {
                     self.view.evaluateJavaScript("onEar(\(jsLiteral(json)))", completionHandler: nil)
@@ -855,26 +983,110 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                 // ⚠ **어절마다 안 만든다.** 임베딩 한 건이 12ms 인데 전사는 한 발화에 수십 번
                 //   갱신된다 — 매번 만들면 큐가 밀려 낡은 벡터만 도착한다. **굳은 글자가
                 //   자랐을 때와 발화가 끝났을 때**만 만든다.
-                // ⚠ 면접관 관만 본다. 내 말(`me`)은 조각을 펴는 데만 쓰이고 순위를 안 매긴다.
-                guard who == .them, !query.isEmpty else { return }
-                let grew = confirmed != self.lastConfirmedThem
-                self.lastConfirmedThem = confirmed
+                // Use the same query engine for the selected input. In microphone-only use,
+                // the microphone supplies questions; in a call, system audio does.
+                guard who == (self.queryUsesSystemAudio ? .them : .me), !query.isEmpty else { return }
+                let grew = confirmed != self.lastConfirmedQuery
+                self.lastConfirmedQuery = confirmed
                 guard ended || grew else { return }
-                self.graph?.embedQuery(query) { [weak self] b64 in
-                    guard let self = self,
-                          let data = try? JSONSerialization.data(withJSONObject: ["query": query,
-                                                                                  "v": b64]),
-                          let json = String(data: data, encoding: .utf8) else { return }
-                    self.view.evaluateJavaScript("onQueryVector(\(jsLiteral(json)))",
-                                                 completionHandler: nil)
+                guard let graph = self.graph else {
+                    self.deliverLiveQueryVector(query: query, vector: nil)
+                    return
+                }
+                graph.embedQuery(query) { [weak self] b64 in
+                    self?.deliverLiveQueryVector(query: query, vector: b64)
                 }
             }
+            e.onResult = { [weak self] who, epoch, result in
+                self?.sessions?.ingest(who: who.rawValue, epoch: epoch, result: result)
+                self?.lastQuestionID = self?.sessions?.currentQuestionID
+            }
+            e.onInput = { [weak self] who, level in
+                self?.view.evaluateJavaScript("onInputLevel(\(jsLiteral(who.rawValue)),\(level))", completionHandler: nil)
+            }
+            e.onCaptureState = { [weak self, weak e] state in
+                guard let self, let e, self.ears === e else { return }
+                self.handleCaptureState(state, owner: e)
+            }
             e.onTrouble = { [weak self] message in
+                self?.sessions?.event("inputError", detail: message)
                 self?.view.evaluateJavaScript("onEarTrouble(\(jsLiteral(message)))", completionHandler: nil)
             }
             ears = e
         }
         ears?.startEars(system: system)
+    }
+
+    /// 질의·전사·볼트 경로와 원래 오류 메시지는 로그에 남기지 않는다.
+    private func deliverLiveQueryVector(query: String, vector: String?) {
+        var payload: [String: String] = ["query": query]
+        if let vector {
+            payload["v"] = vector
+            logQueryVector("embedding_succeeded", diagnosticsOnly: true)
+        } else {
+            payload["error"] = "query_embedding_failed"
+            logQueryVector("embedding_failed")
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else {
+            logQueryVector("payload_encoding_failed")
+            return
+        }
+        view.evaluateJavaScript("onQueryVector(\(jsLiteral(json)))") { [weak self] result, error in
+            guard let self else { return }
+            guard error == nil else { self.logQueryVector("js_delivery_failed"); return }
+            guard let receipt = result as? [String: Any],
+                  let accepted = receipt["accepted"] as? Bool,
+                  let matching = receipt["matching"] as? Bool else {
+                self.logQueryVector("invalid_receipt")
+                return
+            }
+            // 화이트리스트 밖의 JS 문자열은 원문이 섞였을 가능성이 있어 출력하지 않는다.
+            let reason: String
+            switch receipt["reason"] as? String {
+            case "stale_query": reason = "stale_query"
+            case "invalid_vector": reason = "invalid_vector"
+            case "invalid_payload": reason = "invalid_payload"
+            case "query_embedding_failed": reason = "query_embedding_failed"
+            case "awaiting_document_vectors": reason = "awaiting_document_vectors"
+            case "applied": reason = "applied"
+            default: reason = "unknown_reason"
+            }
+            if accepted {
+                self.logQueryVector("accepted reason=\(reason) matching=\(matching ? "true" : "false")", diagnosticsOnly: true)
+            } else {
+                self.logQueryVector("rejected reason=\(reason) matching=\(matching ? "true" : "false")")
+            }
+        }
+    }
+
+    private func logQueryVector(_ code: String, diagnosticsOnly: Bool = false) {
+        if diagnosticsOnly && ProcessInfo.processInfo.environment["CLONIE_DIAGNOSTICS"] != "1" { return }
+        FileHandle.standardError.write(Data("[cue] query-vector \(code)\n".utf8))
+    }
+
+    private func handleCaptureState(_ state: CaptureReadiness.Snapshot, owner: InterviewEars) {
+        if let data = try? JSONEncoder().encode(state), let json = String(data: data, encoding: .utf8) {
+            view.evaluateJavaScript("onCaptureState(\(json))", completionHandler: nil)
+        }
+        if !state.receiving.isEmpty { sessions?.captureDidReceiveInput() }
+        guard state.phase == "failed" else { return }
+        let generation = owner.captureGeneration
+        let message = state.failed.sorted(by: { $0.key < $1.key }).map(\.value).joined(separator: " ")
+        if let controller = sessions, controller.capturing {
+            let recordID = controller.record?.id
+            Task { @MainActor [weak self, weak owner] in
+                guard let self, let owner, self.ears === owner, owner.captureGeneration == generation,
+                      self.sessions === controller, controller.record?.id == recordID else { return }
+                controller.event("inputUnavailable", detail: message)
+                _ = await controller.finish(ears: owner, interrupted: true)
+                if self.sessions === controller, controller.record?.id == recordID { self.sendSessionError(message) }
+            }
+        } else {
+            owner.stopEars()
+            view.evaluateJavaScript("onPreviewStopped()", completionHandler: nil)
+            sendSessionError(message)
+        }
     }
 
     func stopInterviewEars() {
@@ -978,13 +1190,17 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         case .notDetermined: mic = "ask"
         default:             mic = "off"
         }
-        let screen = CGPreflightScreenCaptureAccess() ? "on" : "off"
+        // A negative preflight is not a confirmed denial: native rehearsal saw
+        // successful ScreenCaptureKit audio after a permission change while it
+        // still returned false. The actual start reports capture success/failure.
+        let screen = CGPreflightScreenCaptureAccess() ? "on" : "unconfirmed"
         let vaultPath = (VaultLocation.selected?.path ?? "")
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
         let failed = failedSlot.map { "\"\($0.name)\"" } ?? "null"
+        let shortcutAvailability = QASession.current == nil ? "available" : "qaDisabled"
         let json = "{\"keys\":{\(keys)},\"mic\":\"\(mic)\",\"screen\":\"\(screen)\","
-            + "\"vault\":\"\(vaultPath)\",\"failed\":\(failed)}"
+            + "\"vault\":\"\(vaultPath)\",\"failed\":\(failed),\"shortcutAvailability\":\"\(shortcutAvailability)\"}"
         view.evaluateJavaScript("setSystemState(\(jsLiteral(json)))", completionHandler: nil)
         if !speechPreparing {
             InterviewEars.probeSpeechModel { [weak self] state in
@@ -1066,11 +1282,17 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         // 「더 좋은 정리」의 켤 수 있나 (#51). 여기서 미는 이유는 `sendDocument` 와 같다 —
         // `init` 시점엔 `setCloudDrafter` 가 아직 없고 `evaluateJavaScript` 는 조용히 실패한다.
         sendCloudReady()
+        sendAccessibilityPreferences()
         sendWindowStyle()
-        // ★ 화면이 **검증용 숫자를 보여도 되나** (#61 E). 이 값은 은신을 안 정한다 —
-        //   그건 `WindowPrivacy` 하나가 정하고 `tests/check_qa_visible_gate.py` 가 잰다.
-        view.evaluateJavaScript("setQAVisible(\(WindowPrivacy.isQAVisible))",
-                                completionHandler: nil)
+        sendSessionState()
+
+    }
+
+    /// Send on every load and when macOS display options change; WSTYLE stays user-owned.
+    func sendAccessibilityPreferences(_ preferences: AccessibilityPreferences = .current) {
+        guard let data = try? JSONEncoder().encode(preferences),
+              let json = String(data: data, encoding: .utf8) else { return }
+        view.evaluateJavaScript("setAccessibilityPreferences(\(jsLiteral(json)))", completionHandler: nil)
     }
 
     /// 저장된 창 손잡이 둘을 화면으로 되돌린다 (#61 B).
@@ -1079,7 +1301,8 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     /// ⚠ 블러는 Swift 가 이미 걸었다(`applyWindowStyle`). 이 짐이 필요한 것은 **불투명도** 때문이다:
     /// 그 값은 화면의 `#app` 배경 알파라, 안 돌려주면 재기동마다 사람이 다시 맞춰야 한다.
     func sendWindowStyle() {
-        let payload: [String: Any] = ["blur": WindowStyle.blur, "opacity": WindowStyle.opacity]
+        let payload: [String: Any] = ["blur": WindowStyle.blur, "opacity": WindowStyle.opacity,
+                                      "universeStyle": WindowStyle.universeStyle, "textScale": WindowStyle.textScale]
         guard let data = try? JSONSerialization.data(withJSONObject: payload),
               let json = String(data: data, encoding: .utf8) else { return }
         view.evaluateJavaScript("setWindowStyleValues(\(jsLiteral(json)))", completionHandler: nil)
@@ -1144,15 +1367,19 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
 
     private func deliverDocument(_ loaded: LoadResult, revision: VaultRevision,
                                  kind: String, requestID: Int?,
-                                 savedRevision: VaultRevision? = nil, workspace: VaultWorkspace? = nil) {
+                                 savedRevision: VaultRevision? = nil, workspace: VaultWorkspace? = nil,
+                                 vaultAction: [String: Any]? = nil) {
         guard let json = VaultIO.documentPayloadJSON(loaded) else {
             if let requestID { failDocumentSave(requestID) }
             return
         }
         let revisionID = rememberVaultRevision(revision)
         var metadata: [String: Any] = ["kind": kind, "revision": revisionID]
+        if let vaultAction { metadata["vaultAction"] = vaultAction }
         if let workspace {
             metadata["folders"] = workspace.folders
+            metadata["orbitGroups"] = workspace.orbitGroups.map { ["id": $0.id, "paths": $0.paths] as [String: Any] }
+            if let error = workspace.orbitError { metadata["orbitError"] = error }
             metadata["entries"] = workspace.entries.map {
                 ["id": $0.id, "path": $0.path, "kind": $0.kind,
                  "byteCount": $0.byteCount, "manageable": $0.manageable] as [String: Any]
@@ -1180,11 +1407,66 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         view.evaluateJavaScript(
             "receiveDocument(\(jsLiteral(json)),\(notice.map(jsLiteral) ?? "null"),\(meta))",
             completionHandler: nil)
+        handleChangeAction(["action": "list"])
         // 볼트를 읽을 때 색인해야 옵시디언에서 더한 조각도 그래프에 앉는다.
         indexFragments(loaded.document)
     }
 
     /// 파일 정리도 기존 저장 큐와 리비전 검사를 통과한다.
+    private func handleChangeAction(_ body: [String: Any]) {
+        guard let vault, let action = body["action"] as? String,
+              ["list", "detail", "review", "restore"].contains(action) else { return }
+        let generation = vaultGeneration
+        let vaultPath = store?.vaultURL.path ?? ""
+        let requestID = (body["requestID"] as? NSNumber)?.intValue
+        let id = body["id"] as? String ?? ""
+        let respond: ([String: Any]) -> Void = { [weak self] value in
+            guard let self, generation == self.vaultGeneration else { return }
+            var payload = value
+            payload["action"] = action; payload["vault"] = vaultPath
+            if let requestID { payload["requestID"] = requestID }
+            guard let data = try? JSONSerialization.data(withJSONObject: payload),
+                  let json = String(data: data, encoding: .utf8) else { return }
+            self.view.evaluateJavaScript("onDocumentChanges(\(json))", completionHandler: nil)
+        }
+        vault.perform({ store -> [String: Any] in
+            var warning: String?
+            if action == "review" { try store.markDocumentChangeReviewed(id: id) }
+            if action == "restore" { warning = try store.restoreDocumentChange(id: id).warning }
+            let changes = try store.documentChanges()
+            func summary(_ change: VaultDocumentChange) -> [String: Any] {
+                var row: [String: Any] = ["id": change.id, "source": change.source,
+                    "fragmentID": change.fragmentID, "path": change.path, "title": change.title,
+                    "operation": change.operation.rawValue, "performedAt": change.performedAt.timeIntervalSince1970]
+                if let date = change.reviewedAt { row["reviewedAt"] = date.timeIntervalSince1970 }
+                if let date = change.restoredAt { row["restoredAt"] = date.timeIntervalSince1970 }
+                return row
+            }
+            if action == "list" { return ["items": changes.map(summary)] }
+            guard let change = changes.first(where: { $0.id == id }) else {
+                throw NSError(domain: "Clonie.ChangeHistory", code: 1,
+                              userInfo: [NSLocalizedDescriptionKey: "변경 기록을 찾을 수 없습니다. 목록을 다시 열어 주세요."])
+            }
+            var result: [String: Any] = ["item": summary(change)]
+            if action == "detail" {
+                var detail = summary(change)
+                detail["after"] = ["title": change.after.title, "body": change.after.body]
+                if let before = change.before { detail["before"] = ["title": before.title, "body": before.body] }
+                result["detail"] = detail
+            }
+            if let warning { result["warning"] = warning }
+            return result
+        }, onTrouble: { _ in }) { [weak self] result in
+            guard let self, generation == self.vaultGeneration else { return }
+            switch result {
+            case .success(let value):
+                respond(value)
+                if action == "restore" { self.sendDocument(kind: "reload") }
+            case .failure(let error): respond(["error": error.localizedDescription])
+            }
+        }
+    }
+
     private func handleVaultAction(_ body: [String: Any]) {
         guard let requestID = (body["requestID"] as? NSNumber)?.intValue else { return }
         let respond: ([String: Any]) -> Void = { [weak self] payload in
@@ -1200,6 +1482,27 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         let generation = vaultGeneration
         let value: (String) -> String = { body[$0] as? String ?? "" }
         let id = value("id"), path = value("path"), name = value("name"), folder = value("folder")
+        if action == "joinOrbit" || action == "splitOrbit" {
+            vault.perform({ store -> [OrbitGroup] in
+                let workspace = try store.loadWorkspace()
+                guard workspace.revision == revision else { throw VaultMutationError.conflict(path) }
+                let orbits = OrbitGroupStore(rootURL: store.vaultURL)
+                if action == "joinOrbit" {
+                    return try orbits.join(path: path, targetPath: value("targetPath"), entries: workspace.entries)
+                }
+                return try orbits.split(path: path, entries: workspace.entries)
+            }) { [weak self] result in
+                guard let self, generation == self.vaultGeneration else { return }
+                switch result {
+                case .success(let groups):
+                    respond(["ok": true, "orbitGroups": groups.map { ["id": $0.id, "paths": $0.paths] as [String: Any] }])
+                case .failure(let error):
+                    respond(["error": error.localizedDescription])
+                    self.sendDocument(kind: "reload", preserveTrouble: true)
+                }
+            }
+            return
+        }
         if value("phase") != "apply" {
             vault.perform({ store -> [VaultLinkImpact] in
                 let workspace = try store.loadWorkspace()
@@ -1277,8 +1580,6 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             guard let self = self, generation == self.vaultGeneration else { return }
             switch result {
             case .success(let mutation):
-                self.deliverDocument(mutation.workspace.versioned.result, revision: mutation.revision,
-                                     kind: "reload", requestID: nil, workspace: mutation.workspace)
                 var result: [String: Any] = ["ok": true]
                 if let operation = mutation.operation {
                     result["operationID"] = operation.id
@@ -1286,10 +1587,214 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                     result["destinationPath"] = action == "undo" ? operation.sourcePath : operation.destinationPath
                 }
                 if let createdID = mutation.createdID { result["createdID"] = createdID }
+                var actionMetadata = result
+                actionMetadata["requestID"] = requestID
+                self.deliverDocument(mutation.workspace.versioned.result, revision: mutation.revision,
+                                     kind: "reload", requestID: nil, workspace: mutation.workspace,
+                                     vaultAction: actionMetadata)
                 respond(result)
             case .failure(let error):
                 respond(["error": error.localizedDescription])
                 self.sendDocument(kind: "reload", preserveTrouble: true)
+            }
+        }
+    }
+
+    private func handleImportDocuments(_ body: [String: Any]) {
+        guard let root = store?.vaultURL, sessions?.capturing != true else { return }
+        if importer == nil {
+            let qaRuntime = QASession.current?.vaultURL.deletingLastPathComponent().appendingPathComponent("document-conversion-runtime", isDirectory: true)
+            importer = DocumentImporter(vaultURL: root, runtimeRoot: qaRuntime)
+        }
+        guard let importer else { return }
+        let action = body["action"] as? String ?? "pick"
+        let generation = vaultGeneration
+        if action == "cancel" { Task { await importer.cancel() }; return }
+        if action == "history" {
+            Task { @MainActor in self.sendImportResults(await importer.history(), generation: generation) }
+            return
+        }
+        guard !importBusy else { return }
+        let progress: @Sendable (DocumentImportProgress) -> Void = { [weak self] value in
+            Task { @MainActor in
+                guard let self, self.vaultGeneration == generation,
+                      let data = try? JSONEncoder().encode(value), let json = String(data: data, encoding: .utf8) else { return }
+                self.view.evaluateJavaScript("onImportProgress(\(json))", completionHandler: nil)
+            }
+        }
+        if action == "retry", let id = body["id"] as? String {
+            importBusy = true
+            Task { @MainActor in
+                let result = await importer.retry(id: id, onProgress: progress)
+                self.importBusy = false
+                self.sendImportResults([result], generation: generation)
+                if generation == self.vaultGeneration { self.sendDocument(kind: "reload") }
+            }
+            return
+        }
+        let destination = body["destination"] as? String ?? ""
+        if action == "drop", let urls = NSPasteboard(name: .drag).readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
+            importBusy = true
+            Task { @MainActor in
+                let results = await importer.importFiles(urls: urls, destination: destination, onProgress: progress)
+                self.importBusy = false
+                self.sendImportResults(results, generation: generation)
+                if generation == self.vaultGeneration { self.sendDocument(kind: "reload") }
+            }
+            return
+        }
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = DocumentExtractor.contentTypes
+        panel.prompt = "가져오기"
+        WindowPrivacy.apply(to: panel)
+        importBusy = true // Includes the file sheet, so repeated requests cannot queue sheets.
+        let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard let self else { return }
+            self.importBusy = false
+            guard response == .OK, generation == self.vaultGeneration else {
+                self.sendImportResults([], generation: generation)
+                return
+            }
+            self.importBusy = true
+            Task { @MainActor in
+                let results = await importer.importFiles(urls: panel.urls, destination: destination, onProgress: progress)
+                self.importBusy = false
+                self.sendImportResults(results, generation: generation)
+                if generation == self.vaultGeneration { self.sendDocument(kind: "reload") }
+            }
+        }
+        if let host = view.window { panel.beginSheetModal(for: host, completionHandler: finish) }
+        else { panel.begin(completionHandler: finish) }
+    }
+
+    private func sendImportResults(_ results: [DocumentImportResult], generation: Int) {
+        guard generation == vaultGeneration, let data = try? JSONEncoder().encode(results),
+              let json = String(data: data, encoding: .utf8) else { return }
+        view.evaluateJavaScript("onImportResults(\(json))", completionHandler: nil)
+    }
+
+    private func setupSessions() {
+        guard let root = store?.vaultURL else { sessions = nil; return }
+        let controller = SessionController(vaultURL: root)
+        sessions = controller
+        controller.onChange = { [weak self, weak controller] record in
+            guard let self, let controller, self.sessions === controller else { return }
+            self.sendSessionState()
+        }
+        controller.onError = { [weak self] message in self?.sendSessionError(message) }
+        Task { @MainActor in await controller.recover() }
+    }
+
+    private func sendSessionState() {
+        guard let sessions else { return }
+        let encoder = JSONEncoder()
+        let record = sessions.record.flatMap { try? encoder.encode($0) }.flatMap { String(data: $0, encoding: .utf8) } ?? "null"
+        let list = (try? encoder.encode(sessions.records)).flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+        view.evaluateJavaScript("onSessionState(\(record),\(list))", completionHandler: nil)
+    }
+
+    private func sendSessionError(_ message: String) {
+        view.evaluateJavaScript("onSessionError(\(jsLiteral(message)))", completionHandler: nil)
+    }
+
+    private func handleSessionAction(_ body: [String: Any]) {
+        guard !changingSessionVault, let action = body["action"] as? String, let controller = sessions else { return }
+        Task { @MainActor [weak self] in
+            guard let self, self.sessions === controller else { return }
+            switch action {
+            case "preferences":
+                let key = "usePreferencesByVault"
+                let vaultKey = controller.vaultURL.path
+                var preferences = UserDefaults.standard.dictionary(forKey: key) ?? [:]
+                if let system = body["system"] as? Bool, let scope = body["scope"] as? String {
+                    preferences[vaultKey] = ["system": system, "scope": scope]
+                    UserDefaults.standard.set(preferences, forKey: key)
+                } else if let revision = body["revision"] as? Int {
+                    let value = preferences[vaultKey] as? [String: Any] ?? ["system": true, "scope": ""]
+                    if let data = try? JSONSerialization.data(withJSONObject: value),
+                       let json = String(data: data, encoding: .utf8) {
+                        self.view.evaluateJavaScript("onUsePreferences(\(json),\(revision))", completionHandler: nil)
+                    }
+                }
+            case "list": self.sendSessionState()
+            case "start":
+                self.stopInterviewEars() // Ends only a preview microphone test before the new session.
+                let system = body["system"] as? Bool ?? true
+                if await controller.start(system: system) { self.startInterviewEars(system: system) }
+            case "pause": await controller.finish(ears: self.ears, paused: true)
+            case "resume":
+                if await controller.resume() { self.startInterviewEars(system: body["system"] as? Bool ?? true) }
+            case "finish":
+                await controller.finish(ears: self.ears)
+            case "select": if self.savingSessionDrafts.isEmpty, let id = body["id"] as? String { await controller.select(id: id) }
+            case "review": controller.review()
+            case "questionReview":
+                if body["sessionID"] as? String == controller.record?.id,
+                   let id = body["id"] as? String, let status = body["status"] as? String {
+                    controller.setQuestionReview(id: id, status: status)
+                }
+            case "recordReview":
+                if let id = body["sessionID"] as? String, let status = body["status"] as? String {
+                    await controller.setRecordReview(id: id, status: status)
+                }
+            case "correct":
+                if body["sessionID"] as? String == controller.record?.id, let id = body["id"] as? String, let text = body["text"] as? String { controller.correct(id: id, text: text) }
+            case "draft", "saveDraft":
+                guard let payload = body["draft"], let data = try? JSONSerialization.data(withJSONObject: payload),
+                      let draft = try? JSONDecoder().decode(SessionDraft.self, from: data),
+                      body["sessionID"] as? String == controller.record?.id,
+                      !self.savingSessionDrafts.contains(draft.id) else { return }
+                controller.editDraft(draft)
+                guard controller.record?.drafts.first(where: { $0.id == draft.id }) == draft else { return }
+                guard await controller.flush(), action == "saveDraft" else { return }
+                guard body["sessionID"] as? String == controller.record?.id,
+                      controller.record?.drafts.first(where: { $0.id == draft.id }) == draft else {
+                    self.sendSessionError("저장 중 내용이 바뀌었습니다. 현재 내용을 확인하고 다시 저장해 주세요.")
+                    return
+                }
+                self.saveSessionDraft(draft, controller: controller)
+            case "retrieval":
+                guard body["sessionID"] as? String == controller.record?.id,
+                      let payload = body["value"], let data = try? JSONSerialization.data(withJSONObject: payload),
+                      let value = try? JSONDecoder().decode(SessionRetrieval.self, from: data) else { return }
+                controller.retrieval(value)
+            default: break
+            }
+        }
+    }
+
+    private var savingSessionDrafts = Set<String>()
+    private func saveSessionDraft(_ draft: SessionDraft, controller: SessionController) {
+        guard sessions === controller, !controller.capturing, let vault,
+              !savingSessionDrafts.contains(draft.id), draft.savedAt == nil,
+              !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !draft.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        savingSessionDrafts.insert(draft.id)
+        let recordID = controller.record?.id
+        vault.perform({ store -> String in
+            let loaded = try store.loadVersioned()
+            if let existing = loaded.result.document.fragments.first(where: { $0.id == draft.fragmentID }) {
+                guard existing.title == draft.title, existing.body == draft.body else {
+                    throw NSError(domain: "SessionDraft", code: 1, userInfo: [NSLocalizedDescriptionKey: "이미 반영된 문서가 바뀌었습니다. 원문에서 변경 내용을 확인해 주세요."])
+                }
+                return loaded.result.paths[draft.fragmentID] ?? ""
+            }
+            var document = loaded.result.document
+            document.fragments.append(Fragment(id: draft.fragmentID, title: draft.title, body: draft.body,
+                questionIds: [], createdAt: Date(), updatedAt: Date()))
+            _ = try store.save(document, expecting: loaded.revision)
+            return try store.load().paths[draft.fragmentID] ?? ""
+        }) { [weak self] result in
+            guard let self else { return }
+            self.savingSessionDrafts.remove(draft.id)
+            guard self.sessions === controller, controller.record?.id == recordID else { return }
+            switch result {
+            case .success(let path):
+                controller.markDraft(id: draft.id, path: path, error: nil)
+                self.sendDocument(kind: "reload")
+            case .failure(let error): controller.markDraft(id: draft.id, path: nil, error: error.localizedDescription)
             }
         }
     }
@@ -1305,26 +1810,48 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     /// 창을 숨긴다 — **문이 둘이고 자리가 하나다** (화면의 ✕ = `closeWindow` · 창 단추의 닫기 =
     /// `ChatWindow.windowShouldClose`). 둘이 각자 짜면 한쪽에 한 줄이 늘 때 다른 쪽이 조용히 낡는다.
     ///
-    /// ⚠ 창을 숨기면 **귀도 끈다.** 이 앱은 `LSUIElement` 라 독 아이콘이 없어서, 숨긴 창은
-    /// 사용자에게 「닫힌 것」으로 보인다 — 그 상태로 마이크를 물고 있으면 안 된다.
-    /// 다시 열 때 화면이 `render()` 로 스스로 켠다.
+    /// 실제 세션은 숨겨도 유지한다. 선택적인 미리 사용 마이크 시험만 중지한다.
     func hideWindow() {
-        stopInterviewEars()
+        if sessions?.capturing != true { stopInterviewEars(); view.evaluateJavaScript("onPreviewStopped()", completionHandler: nil) }
+        sessions?.event("windowHidden")
         // ★ **전체화면이면 먼저 나온다** (박선호 2026-09-02: *"전체화면으로 키우고 화면을 닫으면
         //   그냥 검은색 화면이 됨"*). 전체화면 창을 그대로 `orderOut` 하면 그 스페이스는 남고
-        //   창만 사라져 **검은 판**이 된다. 나오는 것은 비동기라, 다 나온 뒤(`windowDidExitFullScreen`)
-        //   `finishHideAfterFullScreen` 이 마저 숨긴다.
-        if let win = view.window, win.styleMask.contains(.fullScreen) {
-            hidePendingFullScreenExit = true
-            win.toggleFullScreen(nil)
-            return
-        }
-        DispatchQueue.main.async { self.view.window?.orderOut(nil) }
+        //   창만 사라져 **검은 판**이 된다. 나오는 것은 비동기라, 전체화면 상태기가 이탈 완료 뒤
+        //   숨김 효과를 마저 수행한다.
+        guard let win = view.window else { return }
+        performWindowEffect(windowTransition.requestHide(
+            isFullScreen: win.styleMask.contains(.fullScreen)), window: win)
     }
 
     /// JS가 아직 예약된 자동 저장을 즉시 저장하고, 저장 확인까지 받은 뒤 종료 허가를 돌려준다.
     /// `applicationShouldTerminate`가 종료를 보류하고 이 completion을 기다린다.
+    private var preparingSessionTermination = false
     func prepareForTermination(completion: @escaping (Bool) -> Void) {
+        guard !preparingSessionTermination else { completion(false); return }
+        preparingSessionTermination = true
+        Task { @MainActor [weak self] in
+            guard let self else { completion(false); return }
+            defer { self.preparingSessionTermination = false }
+            if let controller = self.sessions {
+                // Read the focused field too: the user may quit without triggering blur/change.
+                do {
+                    let payload = try await self.view.evaluateJavaScript("sessionPendingDrafts()")
+                    if let values = payload as? [Any] {
+                        for value in values {
+                            let data = try JSONSerialization.data(withJSONObject: value)
+                            controller.editDraft(try JSONDecoder().decode(SessionDraft.self, from: data))
+                        }
+                    }
+                } catch { self.sendSessionError("보완 초안을 확인하지 못했습니다. 창을 다시 열고 종료해 주세요."); completion(false); return }
+                if controller.capturing, !(await controller.finish(ears: self.ears)) { completion(false); return }
+                guard await controller.flush() else { completion(false); return }
+            }
+            self.stopInterviewEars()
+            self.prepareDocumentForTermination(completion: completion)
+        }
+    }
+
+    private func prepareDocumentForTermination(completion: @escaping (Bool) -> Void) {
         guard terminationCompletion == nil else { completion(false); return }
         terminationCompletion = completion
         let token = UUID().uuidString
@@ -1356,12 +1883,24 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         completion(ok)
     }
 
-    /// `hideWindow` 가 전체화면을 먼저 풀고 남긴 숨기기. `ChatWindow.windowDidExitFullScreen` 이 부른다.
-    private var hidePendingFullScreenExit = false
-    func finishHideAfterFullScreen() {
-        guard hidePendingFullScreenExit else { return }
-        hidePendingFullScreenExit = false
-        DispatchQueue.main.async { self.view.window?.orderOut(nil) }
+    func windowWillEnterFullScreen() { windowTransition.willEnterFullScreen() }
+    func windowWillExitFullScreen() { windowTransition.willExitFullScreen() }
+
+    /// AppKit가 전체화면 진입을 끝낸 뒤 창 껍데기를 다시 맞춘다.
+    func windowDidEnterFullScreen() {
+        guard let win = view.window else { return }
+        let currentMode = appliedWindowMode ?? (win as? MovableWindow)?.modeKey ?? "stack"
+        reconcileWindowShell(currentMode, window: win)
+        performWindowEffect(windowTransition.didEnterFullScreen(currentMode: currentMode), window: win)
+    }
+
+    /// AppKit가 전체화면의 원래 일반 프레임을 복원한 뒤 대기 중인 모드 또는 숨김을 적용한다.
+    func windowDidExitFullScreen() {
+        guard let win = view.window else { return }
+        let currentMode = appliedWindowMode ?? (win as? MovableWindow)?.modeKey ?? "stack"
+        let effect = windowTransition.didExitFullScreen(currentMode: currentMode)
+        if effect == .none { reconcileWindowShell(currentMode, window: win) }
+        performWindowEffect(effect, window: win)
     }
 
     // MARK: - 볼트 사고를 화면으로 (블로커 F1)

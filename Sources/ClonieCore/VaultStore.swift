@@ -79,6 +79,7 @@ public struct VaultSaveResult: Equatable, Sendable {
     public let revision: VaultRevision
     /// 조각 id → 볼트 상대경로. 새 조각의 실제 파일명도 바로 돌려준다.
     public let paths: [String: String]
+    public var changeWarning: String? = nil
 }
 
 public struct FileConflict: Equatable, Sendable {
@@ -347,15 +348,25 @@ public final class VaultStore {
         try performSave(document, expecting: revision, newPaths: newPaths)
     }
 
-    /// MCP는 Markdown만 갱신한다. 오래된 질문·입력 기록을 받아도 사이드카에 쓰지 않는다.
+    /// MCP 문서 변경과 그 전후 기록을 저장한다. 오래된 질문·입력 기록 사이드카는 쓰지 않는다.
     public func saveFragments(_ document: CueDocument, expecting revision: VaultRevision,
                               newPaths: [String: String] = [:]) throws -> VaultSaveResult {
-        try performSave(document, expecting: revision, newPaths: newPaths, writeMetadata: false)
+        try performSave(document, expecting: revision, newPaths: newPaths, writeMetadata: false, recordDocumentChanges: true)
     }
 
     private func performSave(_ document: CueDocument,
                              expecting revision: VaultRevision,
-                             newPaths: [String: String], writeMetadata: Bool = true) throws -> VaultSaveResult {
+                             newPaths: [String: String], writeMetadata: Bool = true,
+                             recordDocumentChanges: Bool = false) throws -> VaultSaveResult {
+        try withDocumentWriteLock {
+            try performSaveLocked(document, expecting: revision, newPaths: newPaths,
+                                  writeMetadata: writeMetadata, recordDocumentChanges: recordDocumentChanges)
+        }
+    }
+
+    private func performSaveLocked(_ document: CueDocument, expecting revision: VaultRevision,
+                                   newPaths: [String: String], writeMetadata: Bool,
+                                   recordDocumentChanges: Bool) throws -> VaultSaveResult {
         try ensureVaultExists()
         let actualVault = vaultURL.standardizedFileURL.path
         guard revision.vaultPath == actualVault else {
@@ -390,6 +401,7 @@ public final class VaultStore {
         var used = Set(baseline.values.map(\.relativePath)).union(explicitPaths.values)
         var next: [String: ParsedFile] = [:]
         var nextRevisions: [String: VaultFileRevision] = [:]
+        var changeWarning: String?
 
         for f in document.fragments {
             if let old = baseline[f.id] {
@@ -405,7 +417,21 @@ public final class VaultStore {
                                              revision: revision)
                 }
                 let text = MarkdownFragment.render(f, preservedFrontmatter: old.preservedFrontmatter)
-                try writeAtomically(text, to: vaultURL.appendingPathComponent(old.relativePath))
+                let change = recordDocumentChanges
+                    ? try prepareDocumentChange(fragment: f, path: old.relativePath, before: old, afterBytes: Data(text.utf8)) : nil
+                do {
+                    // Journal preparation touches disk; recheck immediately before writing.
+                    if let conflict = try fileConflict(fragmentID: f.id, baseline: old,
+                                                       expected: revision.files[f.id],
+                                                       knownQuestionIDs: Set(document.questions.map(\.id))) {
+                        throw preservingAttempts(for: [conflict], document: document, revision: revision)
+                    }
+                    try writeAtomically(text, to: vaultURL.appendingPathComponent(old.relativePath))
+                } catch {
+                    if let change { cancelDocumentChange(change) }
+                    throw error
+                }
+                if let change { changeWarning = commitDocumentChange(change) ?? changeWarning }
                 next[f.id] = ParsedFile(fragment: f, relativePath: old.relativePath,
                                         preservedFrontmatter: old.preservedFrontmatter,
                                         hadFrontmatterID: true)
@@ -418,7 +444,14 @@ public final class VaultStore {
                 try fm.createDirectory(at: url.deletingLastPathComponent(),
                                        withIntermediateDirectories: true)
                 let text = MarkdownFragment.render(f)
-                try writeNewAtomically(text, to: url, relativePath: rel)
+                let change = recordDocumentChanges
+                    ? try prepareDocumentChange(fragment: f, path: rel, before: nil, afterBytes: Data(text.utf8)) : nil
+                do { try writeNewAtomically(text, to: url, relativePath: rel) }
+                catch {
+                    if let change { cancelDocumentChange(change) }
+                    throw error
+                }
+                if let change { changeWarning = commitDocumentChange(change) ?? changeWarning }
                 next[f.id] = ParsedFile(fragment: f, relativePath: rel, hadFrontmatterID: true)
                 nextRevisions[f.id] = Self.fileRevision(data: Data(text.utf8), relativePath: rel)
             }
@@ -442,8 +475,14 @@ public final class VaultStore {
         }
         snapshot = next
         snapshotRevisions = nextRevisions
-        snapshotEntries = Dictionary(uniqueKeysWithValues: try VaultEntryCatalog(rootURL: vaultURL, fileManager: fm).entries().map { ($0.path, $0) })
-        return VaultSaveResult(revision: currentRevision(), paths: next.mapValues(\.relativePath))
+        do {
+            snapshotEntries = Dictionary(uniqueKeysWithValues: try VaultEntryCatalog(rootURL: vaultURL, fileManager: fm).entries().map { ($0.path, $0) })
+        } catch {
+            // MCP callers must not retry a successfully written document because catalog refresh failed.
+            guard recordDocumentChanges else { throw error }
+            changeWarning = changeWarning ?? "문서는 저장됐지만 파일 목록을 다시 읽지 못했다. 같은 쓰기를 반복하지 말고 다시 읽는다."
+        }
+        return VaultSaveResult(revision: currentRevision(), paths: next.mapValues(\.relativePath), changeWarning: changeWarning)
     }
 
     private func currentRevision() -> VaultRevision {
@@ -485,6 +524,8 @@ public final class VaultStore {
             return FileConflict(fragmentID: fragmentID, relativePath: baseline.relativePath,
                                 diskState: .deleted)
         }
+        let entry = try VaultEntryCatalog(rootURL: vaultURL, fileManager: fm).entry(at: baseline.relativePath)
+        guard entry.kind == "file", entry.manageable else { throw VaultPathError.outsideVault(baseline.relativePath) }
         let data = try Data(contentsOf: url)
         let actual = Self.fileRevision(data: data, relativePath: baseline.relativePath)
         guard actual != expected else { return nil }

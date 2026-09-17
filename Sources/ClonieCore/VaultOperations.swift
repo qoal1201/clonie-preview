@@ -4,6 +4,8 @@ public struct VaultWorkspace: Equatable {
     public let versioned: VersionedLoadResult
     public let folders: [String]
     public let trashEntries: [VaultTrashEntry]
+    public var orbitGroups: [OrbitGroup] = []
+    public var orbitError: String? = nil
     public var document: CueDocument { versioned.result.document }
     public var revision: VaultRevision { versioned.revision }
     public var paths: [String: String] { versioned.result.paths }
@@ -119,8 +121,11 @@ extension VaultStore {
 
     public func loadWorkspace() throws -> VaultWorkspace {
         let loaded = try loadVersioned()
-        return VaultWorkspace(versioned: loaded, folders: loaded.revision.entries.values.filter { $0.kind == "folder" }.map(\.path).sorted(),
-                              trashEntries: try listTrash())
+        var workspace = VaultWorkspace(versioned: loaded, folders: loaded.revision.entries.values.filter { $0.kind == "folder" }.map(\.path).sorted(),
+                                       trashEntries: try listTrash())
+        do { workspace.orbitGroups = try OrbitGroupStore(rootURL: vaultURL).load(entries: workspace.entries) }
+        catch { workspace.orbitError = "궤도 묶음을 읽지 못했어요. 저장 파일은 보존했어요. " + error.localizedDescription }
+        return workspace
     }
 
     /// 빈 폴더와 일반 dot 폴더를 포함한다. 도구 내부 경로·symlink·패키지는 내려가지 않는다.

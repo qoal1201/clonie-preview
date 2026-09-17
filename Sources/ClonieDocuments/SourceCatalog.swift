@@ -35,8 +35,21 @@ public final class SourceCatalog {
     public init(vaultURL: URL) { self.vaultURL = vaultURL.standardizedFileURL.resolvingSymlinksInPath() }
     private var hasRaw: Bool { fm.fileExists(atPath: vaultURL.appendingPathComponent("raw").path) }
 
+    /// Explicit original-storage paths shared by the catalog and write boundaries.
+    /// A file named `원본.md` is an ordinary note; only an ancestor directory named
+    /// `원본` and the legacy top-level `raw` directory identify originals.
+    public static func isOriginalPath(_ path: String) -> Bool {
+        let parts = path.split(separator: "/", omittingEmptySubsequences: false)
+        guard !path.isEmpty,
+              !parts.contains(where: { $0.isEmpty || $0 == "." || $0 == ".." || $0.hasPrefix(".") })
+        else { return false }
+        return parts.first?.lowercased() == "raw" || parts.dropLast().contains("원본")
+    }
+
     public func list() throws -> [Source] {
-        let start = hasRaw ? vaultURL.appendingPathComponent("raw") : vaultURL
+        // New imports keep originals beside their destination (자료/원본/...). Keep
+        // discovering them even when this vault also has the legacy raw/ directory.
+        let start = vaultURL
         guard start.resolvingSymlinksInPath().path.hasPrefix(vaultURL.path + "/") || start == vaultURL else {
             throw SourceError.invalidPath
         }
@@ -47,6 +60,7 @@ public final class SourceCatalog {
             if relative == "wiki" || relative.hasPrefix("wiki/") { walk.skipDescendants(); continue }
             let values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
             guard values.isSymbolicLink != true, values.isRegularFile == true else { continue }
+            if hasRaw && !Self.isOriginalPath(relative) { continue }
             let safe = try sourceURL(relative)
             let data = try Data(contentsOf: safe, options: .mappedIfSafe)
             result.append(Source(path: relative, hash: Self.hash(data), bytes: data.count,
@@ -84,7 +98,7 @@ public final class SourceCatalog {
         let parts = path.split(separator: "/", omittingEmptySubsequences: false)
         guard !path.isEmpty, !path.hasPrefix("/"), !path.contains("\0"),
               !parts.contains(where: { $0.isEmpty || $0 == "." || $0 == ".." || $0.hasPrefix(".") }),
-              parts.first != "wiki", !hasRaw || parts.first == "raw" else { throw SourceError.invalidPath }
+              parts.first != "wiki", !hasRaw || Self.isOriginalPath(path) else { throw SourceError.invalidPath }
         let url = vaultURL.appendingPathComponent(path).standardizedFileURL
         let resolved = url.resolvingSymlinksInPath()
         guard resolved.path.hasPrefix(vaultURL.path + "/"), resolved.path == url.path else { throw SourceError.invalidPath }

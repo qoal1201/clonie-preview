@@ -77,5 +77,5 @@ python3 scripts/test-install.py
 
 ## 라이선스
 
-기여물은 프로젝트의 [MIT License](LICENSE)를 따릅니다. 포함된 제3자 구성요소의 출처·고지는
+신규 자체 코드의 기여물은 [PolyForm Perimeter 1.0.1](LICENSE)을 따릅니다. 기존 MIT 권리와 적용 범위는 [LICENSING.md](LICENSING.md)를 참고하세요. 포함된 제3자 구성요소의 출처·고지는
 [ThirdPartyNotices/](ThirdPartyNotices/)에 보존합니다. 이전 버전의 출처는 [개발 이력](HISTORY.md)에 있습니다.

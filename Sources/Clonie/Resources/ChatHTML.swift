@@ -28,7 +28,7 @@ func chatHTML() -> String { return #"""
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:transparent;color:var(--t1);font-family:var(--sans);
-  font-size:13px;line-height:1.6;letter-spacing:-.01em;overflow:hidden;-webkit-font-smoothing:antialiased}
+  font-size:calc(13px * var(--text-scale,1));line-height:1.6;letter-spacing:-.01em;overflow:hidden;-webkit-font-smoothing:antialiased}
 button{font:inherit;font-family:var(--sans);cursor:pointer;border:none;background:none;color:inherit}
 /* ⚠ **`select` 도 여기 든다** (#65 ⑥). 빠져 있어서 제공자 드롭다운만 **시스템 기본 글꼴·
    기본 글자색**으로 떴다 — 어두운 판 위에서 그 칸 하나가 다른 앱처럼 보였다. */
@@ -46,58 +46,61 @@ input:focus,textarea:focus,select:focus{outline:none}
 
 /* 전사 — 높이를 **미리 잡는다.** 글이 차도 상자가 안 커져서 읽던 글자가 안 밀린다 (라운드 8) */
 #hist{padding:10px 15px 0;height:38px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;overflow:hidden}
-.hl{font-size:10.5px;line-height:1.45;color:var(--t3);text-shadow:0 1px 4px rgba(0,0,0,.85);
+.hl{font-size:calc(11px * var(--text-scale,1));line-height:1.45;color:var(--t3);text-shadow:0 1px 4px rgba(0,0,0,.85);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 0 auto}
 .hl .w{color:var(--t4);margin-right:6px}
 #cur{padding:5px 15px 10px;display:flex;gap:9px;align-items:flex-start}
-#curw{flex:0 0 auto;font-size:10px;padding:2px 7px;border-radius:4px;margin-top:3px;user-select:none;
+#curw{flex:0 0 auto;font-size:calc(11px * var(--text-scale,1));padding:2px 7px;border-radius:4px;margin-top:3px;user-select:none;
   background:rgba(255,255,255,.06);color:var(--t2);cursor:pointer;transition:background .3s,color .3s}
 #cur.me #curw{background:var(--me-d);color:var(--me)}
 #curbox{flex:1;min-width:0;height:44px;overflow:hidden}
-#curtx{font-size:13px;line-height:1.55;text-shadow:0 1px 4px rgba(0,0,0,.9);outline:none;white-space:pre-wrap}
+#curtx{font-size:calc(13px * var(--text-scale,1));line-height:1.55;text-shadow:0 1px 4px rgba(0,0,0,.9);outline:none;white-space:pre-wrap}
 #curtx:empty:before{content:attr(data-ph);color:var(--t3)}
 /* 미확정 꼬리 — 전사기가 아직 안 굳힌 자리. **확정된 글자는 다시 안 바뀐다** */
 #curtx .vol{opacity:.5;color:var(--t2)}
 .hsep{height:1px;background:var(--line)}
-#recs{flex:1;overflow-y:auto}
+#recs{flex:1;min-height:0;overflow-y:auto}
 #recs::-webkit-scrollbar{width:3px}
 #recs::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
-/* 줄 높이 고정 + 본문은 max-height 로 편다 — 펼침이 아래 줄을 안 밀어낸다 */
+/* 후보는 제목과 본문 두 줄을 함께 보여주고, 읽기 카드는 긴 본문을 안에서 스크롤한다. */
 .rec{padding:10px 15px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;min-height:54px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.055);transition:background .4s,opacity .4s,box-shadow .4s}
 .rec:hover{background:rgba(255,255,255,.03)}
 .rec.open{background:rgba(74,222,128,.07);box-shadow:inset 2px 0 0 var(--acc)}
+.rec.manual-read{cursor:default}
+.rec.manual-read[hidden],[data-live-empty][hidden]{display:none}
 .rec.dim{opacity:.42}
 .rec .in{flex:1;min-width:0;transition:opacity .24s}
 .rec.fade .in{opacity:0}
-.rt{font-size:12.5px;line-height:1.45;text-shadow:0 1px 4px rgba(0,0,0,.9)}
-.rec.open .rt{font-size:13px}
-.rs{font-size:10.5px;line-height:1.4;color:var(--t2);text-shadow:0 1px 4px rgba(0,0,0,.85);margin-top:3px}
+.rt{font-size:calc(12.5px * var(--text-scale,1));line-height:1.45;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.rec.open .rt{font-size:calc(13px * var(--text-scale,1))}
+.rs{font-size:calc(11px * var(--text-scale,1));line-height:1.4;color:var(--t2);text-shadow:0 1px 4px rgba(0,0,0,.85);margin-top:3px}
 /* 신호등 — 순위가 아니라 **절대 유사도**가 근거다. 빨강이어도 안 숨긴다(#20) */
 .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;
   vertical-align:middle;transition:background .3s}
 .dot.g{background:var(--acc)}
 .dot.a{background:var(--warn)}
 .dot.r{background:var(--risk)}
-.rb{font-size:12px;line-height:1.72;color:#d9d8d3;text-shadow:0 1px 4px rgba(0,0,0,.9);
-  max-height:0;overflow:hidden;margin-top:0;transition:max-height .45s ease,margin .45s ease}
+.rb{font-size:calc(12px * var(--text-scale,1));line-height:1.72;color:#d9d8d3;text-shadow:0 1px 4px rgba(0,0,0,.9);
+  max-height:3.44em;overflow:hidden;overflow-wrap:anywhere;margin-top:4px;transition:max-height .45s ease,margin .45s ease}
 .rec.open .rb{max-height:132px;margin-top:7px}
-.rn{font-size:10px;color:var(--t4);flex:0 0 auto;padding-top:3px;width:12px;transition:color .4s}
+.rec.manual-read.open .rb{overflow-y:auto;overscroll-behavior:contain}
+.rn{font-size:calc(11px * var(--text-scale,1));color:var(--t4);flex:0 0 auto;padding-top:3px;width:12px;transition:color .4s}
 .rec.open .rn,.rec.lead .rn{color:var(--acc)}
-.empty{padding:14px 15px;font-size:11.5px;color:var(--t3)}
-.trouble{padding:8px 15px;font-size:11px;line-height:1.5;color:var(--warn);
+.empty{padding:14px 15px;font-size:calc(11.5px * var(--text-scale,1));color:var(--t3)}
+.trouble{padding:8px 15px;font-size:calc(11px * var(--text-scale,1));line-height:1.5;color:var(--warn);
   border-top:1px solid var(--line);background:rgba(224,178,90,.07)}
 .bottom{display:flex;gap:9px;align-items:center;padding:8px 15px;border-top:1px solid var(--line)}
-.foot{font-size:10.5px;color:var(--t4)}
+.foot{font-size:calc(11px * var(--text-scale,1));color:var(--t4)}
 /* ⚠ `white-space:nowrap` — 받기 화면 윗줄에 버튼이 셋이 되면서(#40) 좁은 창에서
    「파일 고 / 르기」로 접혔다. 글자가 접히면 버튼이 두 개로 보인다.
    ⚠ #46 이 「파일 고르기」를 윗줄에서 카드 안으로 옮겨 윗줄은 둘이 됐다 — **그래도 안 걷는다.**
      걷으면 다음에 버튼이 하나 늘 때 같은 자리가 조용히 다시 접힌다. */
-.gbtn{font-size:11.5px;padding:6px 12px;border-radius:5px;border:1px solid var(--line2);color:var(--t2);transition:.12s;white-space:nowrap}
+.gbtn{font-size:calc(11.5px * var(--text-scale,1));padding:6px 12px;border-radius:5px;border:1px solid var(--line2);color:var(--t2);transition:.12s;white-space:nowrap}
 .gbtn:hover{border-color:var(--t3);color:var(--t1)}
 .gbtn.p{background:var(--acc);border-color:var(--acc);color:#0f2417}
 .gbtn.p:hover{background:#6ee79b}
-.ibtn{font-size:12px;color:var(--t4);padding:4px 7px;border-radius:4px}
+.ibtn{font-size:calc(12px * var(--text-scale,1));color:var(--t4);padding:4px 7px;border-radius:4px}
 .ibtn:hover{color:var(--t1);background:rgba(255,255,255,.06)}
 
 #top{display:flex;align-items:center;gap:12px;padding:14px 20px 13px;border-bottom:1px solid var(--line)}
@@ -110,9 +113,9 @@ input:focus,textarea:focus,select:focus{outline:none}
    ⚠ **면접(`live`)은 그대로 20px** — 거기엔 단추가 없다(`applyMode`). 새 축을 안 만들고
      Swift 가 이미 쓰는 그 갈림(`live` 냐 아니냐)을 화면에서도 그대로 쓴다. */
 #app:not(.live) #top{padding-left:76px}
-#brand{font-size:15px;display:flex;align-items:center}
+#brand{font-size:calc(15px * var(--text-scale,1));display:flex;align-items:center}
 #brand .brand-mark{width:22px;height:22px;display:block;object-fit:contain}
-#stat{font-size:11.5px;color:var(--t3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#stat{font-size:calc(11.5px * var(--text-scale,1));color:var(--t3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* ⚠ **준비도 한 줄(`#ready`)의 CSS 가 걷혔다** (#74 C4) — 머리글은 이제 아이콘 넷뿐이다. */
 /* ★ 머리글 아이콘 (#74 C4) — **인라인 SVG 만** 쓴다(바깥 자산 0, 채팅 UI 제약 ②).
    ⚠ 크기·색을 여기 한 곳에서 정한다: `currentColor` 라 버튼 색만 바꾸면 그림이 따라온다. */
@@ -128,7 +131,7 @@ input:focus,textarea:focus,select:focus{outline:none}
      흐르고, `grid-template-columns` 는 그 값을 부모가 들어야 해서 칸마다 따로 못 준다. */
 #cols{flex:1;display:flex;min-height:0}
 /* 흐름을 막는 안내는 접힌 본문 패널과 무관하게 보인다. */
-#stacknotices:empty{display:none}
+#stacknotices:empty,#stacknotices:not(:has(.wb,#sessionerror:not(:empty))){display:none}
 #stacknotices{flex:0 0 auto;max-height:28vh;overflow:auto;padding:8px 20px}
 #stacknotices .wb + .wb{margin-top:6px}
 /* ★ 왼쪽 칸은 **세 층**이다 — 위 고정(새 조각) · 목록 스크롤 · 아래 고정(파일 올리기).
@@ -152,10 +155,10 @@ input:focus,textarea:focus,select:focus{outline:none}
    ⚠ 가운데 지도의 질문 칸과 **다른 것**이다: 저건 뜻으로 재고 이건 목록을 좁힌다.
      한 칸으로 합치면 「좁히기」와 「재기」가 같은 동작이 되고, 재는 것은 비싼 쪽(임베딩)이다. */
 #lfind{width:100%;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:6px;
-  font-size:12px;color:var(--t1);padding:6px 9px}
+  font-size:calc(12px * var(--text-scale,1));color:var(--t1);padding:6px 9px}
 #lfind::placeholder{color:var(--t4)}
 #lfind:focus{border-color:var(--line2)}
-.lhits{font-size:10.5px;color:var(--t4);letter-spacing:.02em}
+.lhits{font-size:calc(11px * var(--text-scale,1));color:var(--t4);letter-spacing:.02em}
 #leftlist{flex:1;min-height:0;overflow-y:auto;padding:2px 10px 14px}
 #leftpin{flex:0 0 auto;padding:10px 12px 12px;border-top:1px solid var(--line);background:rgba(var(--panelrgb),var(--opa));
   display:flex;flex-direction:column;gap:8px}
@@ -163,7 +166,7 @@ input:focus,textarea:focus,select:focus{outline:none}
 #leftlist::-webkit-scrollbar-thumb,#right::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
 /* 씨앗 표식이 **눈에 보이는 자리** — 이 한 장은 면접·연습 순위에서 빠진다(블로커 F2).
    빼기만 하고 안 말하면 「왜 안 뜨지」가 코드에서 찾을 일이 된다. */
-.seedtag{font-size:9.5px;color:var(--t4);border:1px solid var(--line2);border-radius:3px;
+.seedtag{font-size:calc(11px * var(--text-scale,1));color:var(--t4);border:1px solid var(--line2);border-radius:3px;
   padding:1px 5px;margin-left:6px;vertical-align:middle;flex:0 0 auto}
 #right{padding:20px 22px 18px;display:flex;flex-direction:column;gap:19px;overflow-y:auto;
   flex:0 0 auto;min-height:0}
@@ -186,16 +189,13 @@ body.rzing{cursor:col-resize;user-select:none}
 /* 접힘·펴짐은 미끄러진다(목업 .pane) — 끄는 동안(`rzing`)은 손을 그대로 따라간다 */
 body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezier(.4,0,.2,1)}
 :where(button,[tabindex]):focus-visible{outline:2px solid var(--t3);outline-offset:2px}
-.fl{font-size:10.5px;color:var(--t4);display:block;margin-bottom:7px}
-#ti{width:100%;background:none;border:none;border-bottom:1px solid var(--line);font-size:15px;line-height:1.5;padding-bottom:9px}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--t2);outline-offset:2px}
+.fl{font-size:calc(11px * var(--text-scale,1));color:var(--t4);display:block;margin-bottom:7px}
+#ti{width:100%;background:none;border:none;border-bottom:1px solid var(--line);font-size:calc(15px * var(--text-scale,1));line-height:1.5;padding-bottom:9px}
 #ti:focus{border-bottom-color:var(--line2)}
-#bo{width:100%;background:none;border:none;border-bottom:1px solid var(--line);font-size:12.5px;
+#bo{width:100%;background:none;border:none;border-bottom:1px solid var(--line);font-size:calc(12.5px * var(--text-scale,1));
   line-height:1.75;color:var(--t2);padding-bottom:9px;min-height:80px;resize:none}
 #bo:focus{border-bottom-color:var(--line2)}
-.srefs{display:flex;gap:6px;flex-wrap:wrap;padding-top:8px}
-.sref{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;color:var(--t3);
-  border:1px solid var(--line);border-radius:999px;padding:3px 8px;white-space:nowrap}
-.sref:hover{color:var(--t1);border-color:var(--line2)}
 /* ⚠ **칩 규칙은 통째로 걷혔다** (#53 경계표 ②). `.chips`/`.chip`/`.chip.on`/`.chip.new`/
    `.chip.sg`/`.lnkedit`/`#sug` — 누를 칩이 화면에 하나도 안 남았다. 다시 생기면
    `tests/screen-load.mjs` 를 쓰는 자물쇠가 아니라 **눈**이 먼저 본다. */
@@ -203,7 +203,7 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
    장부(`questionIds`)를 이 화면에서 통째로 걷은 결정([ADR 0005](docs/adr/0005-content-direct-only-drop-the-chip-index.md)
    의 화면 층 연장)이 여기까지 온 것이다 — 「연결됨/미연결」 이분이 없는 화면에 그 태그만
    남으면 화면이 두 말을 한다. 그 자리를 가운데 우주의 별 이웃 점등(`canvasPaintFrom`)이 든다. */
-.wb{font-size:11.5px;line-height:1.6;color:var(--warn);border-left:2px solid var(--warn);padding-left:11px}
+.wb{font-size:calc(11.5px * var(--text-scale,1));line-height:1.6;color:var(--warn);border-left:2px solid var(--warn);padding-left:11px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 
 /* ⚠ **왼쪽 칸 아래의 큰 [면접 시작]·[연습하기] 두 장은 걷혔다** (v3 정식화).
@@ -216,7 +216,7 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
   background:rgba(0,0,0,.25)}
 #confirm.on{display:flex}
 #cbox{background:rgba(16,16,18,.78);border:1px solid var(--line2);border-radius:10px;padding:16px 20px;text-align:center}
-#cbox p{font-size:12.5px;margin-bottom:12px;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+#cbox p{font-size:calc(12.5px * var(--text-scale,1));margin-bottom:12px;text-shadow:0 1px 4px rgba(0,0,0,.9)}
 #cbox .crow{display:flex;gap:10px;justify-content:center}
 
 /* ── 던져 넣기 (#14). 쌓기 모드 안이라 불투명 위에 얹힌다 ── */
@@ -231,13 +231,13 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
 #ingest::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
 /* ★ 큰 안내 한 문장 (#46, 목업 ①) — 첫 실행에 열리는 화면이라 **여기가 제품의 첫 문장**이다.
    ⚠ 무엇을 하는지만 말한다. 라벨·버튼이 다시 말하면 같은 말이 세 곳이 된다. */
-.ihx{font-size:21px;line-height:1.45;font-weight:600;color:var(--t1)}
-.ihs{font-size:12.5px;line-height:1.6;color:var(--t2);margin-top:9px}
+.ihx{font-size:calc(21px * var(--text-scale,1));line-height:1.45;font-weight:600;color:var(--t1)}
+.ihs{font-size:calc(12.5px * var(--text-scale,1));line-height:1.6;color:var(--t2);margin-top:9px}
 /* 넣는 일 셋(파일·붙여넣기·갈라보기)이 **한 카드 안**에 산다 — 흐름이 하나라는 것을 상자가 말한다 */
 .icard{border:1px solid var(--line);border-radius:8px;padding:20px 22px;background:rgba(255,255,255,.02);
   display:flex;flex-direction:column;gap:16px}
 #doc{width:100%;min-height:150px;background:rgba(0,0,0,.22);border:1px solid var(--line);
-  border-radius:7px;padding:11px 13px;font-size:12.5px;line-height:1.7;color:var(--t2);resize:vertical}
+  border-radius:7px;padding:11px 13px;font-size:calc(12.5px * var(--text-scale,1));line-height:1.7;color:var(--t2);resize:vertical}
 #doc:focus{border-color:var(--line2)}
 /* ★ 공통 지능 한 줄 (#51 → #55) — **조용한 한 줄**이다. 기본이 뒤집혀 이제 켜진 채로
    시작하지만(#55) **줄의 무게는 그대로 둔다**: 눈에 띄게 만들면 그건 자랑이지 고지가 아니다.
@@ -245,7 +245,7 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
      기본이 켬이 된 지금 그 한 줄이 화면의 유일한 정직성이다. */
 #cloud:empty{display:none}
 #cloud{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:13px}
-.ctog{display:flex;gap:7px;align-items:center;font-size:11.5px;color:var(--t2);cursor:pointer}
+.ctog{display:flex;gap:7px;align-items:center;font-size:calc(11.5px * var(--text-scale,1));color:var(--t2);cursor:pointer}
 /* ⚠ **초록(`--acc`)을 안 칠한다** — 이 화면에서 초록은 신호등의 「준비됨」이다(`.dbox` 주석과 같은 규율) */
 .ctog input{margin:0}
 /* ── 시스템 상태 어휘 (`mk*`) ──────────────────────────────────────────────────
@@ -257,15 +257,15 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
 .mkcard{border:1px solid var(--line2);border-radius:8px;padding:14px 15px;
   background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:11px}
 .mkbig{display:block;width:100%;padding:12px;border-radius:8px;text-align:center;
-  background:var(--acc-d);border:1px solid var(--acc-b);color:var(--acc);font-size:13px;font-weight:600;
+  background:var(--acc-d);border:1px solid var(--acc-b);color:var(--acc);font-size:calc(13px * var(--text-scale,1));font-weight:600;
   transition:background .15s}
 .mkbig:hover{background:rgba(74,222,128,.22)}
-.mkfine{font-size:10.5px;line-height:1.6;color:var(--t3)}
-.mkstat{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--t2)}
-.mkrow{display:flex;gap:9px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--t2)}
-.mkcode{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--t1);
+.mkfine{font-size:calc(11px * var(--text-scale,1));line-height:1.6;color:var(--t3)}
+.mkstat{display:flex;gap:6px;align-items:center;font-size:calc(11.5px * var(--text-scale,1));color:var(--t2)}
+.mkrow{display:flex;gap:9px;align-items:center;flex-wrap:wrap;font-size:calc(11.5px * var(--text-scale,1));color:var(--t2)}
+.mkcode{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:calc(11.5px * var(--text-scale,1));color:var(--t1);
   background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:4px;padding:2px 7px}
-.mklink{font-size:11.5px;color:var(--me);text-decoration:underline;text-underline-offset:3px}
+.mklink{font-size:calc(11.5px * var(--text-scale,1));color:var(--me);text-decoration:underline;text-underline-offset:3px}
 /* 중립 점 — **신호등이 아니다.** 색을 뜻으로 안 쓰고 **채움과 굵기**로만 가른다:
    빈 점(가는 테두리) = 안 잡힘 · 굵은 테두리 = 중간 층 · 채움 = 잡힘.
    ⚠ 주황을 새로 안 만든다(#46) — 여기 쓰는 색은 이미 있는 글자색뿐이다. */
@@ -275,8 +275,8 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
 .mkdot.on{border-color:var(--t1);background:var(--t1)}
 /* ── 점 어휘 (왼쪽 트리·순위 상자가 쓴다) ──
    ⚠ SVG 는 **인라인**이다 — 자산을 하나도 안 부른다(채팅 UI 제약 ②). `url(…)` 도 0건. */
-.mtx{font-size:11.5px;fill:var(--t2)}
-.mhd{font-size:10px;fill:var(--t4)}
+.mtx{font-size:calc(11.5px * var(--text-scale,1));fill:var(--t2)}
+.mhd{font-size:calc(11px * var(--text-scale,1));fill:var(--t4)}
 /* 신호등은 **점이 든다** (`CONTEXT.md` 불변식 ②) — 선·글자는 색으로 뜻을 안 만든다 */
 .mg{fill:var(--acc)}
 .ma{fill:var(--warn)}
@@ -292,6 +292,24 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
    ⚠ **강조 1색(`--acc`)을 그래프에 안 쓴다.** 그래프에서 초록은 「준비됨」이라, 가운데 노드나
      선을 초록으로 칠하면 같은 화면의 초록이 두 뜻이 된다 — 가운데는 중립 밝은색(`--t1`)이다. */
 .hmtop{position:relative}
+/* 저장소 상단: 네이티브 신호등·현재 위치·주요 행동을 한 줄에 연결한다. */
+#app:not(.live) #top.workspace-top{display:grid;grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr);padding:0;gap:8px;min-height:38px;flex:0 0 auto}
+.workspace-header-start,.workspace-header-end{display:flex;align-items:center;min-width:0;height:100%;gap:6px}
+.workspace-header-start{overflow:hidden}
+.workspace-header-end{justify-content:flex-end;padding-right:10px}
+.workspace-header-end .ibtn{flex-shrink:0}
+#workspace-sidebar-head{display:flex;align-items:center;gap:5px;flex:0 1 auto;min-width:114px;max-width:100%;align-self:stretch;padding-left:76px;padding-right:8px;border-right:1px solid var(--line)}
+#workspace-sidebar-head #vaultmenu{flex:0 0 28px}
+#workspace-sidebar-head #vaultheading{font-size:calc(12px * var(--text-scale,1));color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#top.workspace-top #cvnav{flex:1;min-width:0;padding:0 2px;gap:2px}
+#top.workspace-top #cvnav>button{width:26px;height:28px;flex:0 0 26px;padding:6px}
+#top.workspace-top #cvnav>button svg{width:14px;height:14px;display:block}
+#top.workspace-top #indexstate{font-size:calc(11px * var(--text-scale,1));color:var(--t3);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#top.workspace-top #indexstate:empty{display:none}
+#top.workspace-top #golive{justify-self:center;margin:4px 0}
+#lefttop{padding-top:8px;gap:6px}
+#lefttop .ltools{margin-bottom:0}
+#lefttop .lhits:empty{display:none}
 /* 가운데 고정 — 좌우 묶음의 너비가 달라서 `flex:1` 두 개로는 **가운데가 아니다**(창 폭 따라 흐른다) */
 .hmmid{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center}
 /* ★ 버튼 위계 — **[면접]이 이 앱의 동사 하나**다. 그것을 말하는 것은 **채움**이지 크기가 아니다.
@@ -304,10 +322,10 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
      `실측 2026-08-31`(창 800×620): `#top` 높이 60.4 · 이 버튼 36.0(둘이 같다) — 위아래 12.2 씩 남는다.
      `#top` 의 높이를 정하는 것은 브랜드가 아니라 **오른쪽 `.gbtn`** 이다.
      글자·패딩을 키우거나 오른쪽 버튼을 줄이면 **이 수를 다시 재라.** */
-.gbtn.hmact{font-size:12.5px;padding:7px 20px;border-radius:6px}
+.gbtn.hmact{font-size:calc(12.5px * var(--text-scale,1));padding:7px 20px;border-radius:6px}
 /* 미니멀 행 — **한 줄 제목 + 점 하나**가 전부다. 부연 문장(「…질문에 연결됨」)은 안 앉는다 */
 .hmit{display:flex;gap:9px;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;
-  font-size:12px;line-height:1.45;color:var(--t2);transition:background .12s}
+  font-size:calc(12px * var(--text-scale,1));line-height:1.45;color:var(--t2);transition:background .12s}
 .hmit:hover{background:rgba(255,255,255,.035)}
 .hmit.sel{background:rgba(255,255,255,.06);color:var(--t1)}
 /* ★ 폴더 행 — 접었다 편다 (#74 C2). **점이 없다**: 폴더는 파일이 아니라 잴 것이 없다 */
@@ -317,7 +335,7 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
    ⚠ 신호등 색을 안 쓴다: 범위는 측정이 아니라 **내가 고른 것**이라 흰색 어휘다(design.md §2). */
 .hmit.fold.scoped{color:var(--t1);box-shadow:inset 2px 0 0 var(--t1)}
 .hmit .tw{display:inline-flex;align-items:center;justify-content:center;flex:0 0 20px;width:20px;height:24px;
-  font-size:12px;color:var(--t2);line-height:1;cursor:pointer;padding:0;border:0;background:transparent;border-radius:4px}
+  margin-left:var(--tree-indent,0px);font-size:calc(12px * var(--text-scale,1));color:var(--t2);line-height:1;cursor:pointer;padding:0;border:0;background:transparent;border-radius:4px}
 .hmit .tw:hover,.hmit .tw:focus-visible{color:var(--t1);background:rgba(255,255,255,.08)}
 .hmit .tw.empty{visibility:hidden;cursor:default}
 .treeicon{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 18px;width:18px;height:18px;color:var(--t3)}
@@ -325,26 +343,36 @@ body:not(.rzing) #left,body:not(.rzing) #right{transition:width .28s cubic-bezie
 .hmit.fold .treeicon{color:#efab72}
 .treeicon .dot{position:absolute;right:-1px;top:-1px;width:5px;height:5px;margin:0;border:1px solid var(--panel);}
 /* 왼쪽 위 도구모음 — 문서·폴더·접기를 한 줄에 두고, 검색은 그 아래 둔다 */
-.vaulttitle{display:flex;align-items:center;gap:5px;min-width:0}
-.vaulttitle .vaultheading{flex:1;min-width:0;padding-bottom:10px}
-.vaulttitle #vaultmenu{flex:0 0 28px;padding:5px 4px;color:var(--t3);font-size:14px;line-height:1}
-.vaulttitle #vaultmenu:hover,.vaulttitle #vaultmenu:focus-visible{color:var(--t1);background:rgba(var(--t1rgb),.06);border-radius:5px;outline:none}
-.ltools{display:flex;align-items:center;gap:4px;margin-bottom:8px}
-.ltools .ico{width:28px;height:28px}
+.ltools{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-bottom:8px}
+.ltools .ico{flex:0 0 27px;width:27px;height:28px;padding:5px}
+.ltools .ico[hidden]{display:none}
+.explorer-nav{padding-bottom:6px;border-bottom:1px solid var(--line)}
+.explorer-secondary{flex:0 0 auto;margin:0;padding:8px 12px;border-top:1px solid var(--line)}
+#flowback,#setback{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+#flowback svg,#setback svg{width:16px;height:16px;flex:none}
+#cols{position:relative}
+#workspacetoast{position:absolute;z-index:12;bottom:18px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);padding:9px 14px;border:1px solid var(--line2);border-radius:9px;background:var(--panel);color:var(--t1);box-shadow:0 4px 18px rgba(0,0,0,.2);pointer-events:none;font-size:calc(12px * var(--text-scale,1))}
+#workspacetoast[hidden]{display:none}
+.explorer-create{padding:5px 10px 7px;color:var(--t2)}
+.explorer-create .create-line{display:flex;gap:7px;align-items:center}
+.explorer-create svg{width:16px;height:16px;flex-shrink:0}
+.explorer-create input{width:100%;min-width:0;font-size:calc(12px * var(--text-scale,1));border:1px solid var(--t4);border-radius:4px;padding:5px 6px;background:var(--glass);color:var(--t1)}
+.explorer-create small{display:block;padding:5px 0 0 23px;font-size:calc(11px * var(--text-scale,1));color:var(--t3)}
+.explorer-create [role=alert]{color:var(--warn)}
 /* 왼쪽 위 한 줄 — 거르개 칸 */
 .lrow{display:flex;gap:6px;align-items:center}
 .lrow #lfind{flex:1;min-width:0}
 .hmtx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 잴 수 없는 점 — **신호등이 아니다.** 벡터가 없거나 걸린 질문이 없으면 여기로 물러선다 */
 .dot.hmn{background:var(--t4)}
-.hmez{font-size:12.5px;line-height:1.6;color:var(--t2);padding:10px 10px 12px}
-.hmnote{font-size:10.5px;line-height:1.6;color:var(--t4);padding:12px 10px 0}
+.hmez{font-size:calc(12.5px * var(--text-scale,1));line-height:1.6;color:var(--t2);padding:10px 10px 12px}
+.hmnote{font-size:calc(11px * var(--text-scale,1));line-height:1.6;color:var(--t4);padding:12px 10px 0}
 /* 로컬 그래프가 **죽은 공간을 먹는다** — 오른쪽 칸의 `flex:1` 자리가 이것이다 */
 .hmnode{cursor:pointer}
 .hmnode:hover .mtx{fill:var(--t1)}
 /* 가운데(고른 조각)의 라벨 — 이웃(`.mtx` 11.5)보다 한 눈금 크고 밝다. **강조는 크기·밝기로
    낸다. 초록(`--acc`)을 안 쓴다** — 이 그림 안에 준비도 초록이 같이 살기 때문이다(위 ⚠). */
-.hmctx{font-size:12.5px;fill:var(--t1)}
+.hmctx{font-size:calc(12.5px * var(--text-scale,1));fill:var(--t1)}
 /* ⚠ **구멍 행의 ✕(`.gpx`)가 걷혔다** (#74 C2) — 구멍 행이 없다. 전사 쓰레기 질문을
    치우는 문은 문지기(#47 후속)와 연습 쪽에 남는다. */
 
@@ -369,7 +397,7 @@ svg#cvb{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
 svg#cvb.grabbing{cursor:grabbing}
 /* 어느 자로 재는 중인가 — **선언된 갈림을 화면 구석에 적는다**(`CONTEXT.md`). 신호등이 아니다 */
 .cvhow{position:absolute;left:14px;top:14px;z-index:2;pointer-events:none;
-  font-size:10.5px;color:var(--t4);white-space:nowrap}
+  font-size:calc(11px * var(--text-scale,1));color:var(--t4);white-space:nowrap}
 .cvhow.mean{color:var(--t2)}
 /* ★ 태양 = 커맨드 센터 (#70 확정 ④). **이 화면의 동사 하나다** — 누르면 질문 칸이 열린다.
    ⚠ 신호등 색을 안 쓴다: 이건 준비도가 아니라 「내가 던지는 자리」다. */
@@ -377,7 +405,7 @@ svg#cvb.grabbing{cursor:grabbing}
 #cvb #orbg .halo{fill:rgba(var(--t1rgb),.05);stroke:none;transition:fill .2s ease}
 #cvb #orbg .disc{fill:rgba(255,255,255,.045);stroke:var(--line2);stroke-width:1.4;
   transition:fill .2s ease,stroke .2s ease}
-#cvb #orbg .mark{font-size:24px;fill:var(--t3);text-anchor:middle;dominant-baseline:central;
+#cvb #orbg .mark{font-size:calc(24px * var(--text-scale,1));fill:var(--t3);text-anchor:middle;dominant-baseline:central;
   pointer-events:none;transition:fill .2s ease}
 #cvb #orbg:hover .disc,#cvb #orbg.asking .disc{fill:rgba(255,255,255,.085);stroke:var(--t3)}
 #cvb #orbg:hover .halo,#cvb #orbg.asking .halo{fill:rgba(var(--t1rgb),.09)}
@@ -389,15 +417,15 @@ svg#cvb.grabbing{cursor:grabbing}
   padding:13px 14px;box-shadow:0 18px 44px -12px rgba(0,0,0,.8);
   transition:opacity .16s ease,transform .16s ease}
 .askpop.show{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
-.askpop .askl{display:block;font-size:9.5px;letter-spacing:.13em;color:var(--t4);margin-bottom:8px}
+.askpop .askl{display:block;font-size:calc(11px * var(--text-scale,1));letter-spacing:.13em;color:var(--t4);margin-bottom:8px}
 #cvq{width:100%;background:none;border:none;border-bottom:1px solid var(--line);
-  font-size:13px;color:var(--t1);padding-bottom:7px}
+  font-size:calc(13px * var(--text-scale,1));color:var(--t1);padding-bottom:7px}
 #cvq:focus{border-bottom-color:var(--line2)}
-.askfoot{margin-top:9px;font-size:10px;color:var(--t4)}
+.askfoot{margin-top:9px;font-size:calc(11px * var(--text-scale,1));color:var(--t4)}
 /* 스치면 뜨는 제목 하나. 점은 제목을 달고 다니지 않는다 */
 .cvtip{position:absolute;left:0;top:0;z-index:3;pointer-events:none;transform:translate(-50%,-100%);
   opacity:0;transition:opacity .12s ease;background:rgba(10,10,12,.94);border:1px solid var(--line2);
-  border-radius:6px;padding:4px 8px;font-size:11.5px;color:var(--t1);white-space:nowrap;max-width:280px;
+  border-radius:6px;padding:4px 8px;font-size:calc(11.5px * var(--text-scale,1));color:var(--t1);white-space:nowrap;max-width:280px;
   overflow:hidden;text-overflow:ellipsis}
 .cvtip.show{opacity:1}
 /* 순위 상자 — 라이브 카드와 **같은 셋**이다(`paintRecs` 의 `[0,1,2]`). 원값은 QA 게이트 뒤다 */
@@ -405,27 +433,28 @@ svg#cvb.grabbing{cursor:grabbing}
   background:rgba(10,10,12,.9);border:1px solid var(--line);border-radius:9px;padding:11px 12px;
   opacity:0;transform:translateY(-6px);transition:opacity .18s ease,transform .18s ease}
 .cvrank.show{opacity:1;transform:none}
+.cvrank[hidden]{display:none!important}
 .cvrank button{pointer-events:auto}   /* 상자는 못 누르지만 그 안의 수확 버튼은 눌린다 — 감사 #56 의 진짜 버그 */
-.cvrank h4{font-size:10px;font-weight:400;color:var(--t4);letter-spacing:.02em}
-.cvrank .cq{font-size:12px;color:var(--t1);line-height:1.45;margin:3px 0 8px}
+.cvrank h4{font-size:calc(11px * var(--text-scale,1));font-weight:400;color:var(--t4);letter-spacing:.02em}
+.cvrank .cq{font-size:calc(12px * var(--text-scale,1));color:var(--t1);line-height:1.45;margin:3px 0 8px}
 .cvrow{display:flex;align-items:center;gap:7px;padding:5px 0;border-top:1px solid var(--line)}
 .cvrow .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-size:11.5px;color:var(--t2)}
+  font-size:calc(11.5px * var(--text-scale,1));color:var(--t2)}
 .cvrow.lead .t{color:var(--t1)}
-.cvrow .s{font-size:11px;color:var(--t4);font-variant-numeric:tabular-nums;flex:0 0 auto}
-.cvrank .cvfoot{margin-top:8px;font-size:10px;line-height:1.55;color:var(--t4)}
+.cvrow .s{font-size:calc(11px * var(--text-scale,1));color:var(--t4);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.cvrank .cvfoot{margin-top:8px;font-size:calc(11px * var(--text-scale,1));line-height:1.55;color:var(--t4)}
 /* 재료 없음 — **순위 대신** 이 자리가 뜬다 (#67 확정 ④). 띠가 아니라 상자 안이라 신호등이 아니다 */
-.cvnone{font-size:12px;line-height:1.6;color:var(--t2);margin:2px 0 9px}
+.cvnone{font-size:calc(12px * var(--text-scale,1));line-height:1.6;color:var(--t2);margin:2px 0 9px}
 /* ⚠ **범례(`.cvlegend`)와 손잡이 설명(`.cvhint`)이 걷혔다** (#74 C5 · design.md 원칙:
    *"글자로 설명하지 말고 모양으로 말한다"*). 남는 덧글자는 어느 자로 재나(`.cvhow`) 하나와
    빈 볼트 한 줄(`.cvez`)뿐이다. 좁은 칸에서 둘이 겹치던 `@container` 규칙도 같이 죽었다. */
 /* ⚠ **순위 상자는 안 숨긴다.** 그건 질문의 **답**이라, 좁다고 걷으면 물어본 사람이 아무것도
    못 받는다 — 대신 칸 폭을 따라 줄어든다(`width:min(...)`). 걷히는 것은 설명글뿐이다. */
 /* 정본을 기다리는 동안 — 빈 저장소와 갈려 보여야 한다(`RECEIVED` 머리글) */
-.opening{flex:1;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--t4)}
+.opening{flex:1;display:flex;align-items:center;justify-content:center;font-size:calc(12.5px * var(--text-scale,1));color:var(--t4)}
 /* 볼트가 비었을 때 — **빈 판은 고장으로 읽힌다.** 그 말은 글자가 든다 (`cvez` 의 그 규율) */
 .cvez{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);z-index:2;
-  pointer-events:none;text-align:center;font-size:12.5px;line-height:1.8;color:var(--t3);padding:0 24px}
+  pointer-events:none;text-align:center;font-size:calc(12.5px * var(--text-scale,1));line-height:1.8;color:var(--t3);padding:0 24px}
 /* 별 — 반지름·색이 전부다. **전환은 CSS 가 든다**(`canvasPaint` 는 속성만 바꾼다).
    ⚠ 커서가 `grab` 이다 — **잡아서 옮기는 것**이 이 점의 두 번째 동사이기 때문이다 (#70 확정 ⑤) */
 #cvb .cvn{cursor:grab}
@@ -494,9 +523,9 @@ svg#cvb.grabbing .cvn{cursor:grabbing}
   border:3px solid transparent;background-clip:content-box}
 #setbody::-webkit-scrollbar-thumb:hover{background:var(--t3);background-clip:content-box}
 .setgrp{display:flex;flex-direction:column;gap:10px}
-.setlbl{flex:0 0 66px;font-size:11px;color:var(--t4)}
+.setlbl{flex:0 0 66px;font-size:calc(11px * var(--text-scale,1));color:var(--t4)}
 .setfld{flex:1;min-width:0;background:rgba(0,0,0,.22);border:1px solid var(--line);
-  border-radius:5px;padding:6px 9px;font-size:12px;line-height:1.45;height:30px}
+  border-radius:5px;padding:6px 9px;font-size:calc(12px * var(--text-scale,1));line-height:1.45;height:30px}
 .setfld:focus{border-color:var(--line2)}
 /* 드롭다운 — `appearance:none` 이 네이티브 화살표까지 걷어서, **떨어진다는 표시가 0개**였다
    (#65 ⑥). 화살표는 감싼 칸의 `::after` 가 든다 — 바깥 자산을 안 부른다(판정선 검사). */
@@ -504,7 +533,7 @@ select.setfld{appearance:none;cursor:pointer;padding-right:24px}
 .setsel{flex:1;min-width:0;position:relative;display:flex}
 .setsel .setfld{flex:1}
 .setsel:after{content:"▾";position:absolute;right:9px;top:0;bottom:0;display:flex;align-items:center;
-  pointer-events:none;color:var(--t3);font-size:10px}
+  pointer-events:none;color:var(--t3);font-size:calc(11px * var(--text-scale,1))}
 input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
 /* 연결 카드 한 장 — **누르면 다시 잰다.** 「다시 확인」 버튼을 따로 안 만든다 */
 .setcli{cursor:pointer}
@@ -514,35 +543,35 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
    ⚠ 녹화 중 테두리는 **신호등이 아니다** — 색을 안 쓰고 글자색(`--t1`)만 올린다. */
 .setkey{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;min-width:96px;text-align:center}
 .setkey.rec{border-color:var(--t1);color:var(--t1)}
-#ierr{display:none;font-size:11.5px;line-height:1.6;color:var(--warn);
+#ierr{display:none;font-size:calc(11.5px * var(--text-scale,1));line-height:1.6;color:var(--warn);
   border-left:2px solid var(--warn);padding-left:11px}
-#isum{font-size:11.5px;color:var(--t3)}
+#isum{font-size:calc(11.5px * var(--text-scale,1));color:var(--t3)}
 .cand{border:1px solid var(--line);border-radius:8px;padding:15px 17px;background:rgba(255,255,255,.02)}
 .cand.done{opacity:.45}
 .irow{display:flex;gap:9px;align-items:flex-start;margin-bottom:8px}
-.ilbl{font-size:10px;color:var(--t4);flex:0 0 34px;padding-top:6px}
-.cq{flex:1;min-width:0;font-size:11.5px;line-height:1.5;color:var(--t3);padding-top:5px}
+.ilbl{font-size:calc(11px * var(--text-scale,1));color:var(--t4);flex:0 0 34px;padding-top:6px}
+.cq{flex:1;min-width:0;font-size:calc(11.5px * var(--text-scale,1));line-height:1.5;color:var(--t3);padding-top:5px}
 /* 문항이 질문 목록으로 어떻게 가나 — **읽는 한 줄**이다 (#53. 예전엔 여기가 칩 목록이었다) */
-.cqn{flex:1;min-width:0;font-size:11px;line-height:1.5;color:var(--t4);padding-top:6px}
+.cqn{flex:1;min-width:0;font-size:calc(11px * var(--text-scale,1));line-height:1.5;color:var(--t4);padding-top:6px}
 .cti{flex:1;min-width:0;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:5px;
-  padding:6px 9px;font-size:12.5px}
+  padding:6px 9px;font-size:calc(12.5px * var(--text-scale,1))}
 .cti:focus{border-color:var(--line2)}
 /* 본문은 **원문 그대로** 보인다 — 줄바꿈까지. 기계가 다듬은 문장이 여기 있으면 안 된다 */
-.cbody{position:relative;font-size:11.5px;line-height:1.7;color:var(--t2);white-space:pre-wrap;
+.cbody{position:relative;font-size:calc(11.5px * var(--text-scale,1));line-height:1.7;color:var(--t2);white-space:pre-wrap;
   background:rgba(0,0,0,.22);border-radius:6px;padding:9px 11px;margin-bottom:9px;max-height:104px;overflow:auto}
-.orig{position:absolute;right:8px;top:6px;font-size:9px;color:var(--t4);background:var(--panel);
+.orig{position:absolute;right:8px;top:6px;font-size:calc(11px * var(--text-scale,1));color:var(--t4);background:var(--panel);
   border:1px solid var(--line);border-radius:3px;padding:1px 5px}
 .cacts{display:flex;gap:8px;justify-content:flex-end}
-.okmsg{font-size:11px;color:var(--acc)}
+.okmsg{font-size:calc(11px * var(--text-scale,1));color:var(--acc)}
 /* ── 받기 (#40) — 파일·붙여넣기를 덩이로 잘라 초안으로 만든다 ──
    ⚠ 새 화면이 아니다. **던져 넣기 화면 그 자리**고, 위에 파일 줄과 진행 띠가 하나씩 얹힐 뿐이다. */
 #ifiles:empty,#ibar:empty{display:none}
-#ifiles{font-size:11px;line-height:1.7;color:var(--t3);display:flex;flex-direction:column;gap:3px}
+#ifiles{font-size:calc(11px * var(--text-scale,1));line-height:1.7;color:var(--t3);display:flex;flex-direction:column;gap:3px}
 .ifile{display:flex;gap:8px;align-items:baseline}
-.ifile .itag{flex:0 0 auto;font-size:9.5px;color:var(--t4);border:1px solid var(--line2);
+.ifile .itag{flex:0 0 auto;font-size:calc(11px * var(--text-scale,1));color:var(--t4);border:1px solid var(--line2);
   border-radius:3px;padding:1px 5px}
 .ifile.bad,.ifile.bad .itag{color:var(--warn);border-color:rgba(224,178,90,.4)}
-#ibar{border:1px solid var(--line2);border-radius:8px;padding:12px 14px;font-size:12px;
+#ibar{border:1px solid var(--line2);border-radius:8px;padding:12px 14px;font-size:calc(12px * var(--text-scale,1));
   line-height:1.6;color:var(--t2);display:flex;flex-direction:column;gap:9px}
 #ibar.warn{border-color:rgba(224,178,90,.4);background:rgba(224,178,90,.07)}
 #ibar.okd{border-color:var(--acc-b);background:var(--acc-d)}
@@ -552,17 +581,17 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
    판정을 안 받은 글자라, 상자는 중립으로 두고 뜻은 `.dhow` 표식이 든다. */
 .dbox{border:1px solid var(--line2);border-radius:7px;background:rgba(255,255,255,.035);
   margin:0 0 10px;padding:11px 13px}
-.dti{font-size:13px;line-height:1.5;color:var(--t1)}
-.dbo{font-size:11.5px;line-height:1.7;color:var(--t2);white-space:pre-wrap;margin-top:6px;
+.dti{font-size:calc(13px * var(--text-scale,1));line-height:1.5;color:var(--t1)}
+.dbo{font-size:calc(11.5px * var(--text-scale,1));line-height:1.7;color:var(--t2);white-space:pre-wrap;margin-top:6px;
   max-height:96px;overflow:auto}
-.dhow{font-size:9.5px;color:var(--t4);border:1px solid var(--line2);border-radius:3px;
+.dhow{font-size:calc(11px * var(--text-scale,1));color:var(--t4);border:1px solid var(--line2);border-radius:3px;
   padding:1px 5px;margin-left:7px;vertical-align:middle}
 /* 한 덩이에서 이야기가 여럿 나온다 (#40 2판) — 장과 장 사이가 안 붙게. */
 .dbo+.dti{margin-top:12px}
 /* 「이야기를 못 찾았다」 — 사고가 아니라 판정이라 빨갛게 안 칠한다. 흐리게 둔다. */
 .dnone{color:var(--t3)}
 /* ── 면접에서 온 질문 (#22) ── */
-.fromiv{font-size:9.5px;color:var(--warn);border:1px solid rgba(224,178,90,.4);
+.fromiv{font-size:calc(11px * var(--text-scale,1));color:var(--warn);border:1px solid rgba(224,178,90,.4);
   border-radius:3px;padding:1px 5px;flex:0 0 auto}
 /* ⚠ **채우기 가이드(#35)의 CSS 가 통째로 걷혔다** (#74 C5) — `#fillstart`·`.fbar`·
    `.fbh`·`.fbn`·`.fbq`·`.fbhint`. 짚을 구멍이 없으면 띠도 없다. */
@@ -574,8 +603,8 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
 #pr{flex:1;padding:18px 24px;display:flex;flex-direction:column;gap:15px;overflow-y:auto}
 #pr::-webkit-scrollbar{width:3px}
 #pr::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
-.pq{font-size:16.5px;line-height:1.45;color:var(--t1)}
-.pn{font-size:10.5px;line-height:1.5;color:var(--t4)}
+.pq{font-size:calc(16.5px * var(--text-scale,1));line-height:1.45;color:var(--t1)}
+.pn{font-size:calc(11px * var(--text-scale,1));line-height:1.5;color:var(--t4)}
 /* 답 칸 — 귀가 있으면 받아적히고, 없으면(브라우저 단독) 사람이 친다. **같은 칸이다**
    ★ **자란 답은 이 칸 안에서만 자란다** (#66-8 재수리, `실측 2026-09-01`). 전 판은 답이 길어지면
      `#pr` 을 통째로 바닥까지 밀었는데, `#pr` 은 문항까지 드는 칸이라 **묻고 있는 질문이 위로
@@ -583,18 +612,18 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
      문항과 「채점/다음 질문」 줄이 언제나 남게 한다. */
 #pans{min-height:82px;max-height:190px;overflow-y:auto;
   background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:7px;
-  padding:10px 12px;font-size:12.5px;line-height:1.75;color:var(--t2);white-space:pre-wrap;outline:none}
+  padding:10px 12px;font-size:calc(12.5px * var(--text-scale,1));line-height:1.75;color:var(--t2);white-space:pre-wrap;outline:none}
 #pans::-webkit-scrollbar{width:3px}
 #pans::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
 #pans:empty:before{content:attr(data-ph);color:var(--t3)}
 #pans .vol{opacity:.5}
-.pres{border:1px solid var(--line);border-radius:8px;padding:11px 13px;font-size:12px;line-height:1.6;color:var(--t2)}
+.pres{border:1px solid var(--line);border-radius:8px;padding:11px 13px;font-size:calc(12px * var(--text-scale,1));line-height:1.6;color:var(--t2)}
 .pres.g{border-color:var(--acc-b);background:var(--acc-d)}
 .pres.a{border-color:rgba(224,178,90,.4);background:rgba(224,178,90,.07)}
 .pres.r{border-color:rgba(224,112,92,.4);background:rgba(224,112,92,.07)}
 .prow{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
 .sumrow{display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);
-  font-size:11.5px;line-height:1.45;color:var(--t2)}
+  font-size:calc(11.5px * var(--text-scale,1));line-height:1.45;color:var(--t2)}
 /* ── 개념 제안 (#33) — 칩 칸 **위에** 얹히는 줄 하나. 새 화면이 아니다 ──
    ⚠ 색이 초록(확정된 칩)이 아니라 파랑(`--me`)이다. **기계가 낸 것과 사람이 고른 것을
      눈으로 가르는 자리** — 누르면 초록 칩으로 옮겨 앉는다. */
@@ -617,21 +646,30 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
 }
 #right .dochead{display:flex;align-items:center;gap:8px;flex-shrink:0}
 #right .docidentity{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
-#right .docpath{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t3);font-size:12px}
-#right .docsavestate{flex-shrink:0;color:var(--t4);font-size:11px;white-space:nowrap}
+#right .docpath{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t3);font-size:calc(12px * var(--text-scale,1))}
+#right .docsavestate{flex-shrink:0;color:var(--t4);font-size:calc(11px * var(--text-scale,1));white-space:nowrap}
 #right .docsavestate[data-state="dirty"]{color:var(--t2)}
 #right .docsavestate[data-state="saving"]{color:var(--t3)}
 #right .docsavestate[data-state="failed"]{color:var(--warn)}
 #right .docbody{display:flex;flex:1;min-height:0;flex-direction:column}
-#right #ti{font-size:24px;border:0;background:transparent;padding:6px 0}
-#right #bo{flex:1;min-height:200px;resize:none;background:transparent;border:0;padding:8px 0;font-size:15px;line-height:1.85}
+#right #ti{font-size:calc(24px * var(--text-scale,1));border:0;background:transparent;padding:6px 0}
+#right #bo{flex:1;min-height:200px;resize:none;background:transparent;border:0;padding:8px 0;font-size:calc(15px * var(--text-scale,1));line-height:1.65;caret-color:var(--t1)}
+#right #bo:focus-visible{outline:none!important;box-shadow:inset 0 -2px 0 var(--control-border)}
+#right .cm-editor{flex:1;min-height:0;min-width:0}
+#right .cm-editor #bo{min-height:100%;padding:8px 0;flex:none;box-shadow:none;outline:none!important;overflow:visible;white-space:pre-wrap}
+#right .cm-editor.cm-focused{outline:none}
+#right .cm-editor .cm-scroller{font-family:var(--sans);line-height:1.65;overflow:auto}
 #right .dochead button{flex-shrink:0}
 #cvwrap{background:radial-gradient(ellipse at 45% 48%,rgba(var(--t1rgb),.045),transparent 60%),rgba(0,0,0,.30)}
 #cvb .beam{display:none}
 /* 2026-09-08 합의: 종류는 고정 색, 검색은 원래 색의 밝기, 선택은 흰 테두리로 구분한다. */
-#cvb .cvn{--body-glow:#dfe8f5}
+#cvb .cvn{--body-glow:#dfe8f5;transition:opacity .28s ease}
+#cvwrap.rm #cvb .cvn{transition:none}
 #cvb .cvn.ksun{--body-glow:#ffb979}
 #cvb .cvn.kplanet{--body-glow:#a9d4ff}
+#cvb #orbg{--body-glow:#f4f7ff}
+#cvb #orbg .surface{filter:drop-shadow(0 0 5px var(--body-glow))}
+#cvb #orbg .corona{opacity:.48}
 #cvb .cvn .surface{filter:drop-shadow(0 0 3px var(--body-glow));transition:filter .2s ease}
 #cvb .cvn.ksun .surface{filter:drop-shadow(0 0 5px var(--body-glow))}
 #cvb .cvn .d,#cvb .cvn.ksun .d{fill-opacity:0;stroke:none;filter:none}
@@ -653,76 +691,146 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
 #cvb .ambient{pointer-events:none;fill:var(--t1)}
 #cvb .ambient .glow{fill:url(#skyglow)}
 #cvrank button.cvrow{width:100%;text-align:left;color:var(--t2)}
+#cvrank .result-row{display:grid;grid-template-columns:minmax(0,1fr);gap:0;padding-bottom:12px;border-top:1px solid var(--line)}
+#cvrank .result-row>.cvrow{flex:1;min-width:0;border-top:0}
+#cvrank .result-document-open{justify-self:end;padding:7px 8px;font-size:calc(11px * var(--text-scale,1));white-space:nowrap}
 #cvrank .preview-copy{flex:1;min-width:0;display:block}
 #cvrank .preview-copy .t{display:block}
-#cvrank .preview-row{align-items:flex-start;padding:10px 0}
+#cvrank .preview-row{align-items:flex-start;padding:12px 0}
 #cvrank .preview-row>.dot{margin-top:5px}
-#cvrank .preview-row .s{color:var(--t3)}
-#cvrank .preview-excerpt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:11px;line-height:1.6;color:var(--t3);margin-top:5px;white-space:normal}
-#cvrank .preview-scope{float:right;margin-left:10px;font-weight:400;font-size:10px}
+#cvrank .preview-row .t{font-size:calc(13px * var(--text-scale,1));color:var(--t1);white-space:normal;line-height:1.6}
+#cvrank .preview-path{font-size:calc(11px * var(--text-scale,1));color:var(--t3);white-space:normal;overflow-wrap:anywhere}
+#cvrank .preview-excerpt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:calc(12px * var(--text-scale,1));line-height:1.7;color:var(--t3);margin-top:5px;white-space:normal}
+#cvrank .preview-scope{float:right;margin-left:10px;font-weight:400;font-size:calc(11px * var(--text-scale,1))}
+#cvrank .result-heading{display:flex;justify-content:space-between;gap:8px;font-size:calc(13px * var(--text-scale,1));font-weight:500;color:var(--t1);margin-bottom:10px}
+#cvrank .result-heading small{color:var(--t3);font-weight:400;font-size:calc(11px * var(--text-scale,1))}
+#cvrank .result-basis{font-size:calc(12px * var(--text-scale,1));line-height:1.6;color:var(--t2);margin-bottom:10px}
+#cvrank .result-open{border:1px solid var(--line2);border-radius:5px;padding:5px 9px;color:var(--t1);font-size:calc(12px * var(--text-scale,1));margin-bottom:10px}
+#cvrank .result-more{width:100%;padding:12px 0;border-top:1px solid var(--line);color:var(--t2);font-size:calc(12px * var(--text-scale,1));text-align:left}
+#cvrank .result-low{color:var(--t2);font-size:calc(12px * var(--text-scale,1));line-height:1.7;padding:10px 0}
+#cvrank details>summary{font-size:calc(11px * var(--text-scale,1));color:var(--t3);cursor:pointer;padding:10px 0}
+.dochead .docrelated{padding:6px 8px;border:1px solid var(--line);border-radius:5px;font-size:calc(11px * var(--text-scale,1));white-space:nowrap;color:var(--t2)}
+#cvb .node-label{fill:var(--t2);stroke:var(--glass);stroke-linejoin:round;paint-order:stroke;pointer-events:none}
+#cvb .cvn.sel .node-label{fill:var(--t1)}
+#cvb .orbit.hovered{stroke:var(--t2);opacity:.58}
+#cvb .orbit.shared{stroke:rgba(var(--t1rgb),.3)}
+#cvb .orbit.orbit-target{stroke:var(--t1);stroke-width:2;opacity:.9}
+#cvb{user-select:none;-webkit-user-select:none}
+#cvb .orbit-carry{pointer-events:none}
+#cvb .cvn.move-target .selhalo{opacity:1;stroke-width:2.2}
+#cvb .cvn.move-target .node-label{fill:var(--t1)}
+.canvas-move-target{outline:1px solid var(--t2);outline-offset:-1px;background:rgba(var(--t1rgb),.08)!important}
+#app.canvas-carrying,#app.canvas-carrying *{user-select:none;-webkit-user-select:none}
+.move-browse-label{font-size:calc(11px * var(--text-scale,1));color:var(--t3);white-space:nowrap;margin-right:8px}
+.hmit[data-orbit-group]{position:relative}
+.hmit .orbit-mark{position:absolute;left:calc(8px + var(--tree-indent) + 7px);top:0;bottom:0;width:4px;border-left:1px solid var(--t3);pointer-events:none}
+.hmit .orbit-mark.first{top:5px;border-top:1px solid var(--t3);border-top-left-radius:3px}
+.hmit .orbit-mark.last{bottom:5px;border-bottom:1px solid var(--t3);border-bottom-left-radius:3px}
+#orbit-drop-note{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);max-width:calc(100% - 24px);padding:7px 10px;border-radius:7px;background:var(--bg);border:1px solid var(--line);color:var(--t1);font-size:calc(12px * var(--text-scale,1));pointer-events:none;z-index:5;text-align:center}
+#orbit-drop-note[hidden]{display:none}
 #orbg .disc{fill:rgba(var(--t1rgb),.75);filter:drop-shadow(0 0 16px rgba(var(--t1rgb),.5))}
 #orbg .halo{stroke:rgba(var(--t1rgb),.15)}
 /* 탐색·질문은 고정된 머리, 결과는 지도를 가리지 않는 별도 열이다. */
-#cvwrap{display:grid;grid-template-columns:minmax(0,1fr) 0px;grid-template-rows:auto auto minmax(0,1fr);transition:grid-template-columns .22s cubic-bezier(.2,.7,.2,1)}
+#cvwrap{display:grid;grid-template-columns:minmax(0,1fr) 0px;grid-template-rows:auto minmax(0,1fr);transition:grid-template-columns .22s cubic-bezier(.2,.7,.2,1)}
 #cvnav{position:relative;grid-row:1;grid-column:1/-1;display:flex;align-items:center;gap:4px;padding:10px 14px 4px;min-width:0;z-index:2}
-#cvnav button{padding:5px 8px;color:var(--t2);font-size:12px;border-radius:5px}
+#cvnav button{padding:5px 8px;color:var(--t2);font-size:calc(12px * var(--text-scale,1));border-radius:5px}
 #cvnav button:disabled{opacity:.3;cursor:default}
 #cvnav button:not(:disabled):hover{background:rgba(var(--t1rgb),.08)}
-#cvnav span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2);font-size:12px;padding:0 6px}
-.workspacequery{grid-row:2;grid-column:1/-1;display:flex;gap:8px;padding:4px 16px 8px;border-bottom:1px solid var(--line)}
-.workspacequery input{flex:1;min-width:0;background:rgba(var(--t1rgb),.04);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--t1)}
+#cvnav span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2);font-size:calc(12px * var(--text-scale,1));padding:0 6px}
+#cvnav .workspace-crumbs{display:flex;align-items:center;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+#cvnav .workspace-crumbs button{flex:0 0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;padding:5px}
+#cvnav .crumb-separator{color:var(--t4);padding:0 2px}
+#cvnav .space-tools{margin-left:auto;display:flex;gap:4px}
+#cvnav .space-tools button{width:28px;height:28px;padding:6px;color:var(--t3)}
+#cvnav .space-tools svg{width:16px;height:16px}
+.workspace-empty{position:absolute;inset:auto 15px 25px;text-align:center;color:var(--t3);font-size:calc(12px * var(--text-scale,1));pointer-events:none}
+.workspace-empty button{display:block;margin:10px auto 0;padding:7px 13px;border:1px solid var(--line2);border-radius:5px;color:var(--t1);pointer-events:auto}
+#canvas-star-shower{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+.workspace-scope{align-self:center;white-space:nowrap;color:var(--t3);font-size:calc(11px * var(--text-scale,1))}
+.workspacequery{grid-row:1;grid-column:1/-1;display:flex;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.workspacequery input{flex:1;min-width:0;background:rgba(var(--t1rgb),.04);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:calc(12px * var(--text-scale,1));color:var(--t1)}
 .workspacequery:focus-within input{padding-top:9px;padding-bottom:9px}
-.workspacequery button{padding:6px 10px;font-size:12px;color:var(--t2)}
-#cvstage{position:relative;grid-row:3;grid-column:1;min-width:0;min-height:0;overflow:hidden}
+.workspacequery button{padding:6px 10px;font-size:calc(12px * var(--text-scale,1));color:var(--t2)}
+#cvstage{position:relative;grid-row:2;grid-column:1;min-width:0;min-height:0;overflow:hidden}
 #cvstage svg#cvb{position:absolute;inset:0;min-width:0;min-height:0}
-#cvwrap:has(.cvrank.show){grid-template-columns:minmax(0,1fr) 262px}
-#cvwrap .cvrank{position:relative;grid-row:3;grid-column:2;top:auto;right:auto;width:auto;min-width:0;min-height:0;overflow:hidden;display:block;margin:0;border:0;border-radius:0;padding:16px 0;background:rgba(0,0,0,.16);pointer-events:none;transform:none;opacity:0;visibility:hidden;transition:opacity .14s,padding .22s,visibility 0s .22s}
+#cvwrap:has(.cvrank.show){grid-template-columns:minmax(0,1fr) clamp(280px,24vw,360px)}
+#cvwrap .cvrank{position:relative;grid-row:2;grid-column:2;top:auto;right:auto;width:auto;min-width:0;min-height:0;overflow:hidden;display:block;margin:0;border:0;border-radius:0;padding:16px 0;background:rgba(0,0,0,.16);pointer-events:none;transform:none;opacity:0;visibility:hidden;transition:opacity .14s,padding .22s,visibility 0s .22s}
 #cvwrap .cvrank.show{overflow:auto;border-left:1px solid var(--line);padding:16px;pointer-events:auto;opacity:1;visibility:visible;transition-delay:0s}
 #cvwrap .cvhow{top:auto;bottom:10px;left:16px}
 @container (max-width:620px){#cvwrap:has(.cvrank.show){grid-template-columns:minmax(0,1fr) 210px}}
 #cols.document-open #cvwrap:has(.cvrank.show){grid-template-columns:minmax(0,1fr) 0px}
 #cols.document-open #cvwrap .cvrank{overflow:hidden;padding-left:0;padding-right:0;border:0;opacity:0;visibility:hidden;pointer-events:none}
+@media(max-width:900px){
+  #cvwrap{grid-template-columns:minmax(0,1fr) 0px;grid-template-rows:auto minmax(0,1fr) 0px}
+  #cvwrap:has(.cvrank.show){grid-template-columns:minmax(0,1fr) 0px;grid-template-rows:auto minmax(150px,1fr) minmax(0,38%)}
+  #cvwrap .cvrank{grid-column:1;grid-row:3}
+  #cvwrap .cvrank.show{border-left:0;border-top:1px solid var(--line);padding:12px 16px}
+  #cols.document-open #cvwrap{grid-template-rows:auto minmax(0,1fr) 0px}
+  #cvnav .workspace-crumbs button{max-width:105px}
+  .workspace-scope{display:none}
+}
 @media (prefers-reduced-motion:reduce){#cols #right,#cvwrap,#cvwrap .cvrank{transition:none;transform:none}}
+/* WebKit은 숨은 창의 전환을 첫 프레임에 멈출 수 있다. 복귀할 화면 상태는 즉시 반영한다. */
+body.window-hidden #cols #right,body.window-hidden #cvwrap,body.window-hidden #cvwrap .cvrank{transition:none;transform:none}
 #leftlist .hmit:focus-visible{outline:1px solid var(--t2);outline-offset:-2px}
 #leftlist .hmit.dragover{background:rgba(var(--t1rgb),.13)}
 #setnav{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:20px}
-#setnav button{padding:8px 12px;font-size:12px;color:var(--t3)}
+#setnav button{padding:8px 12px;font-size:calc(12px * var(--text-scale,1));color:var(--t3)}
 #setnav button.active{background:rgba(var(--t1rgb),.07);color:var(--t1)}
 #setbody .setpage[hidden]{display:none}
 
 /* 승인된 탐색기 초안의 프레임·색·간격을 실제 저장소에 적용한다. */
-#app.stack{--panelrgb:16,21,30;--panel:#10151e;--glass:#0d121b;--t1:#e4e9f1;--t2:#bec9d8;--t3:#8995a8;--t4:#63758d;--t1rgb:228,233,241;--line:#ffffff12;--line2:#ffffff20;background:#090d14}
-#app.stack #top{height:49px;min-height:49px;padding:0 20px;background:#0d1119}
-#app.stack #brand{font-size:15px;font-weight:600;letter-spacing:.3px}
+#app.stack,#app.practice,#app.live{--panelrgb:16,21,30;--panel:#10151e;--glass:#0d121b;--t1:#e4e9f1;--t2:#bec9d8;--t3:#8995a8;--t4:#63758d;--t1rgb:228,233,241;--line:#ffffff12;--line2:#ffffff20;background:#090d14}
+#app.stack #top{height:49px;min-height:49px;padding:0 20px 0 76px;background:#0d1119}
+#app.stack #brand{font-size:calc(15px * var(--text-scale,1));font-weight:600;letter-spacing:.3px}
 #app.stack #left{background:#10151e;border-right:1px solid var(--line);padding-top:5px}
-#app.stack #lefttop{padding:16px 14px 10px;gap:0}
-.vaultheading{font-size:13px;font-weight:500;padding:2px 5px 18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app.stack #lefttop{padding:8px 14px 10px;gap:6px}
+.vaultheading{font-size:calc(13px * var(--text-scale,1));font-weight:500;padding:2px 5px 18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #app.stack #lfind{background:#ffffff05;padding:7px 8px;color:var(--t1)}
 #app.stack #leftlist{padding:2px 10px 10px}
-#app.stack .hmit{min-height:30px;margin:0;border-radius:5px;padding-top:4px;padding-bottom:4px;gap:5px;font-size:13px}
-#app.stack .hmit.fold{margin-top:3px;color:var(--t2);font-size:13px}
+#app.stack .hmit{min-height:30px;margin:0;border-radius:5px;padding-top:4px;padding-bottom:4px;gap:5px;font-size:calc(13px * var(--text-scale,1))}
+#app.stack .hmit.fold{margin-top:3px;color:var(--t2);font-size:calc(13px * var(--text-scale,1))}
 #app.stack .hmit.sel{background:#88b6ff16;color:#d6e7ff}
 #app.stack .hmit.scoped{box-shadow:inset 2px 0 #bbd5fa}
 #app.stack .hmit .hmtx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fileedit{min-width:34px;font-size:11px!important}
+.fileedit{min-width:calc(34px * var(--text-scale,1));white-space:nowrap;font-size:calc(11px * var(--text-scale,1))!important}
 .hmit.cosmic-hover{background:rgba(174,199,236,.16);box-shadow:inset 2px 0 #c4d8f3}
-.filemore{flex:0 0 22px;padding:0 3px;color:var(--t3);opacity:.45;font-size:14px}
-.hmit:hover .filemore,.hmit:focus-within .filemore{opacity:1}
+/* 깊은 경로의 가로 탐색을 유지하면서 편집·작업 버튼은 목록 안에 남긴다. */
+.filemore{position:sticky;right:10px;z-index:1;flex:0 0 22px;padding:0 3px;color:var(--t4);background:var(--panel);font-size:calc(14px * var(--text-scale,1))}
+.hmit:hover .filemore,.hmit:focus-within .filemore{color:var(--t3)}
 #app.stack #leftpin{background:none;flex-direction:row;align-items:center;justify-content:space-between;padding:10px 14px;gap:8px}
-#leftpin button{padding:7px;color:var(--t3);font-size:12px}
+#leftpin button{padding:7px;color:var(--t3);font-size:calc(12px * var(--text-scale,1))}
 #app.stack #right{background:#0d121b}
 #app.stack #sv{background:#d4e3f3;color:#172432;border-color:transparent}
 #app.stack #cvwrap{background:radial-gradient(ellipse at 45% 48%,#263b552b,transparent 65%),#060b13}
+#app.stack #cvwrap[data-universe-style="depth"]{background:radial-gradient(ellipse at 46% 48%,#263f5729,transparent 54%),#050912}
+#cvwrap[data-universe-style="depth"] #cvstage:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 15% 23%,#42659022,transparent 37%),radial-gradient(ellipse at 87% 74%,#ac784412,transparent 40%)}
+#cvwrap[data-universe-style="depth"] #cvb .orbit{stroke:url(#universe-depth-orbit);stroke-width:1.15}
+#cvwrap[data-universe-style="depth"] #cvb .orbit.shared{stroke:#c4d3e68a;stroke-width:1.3}
+#cvwrap[data-universe-style="depth"] #cvb .orbit.hovered,#cvwrap[data-universe-style="depth"] #cvb .orbit.orbit-target{stroke:#e6f2ff;stroke-width:1.7}
+#cvwrap[data-universe-style="depth"] #cvb .node-label{stroke:#050912}
+#app.stack #cvwrap[data-universe-style="pixel"]{background:radial-gradient(ellipse at 45% 50%,#1c294341,transparent 68%),#080b17}
+#cvwrap[data-universe-style="pixel"] #cvstage:before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(#99b5e503 1px,transparent 1px),linear-gradient(90deg,#99b5e503 1px,transparent 1px);background-size:8px 8px}
+#cvwrap[data-universe-style="pixel"] #cvb image.surface{image-rendering:pixelated}
+#cvwrap[data-universe-style="pixel"] #cvb .ambient-points{shape-rendering:crispEdges}
+#cvwrap[data-universe-style="pixel"] #cvb .orbit{stroke:#b0c7e54d;stroke-width:.85;stroke-dasharray:2.4 4.5;stroke-linecap:square}
+#cvwrap[data-universe-style="pixel"] #cvb .orbit.shared{stroke:#cce3ff9c;stroke-dasharray:6 3;stroke-width:1.2}
+#cvwrap[data-universe-style="pixel"] #cvb .orbit.hovered,#cvwrap[data-universe-style="pixel"] #cvb .orbit.orbit-target{stroke:#f1f6ff;stroke-dasharray:none;stroke-width:1.7}
+#cvwrap[data-universe-style="pixel"] #cvb .node-label{stroke:#080b17}
+#cvwrap[data-universe-style="depth"] #cvb .corona,#cvwrap[data-universe-style="pixel"] #cvb .corona{opacity:.2}
+#cvwrap[data-universe-style="depth"] #cvb .cvn.sel .corona,#cvwrap[data-universe-style="depth"] #cvb .cvn.scoped .corona,
+#cvwrap[data-universe-style="pixel"] #cvb .cvn.sel .corona,#cvwrap[data-universe-style="pixel"] #cvb .cvn.scoped .corona{opacity:.8}
+.setselect{font:inherit;color:var(--t1);background:var(--glass);border:1px solid var(--line2);border-radius:6px;padding:7px 10px;min-width:170px}
 #settingspane{display:flex;flex:1;min-width:0;min-height:0;flex-direction:column;background:#0d121b}
-.settingsbar{height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 25px;border-bottom:1px solid var(--line);color:var(--t3);font-size:12px}
+.settingsbar{height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 25px;border-bottom:1px solid var(--line);color:var(--t3);font-size:calc(12px * var(--text-scale,1))}
 #settingspane #setbody{padding:40px 32px;gap:0;align-items:stretch}
 #settingspane #setbody>*{width:100%;max-width:696px;margin-left:auto;margin-right:auto}
 #settingspane #setnav{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:4px;gap:5px}
-#settingspane #setnav button{padding:9px 12px;font-size:12px}
+#settingspane #setnav button{padding:9px 12px;font-size:calc(12px * var(--text-scale,1))}
 #settingspane .mkcard{background:none;border:0;border-radius:0;padding:0;margin:0}
 #settingspane .mkcard>.setlbl{flex:0 0 auto;margin-top:16px}
 #settingspane .mkrow{padding:22px 0;margin:0;border-bottom:1px solid var(--line);gap:12px;flex-wrap:wrap}
-#settingspane .setlbl{min-width:96px;color:var(--t1);font-size:13px}
+#settingspane .setlbl{min-width:96px;color:var(--t1);font-size:calc(13px * var(--text-scale,1))}
 #settingspane .gbtn{background:#172131;border:1px solid #ffffff10;padding:8px 12px;color:#d4dfec}
 #settingspane #setnav .gbtn{background:none;border:0}
 #settingspane #setnav .active{background:#ffffff09;color:#e3ecf9}
@@ -730,11 +838,141 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
 #settingspane #setvault{width:100%;overflow-wrap:anywhere}
 #settingspane #setvaultbtn{margin-left:auto}
 
+/* Preparation, import and review share workspace typography and controls. */
+#app.live,#app.practice{background:rgba(13,18,27,.72);--acc:#bbd5fa;--acc-d:#88b6ff16;--acc-b:#bbd5fa55}
+#app.stack .gbtn.p{background:#d4e3f3;color:#172432;border-color:transparent}
+#app.practice{background:var(--glass);border:1px solid var(--line2)}
+.flowbody{flex:1;overflow:auto;padding:24px 32px;min-width:0}
+.flowsection{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.flowsection h2{font-size:calc(20px * var(--text-scale,1));font-weight:600;letter-spacing:-.025em}
+.flowrow{display:flex;gap:12px;align-items:center;min-height:40px;border-bottom:1px solid var(--line);padding:8px 0}
+.flowrow>:first-child{flex:1}.flowrow select{margin-left:auto;max-width:65%}
+.flowhint{font-size:calc(12px * var(--text-scale,1));color:var(--t2);line-height:1.65}
+.flowactions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flowsection input:not([type=checkbox]),.flowsection textarea,.flowsection select{background:rgba(127,127,127,.06);border:1px solid var(--line2);border-radius:7px;padding:8px 10px}
+.flowsection input:focus-visible,.flowsection textarea:focus-visible,.flowsection select:focus-visible{outline:2px solid var(--me);outline-offset:2px}
+.sessionlayout{display:flex;flex:1;min-height:0}.sessionlist{width:240px;flex-shrink:0;overflow:auto;padding:16px;border-right:1px solid var(--line)}
+.sessionitem{display:block;width:100%;text-align:left;padding:12px;border-radius:8px;margin-bottom:4px}.sessionitem small{display:block;color:var(--t2)}.sessionitem.selected{background:rgba(127,127,127,.12)}
+.sessiondraft,.importdocument{font:inherit;color:var(--t1);background:none;border:0;padding:0;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}.importdocument:focus-visible{outline:2px solid var(--t2);outline-offset:3px}
+.importrow{padding:18px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+details.sessiondraft{display:block}
+details.sessiondraft>summary{cursor:pointer;color:var(--t1)}
+details.sessiondraft:not([open])>:not(summary){display:none}
+details.sessiondraft[open]>:not(summary){margin-top:10px}
+.sessiondraft label,.sessiondetails label{display:flex;flex-direction:column;min-width:0;gap:5px;color:var(--t2)}
+.sessiondraft textarea,.sessiondetails textarea{min-height:110px;resize:vertical}
+/* 기록 패널은 .flowsection 밖에서도 입력 표면을 명시한다. 기본 흰 배경을 상속하지 않는다. */
+.sessiondraft input:not([type=checkbox]),.sessiondraft textarea,.sessiondetails input:not([type=checkbox]),.sessiondetails textarea{
+  display:block;width:100%;min-width:0;max-width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:6px;
+  background:var(--glass);color:var(--t1);caret-color:var(--t1);font:inherit;line-height:1.65;color-scheme:dark}
+.sessiondraft input:focus-visible,.sessiondraft textarea:focus-visible,.sessiondetails input:focus-visible,.sessiondetails textarea:focus-visible{outline:2px solid var(--me);outline-offset:2px}
+.sessiondraft input::placeholder,.sessiondraft textarea::placeholder,.sessiondetails input::placeholder,.sessiondetails textarea::placeholder{color:var(--t3);opacity:1}
+.sessiondraft input:disabled,.sessiondraft textarea:disabled,.sessiondetails input:disabled,.sessiondetails textarea:disabled{color:var(--t2);-webkit-text-fill-color:var(--t2);opacity:1}
+.sessiondraft,.sessiondetails,.reviewarchive,.reviewarchivebody,.reviewanswers,.reviewquestion{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.sessiondraft p,.sessiondetails p,.reviewanswers p{white-space:pre-wrap;overflow-wrap:anywhere}
+.sessiondetails summary,.reviewarchive>summary,.reviewanswers summary{color:var(--t2)}
+.sessiondraft>summary:focus-visible,.sessiondetails summary:focus-visible,.reviewarchive>summary:focus-visible,.reviewanswers summary:focus-visible{outline:2px solid var(--me);outline-offset:2px;border-radius:6px}
+.sessiondetails{border-top:1px solid var(--line);padding-top:12px}.sessiondetails summary{cursor:pointer;padding:5px 0}.utterance{padding:12px 0;border-bottom:1px solid var(--line)}.utterance p{white-space:pre-wrap}.utterance>span{color:var(--t2)}
+#sessionstatus{font-size:calc(11px * var(--text-scale,1));color:var(--t2)}.previewinput{display:flex;gap:8px;padding:8px 14px}.previewinput input{flex:1;min-width:0;background:rgba(127,127,127,.1);border:1px solid var(--line2);border-radius:6px;padding:7px}
+.inputmeters{display:flex;gap:8px;align-items:center;padding:0 14px;font-size:calc(11px * var(--text-scale,1));color:var(--t2)}.inputmeters meter{width:44px;height:8px}
+@media(max-width:650px){.sessionlist{width:180px}.flowbody{padding:16px}.flowrow{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.ld{animation:none}}
+
+
+#sessionreview{width:360px;min-width:300px;max-width:42%;flex-shrink:0;overflow:auto;border-left:1px solid var(--line);padding:0 20px 24px;background:var(--panel)}
+.reviewbar{display:flex;align-items:center;justify-content:space-between;padding:16px 0}.reviewbar .ibtn{width:28px;height:28px}.reviewbar svg{width:16px;height:16px}
+.reviewhistory{display:flex;flex-direction:column;gap:6px;color:var(--t3);font-size:calc(11px * var(--text-scale,1))}.reviewhistory select,.reviewcompactquestions select{width:100%;padding:6px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--t1);font:inherit;color-scheme:dark}
+.reviewquestion{padding:22px 0}.reviewquestion>small{font-size:calc(11px * var(--text-scale,1));color:var(--t3)}.reviewquestion h2{font-size:calc(18px * var(--text-scale,1));line-height:1.5;margin:6px 0 12px}.reviewquestion h3{font-size:calc(12px * var(--text-scale,1));margin:24px 0 8px}
+.reviewsource,.reviewanswers{padding:10px 0;border-bottom:1px solid var(--line);font-size:calc(12px * var(--text-scale,1));line-height:1.65}.reviewsource summary,.reviewanswers summary{cursor:pointer}.reviewsource p,.reviewanswers p{white-space:pre-wrap;color:var(--t2)}.reviewsource small{display:block;color:var(--t3);overflow-wrap:anywhere;margin-bottom:8px}
+.reviewactions{display:flex;flex-direction:column;gap:8px;padding-top:20px}.reviewdone{display:flex;align-items:center;gap:6px;font-size:calc(12px * var(--text-scale,1));margin-top:18px}.reviewarchive{border-top:1px solid var(--line);padding-top:16px;font-size:calc(12px * var(--text-scale,1))}.reviewarchivebody{padding-top:16px}.reviewarchive .sessiondraft{padding:12px 0}.reviewarchive textarea{min-height:90px}
+.sidebartabs,.recordfilters{display:flex;gap:4px;padding:5px 0}.sidebartabs button,.recordfilters button{flex:1;border-radius:5px;padding:5px;color:var(--t2);font-size:calc(12px * var(--text-scale,1))}.sidebartabs [aria-selected="true"],.recordfilters [aria-pressed="true"]{background:rgba(255,255,255,.08);color:var(--t1)}
+#left-files-panel{display:flex;flex-direction:column;flex:1;min-height:0}#left-files-panel[hidden],#records-pane[hidden]{display:none}
+.reviewentry{flex:1;min-width:0;min-height:0;overflow-y:auto;padding:8px 10px}.recordcards{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:5px}.recordcard{display:block;width:100%;min-width:0;max-width:100%;text-align:left;padding:9px 8px;border:1px solid var(--line);border-radius:6px}.recordcard.selected{background:rgba(255,255,255,.06);border-color:var(--line2)}.recordcard span,.recordcard small{display:block;overflow-wrap:anywhere}.recordcard span{font-size:calc(12px * var(--text-scale,1))}.recordcard small{color:var(--t3);font-size:calc(11px * var(--text-scale,1))}.recordcard .recordpreview{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2);margin:3px 0}.recordactions{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}.recordactions .gbtn{font-size:calc(11px * var(--text-scale,1))}
+.reviewquestions button{width:100%;display:block;text-align:left;background:none;border:0;border-radius:5px;padding:9px 8px;color:var(--t2);cursor:pointer;font:inherit;font-size:calc(12px * var(--text-scale,1))}.reviewquestions button.selected{background:rgba(255,255,255,.06)}.reviewquestions span{display:block;overflow-wrap:anywhere}.reviewquestions small{display:block;font-size:calc(11px * var(--text-scale,1));color:var(--t3);margin-top:4px}
+
+
+/* Readable text and controls share one scale across the workspace and overlay. */
+#app.stack,#app.practice,#app.live{--t3:#a5b1c3;--t4:#98a5b8;--control-border:#758297}
+button,input,select,textarea,summary{-webkit-tap-highlight-color:transparent}
+input::placeholder,textarea::placeholder{color:var(--t3);opacity:1}
+input:not([type=range]):not([type=checkbox]),select,textarea{border-color:var(--control-border)}
+:where(button,input,textarea,select,summary,[tabindex]):focus-visible{outline:2px solid #a9ceff!important;outline-offset:2px}
+button:disabled{cursor:default}
+#app.stack{background:rgba(9,13,20,var(--opa))}
+#app.live,#app.practice{background:rgba(13,18,27,var(--opa))}
+#app.live #curbox,#app.practice #curbox,#app.live .rec,#app.practice .rec,#hist .hl{background:rgba(13,18,27,.94);border-radius:6px}
+#curbox{padding:2px 6px}#hist .hl{padding:0 6px}#recs .rec{margin:3px 8px}
+.rec.dim{opacity:1}.rec.dim .rt{color:var(--t2)}
+#recs .rec.lead:not(.dim){box-shadow:inset 2px 0 0 #9cbce3;background:rgba(28,39,55,.96)}
+#recs .rec.lead .rt{font-size:calc(14px * var(--text-scale,1));font-weight:600}
+#recs .rn{order:-1;width:22px;height:22px;display:grid;place-items:center;padding:0;border:1px solid var(--line2);border-radius:6px;color:var(--t2);font-variant-numeric:tabular-nums}
+#recs .rec.lead .rn{color:#e4efff;background:#2c405a;border-color:#7796bb}
+#recs .rec.manual-read.open{background:rgba(26,38,54,.98);box-shadow:inset 3px 0 0 #b2d1f5}
+#recs .rec.manual-read .rt{font-size:calc(15px * var(--text-scale,1));font-weight:600}
+#recs .rec.manual-read .rs{color:#bed6f1}
+.workspacequery:focus-within input{padding-top:6px;padding-bottom:6px}
+#settingspane{overflow:auto;background:#10151e}
+#settingspane #setbody.preferences{display:block;padding:24px 32px 32px;max-width:720px;width:100%;margin:0 auto;overflow:visible}
+.preferencegroup{margin:0 0 28px}.preferencegroup h2{font-size:calc(14px * var(--text-scale,1));font-weight:600;margin:0 0 8px}
+.preferencerow{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:13px 0;min-height:48px;border-bottom:1px solid var(--line);font-size:calc(13px * var(--text-scale,1))}
+.preferencerow>label,.preferencerow>span{flex:1;min-width:0}.preferencerow>select{min-width:160px;max-width:55%}
+.preferencerow select{background:#192231;color:var(--t1);border:1px solid var(--control-border);border-radius:6px;padding:6px 10px;font:inherit}
+.preferencecontrol{display:flex;align-items:center;gap:12px;max-width:55%;min-width:180px}.preferencecontrol input{width:150px;min-width:0;accent-color:#c3d9f8}.preferencecontrol output{min-width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--t2)}
+.preferencehint{font-size:calc(12px * var(--text-scale,1));line-height:1.6;color:var(--t2);margin-top:8px;overflow-wrap:anywhere}.preferencehint:empty{display:none}
+.preferenceextra summary{font-size:calc(12px * var(--text-scale,1));padding:12px 0;cursor:pointer;color:var(--t2)}
+.preferencefooter{display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--line);padding-top:16px;color:var(--t2);font-size:calc(12px * var(--text-scale,1))}
+#settingspane .gbtn{padding:7px 12px;border-color:var(--control-border);font-size:calc(12px * var(--text-scale,1));white-space:normal}
+.reduceTransparency #app,.reduceTransparency #app.live,.reduceTransparency #app.practice{background:#10151e!important}
+.reduceTransparency #app{--glass:#10151e}
+.increaseContrast #app{--t1:#ffffff;--t2:#edf2fa;--t3:#d1dae8;--t4:#c4cfdf;--line:#77869a;--line2:#96a7bd;--control-border:#a5b7cf}
+.increaseContrast .gbtn,.increaseContrast .workspacequery input{border:1px solid var(--control-border)}
+.reduceMotion *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media(max-width:620px){#settingspane #setbody.preferences{padding:20px}.preferencerow{flex-wrap:wrap;gap:8px}.preferencerow>label,.preferencerow>span{flex-basis:100%}.preferencerow>select{max-width:100%}.preferencecontrol{max-width:100%}.preferencefooter{flex-wrap:wrap}}
+.large-text .preferencerow{flex-wrap:wrap}.large-text .preferencerow>label,.large-text .preferencerow>span{min-width:200px}
+.large-text #hist{height:calc(42px * var(--text-scale))}.large-text #curbox{height:calc(48px * var(--text-scale))}
+
+.overlayappearance{position:relative;font-size:calc(12px * var(--text-scale,1))}
+.overlayappearance>summary{padding:7px 9px;cursor:pointer;list-style:none;border:1px solid var(--control-border);border-radius:6px;background:#161f2c}
+.overlayappearancepanel{position:absolute;bottom:calc(100% + 8px);right:0;width:240px;padding:14px;background:#151c28;border:1px solid var(--control-border);border-radius:10px;box-shadow:0 8px 30px #0008;z-index:30;display:grid;grid-template-columns:1fr auto;gap:10px}
+.overlayappearancepanel label,.overlayappearancepanel p{grid-column:1/-1}.overlayappearancepanel input{width:100%;min-width:0}.overlayappearancepanel p{font-size:calc(11px * var(--text-scale,1));color:var(--t3);margin:0}
+.connectionsteps{color:var(--t2);line-height:1.7;padding-left:24px;margin:20px 0}.connectionrecord{border-top:1px solid var(--line);margin-top:28px;padding-top:18px}.connectionrecord>summary{cursor:pointer}#mcpsetup:disabled{opacity:.45;cursor:default}
+
+#app.practice .bottom,#app.live .bottom{flex-wrap:wrap}
+#app:is(.practice,.live) :is(.bottom,.inputmeters,.previewinput){background:rgba(13,18,27,.96)}
+#app:is(.practice,.live) .gbtn{border-color:var(--control-border)}
+#curw{background:#182230;color:var(--t2)}.flowrow[hidden]{display:none}
+.reviewcompactquestions{display:none}.reviewcompactquestions select{display:block;max-width:100%;width:100%;margin:8px 0 20px}
+#cols.document-open.query-context>#cvwrap{min-width:220px;visibility:visible;pointer-events:auto}
+#cols.document-open.query-context>#right{flex:0 0 34%;min-width:260px;border-left:1px solid var(--line);padding:16px 12px}
+#cols.document-open.query-context #right .dochead{flex-wrap:wrap;gap:6px}
+#cols.document-open.query-context #right .docidentity{flex-basis:100%}
+#cols:has(#sessionreview) #cvwrap{grid-template-columns:minmax(0,1fr) 0px;grid-template-rows:auto minmax(0,1fr) 0px}
+@media(max-width:1080px){
+ #app:has(#sessionreview):has(#left:not(.zip)) #workspace-sidebar-head,#app:has(#cols.document-open.query-context):has(#left:not(.zip)) #workspace-sidebar-head{min-width:180px;max-width:23vw;flex-shrink:0}
+ #cols:has(#sessionreview),#cols.document-open.query-context{display:flex;overflow:hidden}
+ #cols:has(#sessionreview)>#left:not(.zip),#cols.document-open.query-context>#left:not(.zip){min-width:180px;max-width:23%}
+ #cols:has(#sessionreview)>#cvwrap,#cols.document-open.query-context>#cvwrap{min-width:220px;visibility:visible;pointer-events:auto}
+ #cols:has(#sessionreview)>#sessionreview{width:34%;min-width:260px;max-width:34%;padding:0 12px 20px}
+ #cols:has(#left.zip) .reviewcompactquestions{display:block;color:var(--t2);font-size:calc(12px * var(--text-scale,1))}
+ #cols:has(#sessionreview) .workspacequery,#cols.document-open.query-context .workspacequery{padding:8px;gap:4px;flex-wrap:wrap}
+ #cols:has(#sessionreview) .workspacequery input,#cols.document-open.query-context .workspacequery input{flex-basis:160px}
+ #cols:has(#sessionreview) .workspace-scope,#cols.document-open.query-context .workspace-scope{display:none}
+}
+
+/* MCP changes share the workspace; they never interrupt document editing. */
+.changecount{font-size:calc(10px * var(--text-scale,1));margin-left:4px;color:var(--acc)}
+#changes-pane{overflow:auto;flex:1;padding:10px;min-height:0}#changes-pane[hidden]{display:none}
+.changefilters{display:flex;gap:6px;margin-bottom:12px}.changefilters button{flex:1;font-size:calc(11px * var(--text-scale,1))}
+.changeitem{display:block;width:100%;text-align:left;padding:12px 9px;margin:6px 0;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--t2);cursor:pointer}.changeitem.selected{background:var(--acc-d);border-color:var(--acc)}.changeitem strong{display:block;font-size:calc(12px * var(--text-scale,1));line-height:1.6;overflow-wrap:anywhere}.changeitem small{display:block;color:var(--t3);font-size:calc(10px * var(--text-scale,1));margin-top:6px}
+#changedetail{flex:1;min-width:0;overflow:auto;padding:26px 30px;background:var(--bg);color:var(--t1)}#changedetail h1{font-size:calc(22px * var(--text-scale,1));line-height:1.5;margin:18px 0 8px}#changedetail .changemeta{font-size:calc(12px * var(--text-scale,1));line-height:1.7;color:var(--t3);overflow-wrap:anywhere}.changebar{display:flex;justify-content:space-between;gap:14px;align-items:center}.changeversions{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}.changeversion{border:1px solid var(--line);border-radius:8px;overflow:hidden}.changeversion h3{font-size:calc(12px * var(--text-scale,1));font-weight:500;padding:12px 16px;background:var(--panel);margin:0}.changeversion pre{font:inherit;font-size:calc(13px * var(--text-scale,1));line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;margin:0;min-height:190px}.changeversion.after pre{background:color-mix(in srgb,var(--acc) 8%,transparent)}.changeactions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:9px;margin-top:20px}.changestatus{font-size:calc(12px * var(--text-scale,1));color:var(--t2);min-height:22px;margin-top:12px}.changeerror{color:var(--risk);white-space:pre-wrap}.changeempty{padding:28px 10px;font-size:calc(13px * var(--text-scale,1));color:var(--t3);line-height:1.8}
+@media(max-width:850px){.changeversions{grid-template-columns:1fr}#changedetail{padding:20px}}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
+/*CLONIE_MARKDOWN_EDITOR*/
 /* ── 브리지 ── 있으면 Swift 가 정본을 든다. 없으면(브라우저 단독) localStorage 가 대신한다.
    ⚠ 이 대체 경로가 `cue.html` 개발 동선을 지킨다 — Swift 를 빌드하지 않고 화면을 고치는 길. */
 const post=(n,b)=>{try{webkit.messageHandlers[n].postMessage(b===undefined?{}:b)}catch(e){}};
@@ -760,7 +998,7 @@ const uid=p=>p+"-"+Date.now().toString(36)+"-"+((_seq++).toString(36))+Math.floo
 /* Swift 의 ISO8601 은 소수점 초를 안 받는다. 받는 쪽도 너그럽게 고쳐뒀지만 여기서도 안 붙인다. */
 const now=()=>new Date().toISOString().replace(/\.\d+Z$/,"Z");
 
-let DOC=blank(),mode="stack",sel=null,opened=null,manual=false,heardV="",mineV="",notice=null;
+let DOC=blank(),mode="stack",sel=null,openedID=null,openedSnapshot=null,manual=false,heardV="",mineV="",notice=null;
 /* ★ 볼트 리비전은 화면이 해석하지 않는 **왕복 표**다 (#84). 실제 `VaultRevision` 은 Swift 가
    들고, 화면은 문서와 함께 받은 이 표를 다음 저장에 그대로 돌려준다. 저장 하나가 끝나기 전에는
    다음 것을 보내지 않는다 — 같은 리비전으로 저장 둘을 줄 세우면 둘째가 첫째와 충돌한다. */
@@ -820,6 +1058,8 @@ let stackView="edit";
    ⚠ **한 번만 산다** — `ingestRender` 가 글을 되돌리면서 비운다. 안 비우면 다음에 받기 화면을
      여는 사람에게 남의 글이 앉는다. 세우는 자리는 `openSettingsScreen` 하나다. */
 let SETBACK=null;
+let FLOW_RETURN=[],FLOW_EPOCH=0,FLOW_RESTORE_SEQ=0;
+let WORKSPACE_TOAST=null,WORKSPACE_TOAST_TIMER=null,WORKSPACE_TOAST_SEQ=0;
 /* ★ 3단의 양쪽 폭 — **세션에 산다.** 사람이 끈 자리는 다시 그려도 남아야 하고(그리는 자리가
    여럿이다), 파일에는 안 남긴다 — 창 크기가 기기마다 다른데 폭만 따라가면 접힌 채로 뜬다.
    `0` = 접힘. 복귀 폭은 `PANE_DEF` 가 든다. */
@@ -827,17 +1067,20 @@ const PANE_DEF={l:242,r:340},PANE_MIN={l:180,r:250},PANE_SNAP=140,PANE_MAX=560;
 /* ★ **오른쪽 판은 기본 접힘** (박선호 2026-09-02: *"굳이 오른쪽 패널이 있어야되나?"*). 하는 일이
    「쓰기」 하나라 별을 고르거나 + 를 누를 때만 연다(`paneOpen`). 우주가 그만큼 넓다. */
 let PANE={l:PANE_DEF.l,r:0};
-let EXPLORER_WIDTH=PANE_DEF.l;
+let DOCUMENT_RETURN=null;
 function paneApply(key,w){
   if(key==="r"&&w<=0&&PANE.r>0&&!leaveEditorAllowed(()=>paneApply(key,w)))return;
   PANE[key]=w;
-  if(key==="l"&&w>0)EXPLORER_WIDTH=w;
   const p=document.getElementById(key==="l"?"left":"right"),h=document.getElementById(key==="l"?"rzl":"rzr");
   if(p){p.style.width=w+"px";p.classList.toggle("zip",w<=0)}
   if(h)h.dataset.zip=w<=0?"1":"0";
-  if(key==="l")paintExplorerToggle();
+  if(key==="l"){
+    const head=document.getElementById("workspace-sidebar-head");if(head)head.style.width=Math.max(114,w)+"px";
+  }
   if(key==="r"){
-    const cols=document.getElementById("cols");if(cols)cols.classList.toggle("document-open",w>0);
+    if(w<=0)DOCUMENT_RETURN=null;
+    const cols=document.getElementById("cols");if(cols)cols.classList.toggle("document-open",w>0&&!SESSION_REVIEW_OPEN);
+    paintWorkspaceQueryContext();
     if(p)p.inert=w<=0;
     canvasApplyVT();canvasWake();
   }
@@ -868,6 +1111,8 @@ let askLogPending=null;
 /* 받기 진행 (#40). `{items, ks:[지금 만드는 덩이], draft:{k:{title,body,how}}, n,got,fail,
    banner, done, saved}` · 안 돌고 있으면 null. **세션에만 산다.** */
 let INTAKE=null;
+/* 직접 승인한 가져오기 카드만 추적한다. 재시도는 처음 만든 문서 ID를 그대로 쓴다. */
+const INGEST_SAVES=new Map();
 /* ★ 「공통 지능」 (#51 → #55) — 받기 화면의 **한 칸**. Swift 가 `setCloudDrafter` 로
    알려준 것은 사다리 두 층의 준비 상태다: `key`(설정에 키·모델이 있나) · `cli`(이 맥에
    공식 CLI 가 깔려 있나) · `ready`(둘 중 하나라도). `on` 은 **지금 켜져 있나**다.
@@ -1031,6 +1276,7 @@ function backfillSeed(d){
    ⚠ **기존 볼트의 `questions.json` 은 안 건드린다** — 사람 데이터고, 연습이 그것으로 돈다.
    경위(질문이 디스크에 0개로 남던 2026-08-31 사고)는 #74 와 그 커밋이 든다. */
 function load(){
+  if(!bridged()){try{ORBIT_GROUPS=JSON.parse(localStorage.getItem(orbitBrowserKey())||"[]")}catch(e){ORBIT_GROUPS=[]}}
   if(bridged())return blank();      /* Swift 가 receiveDocument 로 밀어넣는다 */
   let loaded;try{const r=localStorage.getItem(KEY);if(r)loaded=seed(JSON.parse(r))}catch(e){}
   loaded=loaded||seed(blank());VAULT_BASE=docCopy(loaded);return loaded;
@@ -1091,6 +1337,7 @@ function editorSaveStateText(state){
   return {saved:"저장됨",dirty:"변경됨",saving:"저장 중…",failed:"저장 실패"}[state]||"";
 }
 function paintEditorSaveState(){
+  const retry=document.getElementById("docretry");if(retry)retry.hidden=EDITOR_SAVE_STATE!=="failed";
   const el=document.getElementById("docsavestate");if(!el)return;
   el.textContent=editorSaveStateText(EDITOR_SAVE_STATE);
   if(el.dataset)el.dataset.state=EDITOR_SAVE_STATE;
@@ -1111,18 +1358,22 @@ function scheduleEditorAutosave(){
   },EDITOR_AUTOSAVE_MS);
 }
 function save(origin="manual"){
+  if(!VAULT_CONNECTED)return false;
+  captureIngestSaveDrafts();
   DOC.schemaVersion=SCHEMA;
   if(bridged()){
     if(SAVE_FLIGHT||!VAULT_REVISION){SAVE_PENDING=true;SAVE_PENDING_AUTO=origin==="auto";if(origin==="auto"||origin==="manual")setEditorSaveState("saving");return false}
     const sent=docCopy(DOC),requestID=++SAVE_SEQ,revisionOverrides=dirtyOverridesForSave();
     syncDirtyRevisionPins();
     SAVE_FLIGHT={requestID,document:sent,revision:VAULT_REVISION,revisionOverrides,auto:origin==="auto"};
+    ingestSaveStarted(sent);
     if(origin==="auto"||origin==="manual")setEditorSaveState("saving");
     post("saveDocument",{requestID,revision:VAULT_REVISION,revisionOverrides,
                          json:JSON.stringify(sent)});return true
   }
-  try{localStorage.setItem(KEY,JSON.stringify(DOC));VAULT_BASE=docCopy(DOC);setEditorSaveState("saved");return true}
-  catch(e){setEditorSaveState("failed");onVaultTrouble("저장하지 못했어요. 내용을 유지했으니 다시 저장해 주세요.");return false}
+  ingestSaveStarted(DOC);
+  try{localStorage.setItem(KEY,JSON.stringify(DOC));VAULT_BASE=docCopy(DOC);setEditorSaveState("saved");ingestSaveSucceeded(DOC);return true}
+  catch(e){setEditorSaveState("failed");ingestSaveFailed();onVaultTrouble("저장하지 못했어요. 내용을 유지했으니 다시 저장해 주세요.");return false}
 }
 /* ★ 종료 준비는 800ms 자동 저장보다 먼저 **현재 편집 DOM을 저장 짐에 올린다**.
    AppKit 의 종료 보류는 이 화면이 `terminationReady` 를 보낸 뒤에만 풀린다. 저장 확인 전
@@ -1190,7 +1441,10 @@ function putEditorDraft(d){
 /* ★ Swift → JS 문서 통로 하나. `meta.revision` 은 Swift 안의 실제 리비전을 가리키는 불투명 표다.
    `save` 확인이면 보낸 뒤 변경만, `reload`면 마지막 수신 뒤 변경만 새 디스크 문서 위에 얹는다. */
 function receiveDocument(json,note,meta){
+  explorerCreateCapture();
   VAULT_CONNECTED=true;
+  const moveContext=meta?.kind==="reload"&&meta.vaultAction?.requestID===VAULT_ACTION?.requestID&&
+    ["moveEntry","moveFile","moveFolder","nestFile","renameEntry","renameFile","renameFolder","undo"].includes(VAULT_ACTION?.command?.action)?VAULT_ACTION.workspaceContext||workspaceMutationContext():null;
   const editor=meta&&meta.kind!=="load"&&RECEIVED?takeEditorDraft():null;
   const selectedID=workspaceSelectedID();
   const oldEntries=VAULT_ENTRIES;
@@ -1199,6 +1453,7 @@ function receiveDocument(json,note,meta){
   const selectedPath=editor&&editor.id?PATHS[editor.id]:null;
   const dialogNode=document.getElementById("vaultdialog");
   const actionDialog=meta&&meta.kind!=="load"&&dialogNode&&dialogNode.parentNode?dialogNode:null;
+  const dialogFocus=actionDialog?.contains?.(document.activeElement)?document.activeElement:null;
   if(meta&&meta.kind==="reload"&&!flight){
     holdDirty(changedFragmentIDs(VAULT_BASE,DOC),beforeRevision);
     if(editor&&editor.id&&(editor.titleDirty||editor.bodyDirty))holdDirty([editor.id],beforeRevision);
@@ -1209,8 +1464,11 @@ function receiveDocument(json,note,meta){
                      asked:d.asked||[]};
   let next=remote,runPending=false,pendingAuto=false;
   if(meta&&meta.kind==="load"){
+    resetMarkdownEditors();
+    FLOW_RETURN=[];FLOW_EPOCH++;FLOW_RESTORE_SEQ++;SETBACK=null;clearWorkspaceToast();
+    resetMaintenanceContext();
     /* 첫 기동·볼트 교체다. 옛 볼트의 늦은 저장 확인을 새 볼트에 이어 보내지 않는다. */
-    SAVE_FLIGHT=null;SAVE_PENDING=false;SAVE_PENDING_AUTO=false;VAULT_ACTION=null;EDITOR_NAVIGATION=null;
+    SAVE_FLIGHT=null;SAVE_PENDING=false;SAVE_PENDING_AUTO=false;VAULT_ACTION=null;VAULT_CREATE=null;EDITOR_NAVIGATION=null;DOCUMENT_RETURN=null;
     setEditorSaveState("saved");
     for(const id of Object.keys(DIRTY_REVISIONS))delete DIRTY_REVISIONS[id];
   }else if(meta&&meta.kind==="save"&&SAVE_FLIGHT&&meta.requestID===SAVE_FLIGHT.requestID){
@@ -1234,20 +1492,31 @@ function receiveDocument(json,note,meta){
     next=mergeDocument(VAULT_BASE,DOC,remote);
   }
   VAULT_BASE=docCopy(remote);DOC=next;
+  if(!meta||meta.kind==="load")INGEST_SAVES.clear();
+  else if(flight&&meta.requestID===flight.requestID){
+    if(meta.kind==="save")ingestSaveSucceeded(flight.document);
+    else if(meta.kind==="conflict")ingestSaveFailed();
+  }
   if(meta&&meta.revision)VAULT_REVISION=meta.revision;
   PATHS=(d&&d.paths)||{};
   VAULT_FOLDERS=(meta&&meta.folders)||[];VAULT_TRASH=(meta&&meta.trash)||[];
   VAULT_ENTRIES=(meta&&meta.entries)||[];
+  if(meta?.kind==="load"||meta?.orbitGroups!==undefined){
+    let groups=meta?.orbitGroups||[];
+    if(!bridged()&&meta?.orbitGroups===undefined){try{groups=JSON.parse(localStorage.getItem(orbitBrowserKey())||"[]")}catch(e){}}
+    ORBIT_GROUPS=orbitNormalize(groups,workspaceFiles().map(f=>f.path));
+    ORBIT_ERROR=meta?.orbitError||null;
+  }
   const movedPath=path=>{const old=oldEntries.find(e=>e.path===path);if(!old)return path;const matches=VAULT_ENTRIES.filter(e=>e.id===old.id);return matches.find(e=>e.path===path)?.path||(matches.length===1?matches[0].path:path)};
   const nextSelectedPath=movedPath(oldSelectedPath);
   const nextSelected=workspaceFiles().find(f=>f.path===nextSelectedPath);
   if(editor&&nextSelected&&!nextSelected.p.entry&&!editor.titleDirty&&!editor.bodyDirty)editor.id=nextSelected.p.id;
   WORKSPACE_SELECTED_ID=meta?.kind==="load"?null:nextSelected?.p.id||null;
   if(meta?.kind==="load"){WORKSPACE_SCOPE="";LZIP=Object.fromEntries(VAULT_FOLDERS.map(p=>[p,true]))}
-  else {WORKSPACE_SCOPE=movedPath(WORKSPACE_SCOPE)||"";LZIP=Object.fromEntries(Object.entries(LZIP).map(([p,v])=>[movedPath(p),v]));if(CANV&&CANV.relatedID===selectedID)CANV.relatedID=nextSelected?.p.id||null}
+  else {WORKSPACE_SCOPE=movedPath(WORKSPACE_SCOPE)||"";LZIP=Object.fromEntries(Object.entries(LZIP).map(([p,v])=>[movedPath(p),v]));if(CANV&&CANV.relatedID===selectedID)CANV.relatedID=nextSelected?.p.id||null;if(VAULT_CREATE&&!VAULT_CREATE.pending)VAULT_CREATE.parent=movedPath(VAULT_CREATE.parent)}
 
-  if(meta&&meta.kind==="load")VAULT_LAST_OPERATION=null;
-  notice=note||null;
+  if(meta&&meta.kind==="load"){VAULT_LAST_OPERATION=null;VAULT_LAST_OPERATION_LABEL="";}
+  notice=note||ORBIT_ERROR||null;
   /* 초안 벡터도 낡았다 (#33). 지우는 이유는 「틀려서」가 아니라 **가리키던 화면이 사라져서**다 —
      남겨두면 앞 문서의 답 벡터로 연습 첫 채점이 나온다. */
   for(const k in DRAFT)delete DRAFT[k];
@@ -1261,7 +1530,7 @@ function receiveDocument(json,note,meta){
      문제를 해결한 경험" 에 초록이었다.
      ⚠ **색인이 실패하면 `receiveVectors` 가 영영 안 온다** — 그때 낡은 자를 들고 있으면
        그 거짓말이 안 걷힌다. 못 재는 것은 화면이 이미 정직하게 말한다(「색인이 아직 없어요」). */
-  VEC=null;QVEC=null;
+  VEC=null;QVEC=null;QUERY_VECTOR_WAITING=null;QUERY_FAILURE=null;
   syncDirtyRevisionPins(meta&&meta.kind==="load");
   /* 표식 없던 판으로 만들어진 씨앗을 한 번 끌어올린다 (블로커 F2 이행). 저장까지 해야
      디스크에 앉는다 — 안 그러면 열 때마다 다시 박고 재기동하면 또 1위로 뜬다. */
@@ -1273,33 +1542,57 @@ function receiveDocument(json,note,meta){
   else if(editor)sel=null;
   else if(meta&&meta.kind!=="load"&&selectedID){const i=DOC.fragments.findIndex(p=>p.id===selectedID);sel=i<0?null:i}
   else sel=null;
-  if(nextSelected&&oldSelectedPath!==nextSelected.path&&!(editor&&(editor.titleDirty||editor.bodyDirty)))WORKSPACE_SCOPE=nextSelected.path.split("/").slice(0,-1).join("/");
+  if(meta?.kind!=="load"&&nextSelected&&oldSelectedPath!==nextSelected.path&&!(editor&&(editor.titleDirty||editor.bodyDirty)))WORKSPACE_SCOPE=nextSelected.path.split("/").slice(0,-1).join("/");
   if(!editor&&WORKSPACE_SELECTED_ID){const i=DOC.fragments.findIndex(p=>p.id===WORKSPACE_SELECTED_ID);sel=i<0?null:i}
   if(editor&&editor.id&&PATHS[editor.id]!==selectedPath)revealWorkspaceFile(editor.id);
+  if(moveContext)workspaceApplyMutationContext(moveContext,meta.vaultAction,!!(editor&&(editor.titleDirty||editor.bodyDirty)));
   /* ★ **설정 화면이면 다시 안 그린다** (#65 ⑨). `onQuestionTidy` 가 쓰는 그 가드와 같은
      모양·같은 이유다: 이 화면은 문서를 한 글자도 안 그리는데, 다시 그리면 사람이 치고 있던
      주소·키·모델 칸이 통째로 날아간다 — 「보던 것을 뺏는 것」이 기능 하나보다 비싸다.
      ⚠ **위의 상태 갱신은 다 지났다.** 건너뛰는 것은 **그리기 한 번**뿐이고, 알림(`notice`)도
        안 사라진다 — 설정을 나가는 문(`setback`)이 `stackRender()` 를 부르고 그때 그려진다. */
   if(mode==="stack"&&stackView==="settings"){paintHomeList();if(runPending)save(pendingAuto?"auto":"manual");terminationSaveSettled();return}
+  /* 저장 확인·외부 갱신은 원문 입력과 남은 카드를 다시 만들지 않는다. */
+  if(mode==="stack"&&stackView==="ingest"&&meta&&meta.kind!=="load"){
+    paintIngestTrouble();
+    if(runPending)save(pendingAuto?"auto":"manual");
+    terminationSaveSettled();
+    if(meta.kind==="conflict")EDITOR_NAVIGATION=null;
+    else resumeEditorNavigation(meta.kind==="save");
+    return;
+  }
   /* 자동 저장 확인은 문서·목록 상태만 갱신한다. `render()` 를 부르면 textarea와
      selection이 통째로 새로 생겨서, 사용자가 계속 치던 자리를 빼앗는다. */
   if(meta?.kind==="save"&&flight?.auto&&meta.requestID===flight.requestID){
     paintHomeList();
     paintEditorSaveState(editor&&(editor.titleDirty||editor.bodyDirty)?"dirty":"saved");
+    if(mode==="stack"&&stackView==="edit"&&workspaceQueryContextActive())canvasRelight();
     if(runPending)save(pendingAuto?"auto":"manual");
     terminationSaveSettled();
     resumeEditorNavigation(true);return;
   }
-  render();if(actionDialog)app.appendChild(actionDialog);putEditorDraft(editor);
+  if(VAULT_CREATE?.composing)VAULT_CREATE.renderPending=true;
+  else {render();putEditorDraft(editor);if(actionDialog){app.appendChild(actionDialog);beginDialogFocus(actionDialog,dialogFocus||actionDialog.querySelector("input,select,button"));}}
+  if(moveContext){const list=document.getElementById("leftlist");if(list)list.scrollTop=moveContext.frame.scroll||0}
   if(runPending)save(pendingAuto?"auto":"manual");
   terminationSaveSettled();
   if(meta?.kind==="conflict")EDITOR_NAVIGATION=null;
   else resumeEditorNavigation(meta?.kind==="save");
 }
 function onVaultDisconnected(){
+  CHANGES=[];CHANGE_DETAIL=null;CHANGE_SELECTED=null;CHANGES_OPEN=false;CHANGE_LOADED=false;CHANGE_VAULT="";CHANGE_BUSY=false;
+  resetMarkdownEditors();
+  resetMaintenanceContext();
+  INGEST_SAVES.clear();
+  VAULT_CREATE=null;VAULT_ACTION=null;
+  ORBIT_GROUPS=[];ORBIT_ERROR=null;
+  FLOW_RETURN=[];FLOW_EPOCH++;FLOW_RESTORE_SEQ++;SETBACK=null;clearWorkspaceToast();
   VAULT_CONNECTED=false;RECEIVED=true;DOC=blank();VAULT_BASE=blank();VAULT_REVISION=null;
-  SAVE_FLIGHT=null;SAVE_PENDING=false;SAVE_PENDING_AUTO=false;EDITOR_NAVIGATION=null;sel=null;WORKSPACE_SELECTED_ID=null;WORKSPACE_SCOPE="";VAULT_ENTRIES=[];VEC=null;QVEC=null;
+  SAVE_FLIGHT=null;SAVE_PENDING=false;SAVE_PENDING_AUTO=false;EDITOR_NAVIGATION=null;DOCUMENT_RETURN=null;sel=null;
+  PATHS={};VAULT_FOLDERS=[];VAULT_ENTRIES=[];VAULT_TRASH=[];
+  WORKSPACE_SELECTED_ID=null;WORKSPACE_SCOPE="";WORKSPACE_PREVIEW_RETURN=null;
+  CANV=null;CANVQ="";CQV=null;LFIND="";LZIP={};VEC=null;QVEC=null;QUERY_VECTOR_WAITING=null;QUERY_FAILURE=null;
+  mode="stack";stackView="edit";
   for(const id of Object.keys(DIRTY_REVISIONS))delete DIRTY_REVISIONS[id];
   finishTermination(false);
   render();
@@ -1312,6 +1605,7 @@ function onDocumentSaveFailed(requestID){
   if(editor&&editor.id&&(editor.titleDirty||editor.bodyDirty))holdDirty([editor.id],base);
   SAVE_FLIGHT=null;SAVE_PENDING=false;SAVE_PENDING_AUTO=false;EDITOR_NAVIGATION=null;
   setEditorSaveState("failed");
+  ingestSaveFailed();
   syncDirtyRevisionPins();
   finishTermination(false);
 }
@@ -1342,10 +1636,12 @@ function receiveVectors(json){
   VEC=(Object.keys(frags).length||Object.keys(passages).length||Object.keys(ques).length)?{dim:dim,frags:frags,passages:passages,ques:ques}:null;
   /* 문서가 갈렸으면 들고 있던 질의 벡터도 낡았다 — 차원이 바뀌었을 수도 있다 */
   if(!VEC)QVEC=null;
+  if(VEC&&QUERY_VECTOR_WAITING){const pending=QUERY_VECTOR_WAITING;QUERY_VECTOR_WAITING=null;onQueryVector(JSON.stringify(pending))}
+  paintSessionIndex();
   paintByVectors();
 }
 /* 자를 통째로 버린다 — **버리고 나서 칠한다.** 그것이 이 함수가 있는 이유다 (#66-6). */
-function dropVectors(){VEC=null;QVEC=null;paintByVectors()}
+function dropVectors(){VEC=null;QVEC=null;QUERY_VECTOR_WAITING=null;QUERY_FAILURE=null;paintByVectors()}
 /* ★ 자가 바뀌었을 때 **다시 칠하는 자리 하나** (#46 · 셀프 실기 수리 · #66-6).
    ⚠ **화면을 다시 그리지는 않는다**: 손대는 것은 준비도 줄·왼쪽 칸·그림 칸 셋뿐이고
      편집기(`#ti`·`#bo`)는 안 건드린다(`paintHomeList` 머리글) — 벡터는 저장 뒤 비동기로
@@ -1353,21 +1649,38 @@ function dropVectors(){VEC=null;QVEC=null;paintByVectors()}
    ⚠ 전 판은 성공 경로에만 있었다. 실패는 자만 지우고 화면은 낡은 값을 든 채였고, 그래서
      **색인이 실패한 뒤에도 준비도 줄과 점 색이 초록이었다** — 한 화면이 두 말을 하는 자리다. */
 function paintByVectors(){
-  if(mode==="live")return applyRank(true);
+  if(mode==="live"||mode==="practice")return applyRank(true);
   paintHomeList();
   /* ★ 뜻 지도도 자가 바뀌면 같이 움직인다 (#67). **배치가 뜻에서 나오므로** 색인이 도착하면
      점이 앉는 자리부터 달라진다 — 안 고치면 지도는 「고른 원」인데 준비도 줄은 색을 낸다.
      ⚠ 오른쪽 판은 안 건드린다 — 위 셋과 같은 이유다(사람이 치는 중일 수 있다). */
   if(mode==="stack"&&stackView==="edit")canvasRefresh();
 }
-/* ★ 내용 그래프가 「이미 비슷한 조각이 있다」고 말하는 자리 (#32, ADR 0003 §3-①).
+/* ★ 내용 그래프가 비슷한 내용이 있는 문서 쌍을 알리는 자리 (#32, ADR 0003 §3-①).
    Swift `ContentGraph` 가 저장 뒤에 **비동기로** 부른다 — 임베딩이 끝나야 알 수 있어서다.
 
    ⚠ **다시 그리지 않는다.** 이 알림이 도착할 때 사용자는 이미 다음 조각을 치고 있을 수 있고,
    `stackRender()` 는 편집기를 통째로 갈아끼워 **그 글자를 지운다**. 그래서 띠 하나만
    제자리에서 고쳐 쓴다 (`paintCur` 이 같은 이유로 같은 모양을 쓴다). */
-function onIndexNotice(text){
+function clearWorkspaceToast(){
+  if(WORKSPACE_TOAST_TIMER!==null)clearTimeout(WORKSPACE_TOAST_TIMER);
+  WORKSPACE_TOAST_TIMER=null;WORKSPACE_TOAST=null;WORKSPACE_TOAST_SEQ++;
+  paintWorkspaceToast();
+}
+function paintWorkspaceToast(){
+  const el=document.getElementById("workspacetoast");if(!el)return;
+  el.textContent=WORKSPACE_TOAST?.text||"";el.hidden=!WORKSPACE_TOAST;
+}
+function onIndexNotice(text,{kind="warning"}={}){
   if(!noticeFits(text,mode,false))return;
+  clearWorkspaceToast();
+  if(kind==="success"){
+    if(stackView!=="edit")return;
+    const token=WORKSPACE_TOAST_SEQ;
+    WORKSPACE_TOAST={text};paintWorkspaceToast();
+    WORKSPACE_TOAST_TIMER=setTimeout(()=>{if(token===WORKSPACE_TOAST_SEQ)clearWorkspaceToast()},3500);
+    return;
+  }
   notice=text;paintNotice();
 }
 /* 띄워도 되는 자리인가 — **순수 함수라 `node --test` 가 잠근다.**
@@ -1388,6 +1701,7 @@ let vaultTrouble=null;
 function onVaultTrouble(text){
   vaultTrouble=(text||"").trim()||null;
   paintVaultTrouble();
+  paintIngestTrouble();
   const error=document.getElementById("foldererror");if(error)error.textContent=vaultTrouble||"";
 }
 /* 띠 하나만 제자리에서 짓고 고쳐 쓴다. ⚠ **다시 그리지 않는다** — 이 말이 도착할 때
@@ -1404,7 +1718,7 @@ function paintVaultTrouble(){
   let el=document.getElementById("vb");
   if(!vaultTrouble){if(el)el.remove();return}
   if(!el){
-    el=document.createElement("div");el.className="wb";el.id="vb";
+    el=document.createElement("div");el.className="wb";el.id="vb";el.setAttribute("role","alert");
     const t=document.createElement("span");t.id="vbt";
     const row=document.createElement("div");row.className="row";row.style.marginTop="9px";
     const b=document.createElement("button");b.className="gbtn";b.textContent="폴더 다시 고르기";
@@ -1424,7 +1738,7 @@ function paintNotice(){
   if(!notice){if(el)el.remove();return}
   if(!el){el=document.createElement("div");el.className="wb";el.id="nb";
     right.insertBefore(el,right.firstChild)}
-  el.textContent=notice;   /* esc 가 필요 없다 — textContent 는 태그를 안 판다 */
+  el.setAttribute("role","alert");el.textContent=notice;   /* esc 가 필요 없다 — textContent 는 태그를 안 판다 */
 }
 
 const qtext=id=>{const q=DOC.questions.find(q=>q.id===id);return q?q.text:""};
@@ -1448,9 +1762,11 @@ const qscore=(p,q)=>sim(q,p.title+" "+p.body);
    (`tests/screen-load.mjs` 머리글이 그 자물쇠의 집이다). */
 let INDEX_STATE="unknown",SPEECH_STATE="unknown",SPEECH_MESSAGE="";
 let VAULT_ENTRIES=[],WORKSPACE_SELECTED_ID=null,WORKSPACE_SCOPE="";
-let VAULT_FOLDERS=[],VAULT_TRASH=[],VAULT_LAST_OPERATION=null,VAULT_ACTION=null,VAULT_ACTION_SEQ=0,VAULT_MENU=null;
+let VAULT_FOLDERS=[],VAULT_TRASH=[],VAULT_LAST_OPERATION=null,VAULT_LAST_OPERATION_LABEL="",VAULT_ACTION=null,VAULT_ACTION_SEQ=0,VAULT_MENU=null;
+let VAULT_CREATE=null;
 let VEC=null;    /* {dim, frags:{짧은조각:Float32Array}, passages:{조각id:[{v,sourceText,…}]}, ques:{질문id:[Float32Array,…]}} */
 let QVEC=null;   /* {q:"<그 질의의 글자>", v:Float32Array} — 글자가 어긋나면 안 쓴다 */
+let QUERY_VECTOR_WAITING=null,QUERY_FAILURE=null;
 
 /* base64(float32 little-endian) → Float32Array. `ContentIndexStore.encode(vector:)` 의 짝이다.
    길이가 안 맞으면 **0 벡터가 아니라 null** 을 돌려준다 — 0 벡터는 코사인 0 으로 조용히 섞인다. */
@@ -1565,6 +1881,18 @@ const scorer=(q,qvec,vec)=>(vec&&qvec&&qvec.v&&qvec.q===q)?"뜻":"글자";
    덜 초록인 일이 안 생긴다. `s` 의 눈금은 `how` 에 달렸다(뜻 = 1.0 이 초록선 · 글자 = bigram).
    ⚠ 인자 둘은 **시험이 갈아끼우라고** 있다. 안 주면 화면의 현재 상태를 쓴다.
    ⚠ 넷째(`scope`)는 다르다 — 시험용이 아니라 **면접이 쓰는 범위**다(아래 필터 주석). */
+function retrievalAnchors(text){
+  const matches=String(text||"").match(/[A-Za-z]+[0-9]+|[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?\s*(?:밀리초|퍼센트|시간|만원|천원|ms|분|초|원|개|명|%|번|년|월|일|층|도)?/gi)||[];
+  return new Set(matches.map(value=>{
+    const raw=value.toLowerCase().replace(/\s/g,""),parts=raw.match(/^([0-9][0-9,.]*)(.*)$/);if(!parts)return raw;
+    let number=Number(parts[1].replace(/,/g,"")),unit=parts[2];
+    if(unit==="만원"){number*=10000;unit="원"}if(unit==="천원"){number*=1000;unit="원"}
+    if(unit==="퍼센트")unit="%";if(unit==="ms")unit="밀리초";
+    return String(number)+unit;
+  }));
+}
+function retrievalAnchorCoverage(query,source){const expected=retrievalAnchors(query),actual=retrievalAnchors(source);return expected.size?[...expected].filter(v=>actual.has(v)).length/expected.size:0}
+function retrievalOrderScore(hit,query){return hit.s+(hit.how==="뜻"?.035/SIM_G_DIRECT:.035)*retrievalAnchorCoverage(query,hit.passage?.text||[hit.p.title,hit.passage?.sourceText||hit.p.body].join("\n"))}
 const rank=(q,qvec,vec,scope)=>{
   if(qvec===undefined)qvec=QVEC;
   if(vec===undefined)vec=VEC;
@@ -1586,7 +1914,7 @@ const rank=(q,qvec,vec,scope)=>{
     }
     const s=qscore(p,q);
     return {p,i,s:s,c:risk(s),how:"글자"};
-  }).filter(x=>!isSeed(x.p)&&(scope==null||scope.has(x.p.id))).sort((a,b)=>b.s-a.s);
+  }).filter(x=>!isSeed(x.p)&&(scope==null||scope.has(x.p.id))).sort((a,b)=>retrievalOrderScore(b,q)-retrievalOrderScore(a,q)||(a.p.id<b.p.id?-1:a.p.id>b.p.id?1:0));
 };
 /* ★ 신호등 경계 — `실측 2026-08-28`(#20). 감으로 박은 값이 아니었다:
      정답 조각 0.154~0.611 · 오답 90분위 0.038 · 저장소 밖 전부 0.000
@@ -1670,7 +1998,7 @@ function onDraftVector(json){
   DRAFT[d.slot]={t:d.text,v:v};
   /* ★ 연습의 답 벡터가 도착했다 (#36). 글자 자로 이미 칠해둔 색을 **뜻 자로 갈아끼운다.**
      ⚠ 다시 그리지 않는다 — 사람이 답을 치고 있을 수 있다(`paintPractice` 머리글). */
-  if(d.slot==="answer"&&mode==="practice"&&prac&&!prac.done){gradePractice();paintPractice()}
+  if(d.slot==="live-preview"&&d.text===heardV){onQueryVector(JSON.stringify({query:d.text,v:d.v}));return}
   /* ★ 뜻 지도의 자유 질문 벡터가 도착했다 (#67). **통로를 안 늘렸다** — 같은 `embedDraft`
      의 칸 하나(`canvas`)일 뿐이고, `kind:"query"` 라 라이브 검색과 **같은 축**이다.
      ⚠ 여기서도 다시 그리지 않는다 — 손대는 것은 지도 쪽뿐이다(`canvasVectorArrived`). */
@@ -2455,6 +2783,16 @@ function workspaceFileIcon(path){
   return FILE_ICON_ASSETS.default;
 }
 const ICO={
+  import:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5v8M5 6.5l3 3 3-3M2 10v4h12v-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  link:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6.5 5 2-2a3.2 3.2 0 0 1 4.5 4.5l-2 2M9.5 11l-2 2A3.2 3.2 0 0 1 3 8.5l2-2M5.5 10.5l5-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  undo:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 3.5v4h4M2.4 7.1A5.2 5.2 0 1 1 3.5 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  up:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 7l5-5 5 5M8 2v12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  home:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 7l6-5 6 5M3.5 6v8h9V6M6.5 14V9h3v5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  filePlus:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9 1.5H3v13h10V5.5L9 1.5ZM9 1.5v4h4M5.5 10h5M8 7.5v5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  expand:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 6l5-4 5 4M3 10l5 4 5-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  pause:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 3v10M11 3v10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  play:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5 2.5l8 5.5-8 5.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
+  sparkle:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M7 2l1.4 3.6L12 7l-3.6 1.4L7 12 5.6 8.4 2 7l3.6-1.4L7 2ZM13 10v4M11 12h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   live:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 3.2v9.6l7.6-4.8z" fill="currentColor"/></svg>`,
   practice:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="5.6" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="1.7" fill="currentColor"/></svg>`,
   gear:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="2.3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.6v1.7M8 12.7v1.7M2.5 8H4.2M11.8 8h1.7M4.1 4.1l1.2 1.2M10.7 10.7l1.2 1.2M11.9 4.1l-1.2 1.2M5.3 10.7l-1.2 1.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
@@ -2467,7 +2805,7 @@ const ICO={
   folderPlus:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.8 4.2h4l1.2 1.4h7.2v6.2a1.8 1.8 0 0 1-1.8 1.8H3.6a1.8 1.8 0 0 1-1.8-1.8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 7.6v3.5M6.25 9.35h3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
   collapse:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.5 2.5h8v8M2.5 5.5h8v8h-8zM4.5 9.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 };
-const BRAND_MARK_DATA_URI="data:image/png;base64,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";
+const BRAND_MARK_DATA_URI="data:image/png;base64,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";
 const app=document.getElementById("app");
 /* ★ 창 크기를 정하는 **자리 하나** (#67 이 뽑아냈다).
    ⚠ 통로를 안 늘렸다 — 크기 옆에 `mode` 를 얹은 그 통로 그대로다(#18). Swift 는 이 이름으로
@@ -2478,14 +2816,535 @@ const app=document.getElementById("app");
      ⚠ 사람이 손으로 키워 둔 창은 그대로다 — Swift 가 기억한 자리를 먼저 본다(`applyMode`).
    ⚠ **부르는 자리는 `render()` 하나다** — 모드가 바뀔 때만. 홈 안의 화면 전환(설정·받기)은
      창 크기를 안 건드린다. */
+/* Native sessions own capture and durable records. Preview only simulates the same reading surface. */
+let SESSION=null,SESSION_LIST=[],SESSION_ERROR="",PREVIEW_MIC=false,SESSION_SYSTEM=true;
+let CAPTURE={phase:"stopped",receiving:[],pending:[],failed:{}};
+let SESSION_CORRECTIONS={};
+let SESSION_DRAFT_OPEN={};
+let SESSION_SAVING=new Set(),SESSION_EDITS={},SESSION_QUERY=null,SESSION_REC_SIGNATURE="",SESSION_UI_SIGNATURE="";
+let CHANGES=[],CHANGE_DETAIL=null,CHANGE_SELECTED=null,CHANGE_FILTER="unread",CHANGE_ERROR="",CHANGE_BUSY=false,CHANGE_REQUEST=0,CHANGE_LOADED=false,CHANGES_OPEN=false,CHANGE_VAULT="";
+function changeRequest(action="list",id=null){
+  const requestID=++CHANGE_REQUEST;CHANGE_ERROR="";CHANGE_BUSY=true;
+  post("changeAction",{action,id,requestID});paintDocumentChanges();
+}
+function onDocumentChanges(data){
+  if(!data||typeof data!=="object")return;
+  const vaultChanged=!!(CHANGE_VAULT&&data.vault&&CHANGE_VAULT!==data.vault);
+  if(data.vault&&CHANGE_VAULT!==data.vault){CHANGES=[];CHANGE_DETAIL=null;CHANGE_SELECTED=null;CHANGE_LOADED=false;CHANGES_OPEN=false;CHANGE_VAULT=data.vault;if(WORKSPACE_SIDEBAR==="changes")WORKSPACE_SIDEBAR="files"}
+  if(data.requestID&&data.requestID!==CHANGE_REQUEST)return;
+  if(data.action==="list"&&!data.error){
+    const known=new Set(CHANGES.map(x=>x.id));
+    const fresh=(data.items||[]).filter(x=>!known.has(x.id)&&!x.reviewedAt);
+    CHANGES=data.items||[];
+    if(CHANGE_LOADED&&fresh.length&&mode==="stack")onIndexNotice("MCP로 변경된 문서가 있습니다. ‘변경’에서 확인하세요.",{kind:"success"});
+    CHANGE_LOADED=true;
+  }
+  if(data.detail&&data.detail.id===CHANGE_SELECTED)CHANGE_DETAIL=data.detail;
+  if(data.action==="review"||data.action==="restore"){
+    if(data.item){CHANGES=CHANGES.map(x=>x.id===data.item.id?data.item:x);if(CHANGE_DETAIL?.id===data.item.id)CHANGE_DETAIL={...CHANGE_DETAIL,...data.item}}
+  }
+  CHANGE_ERROR=data.error||data.warning||"";if(data.requestID)CHANGE_BUSY=false;
+  paintDocumentChanges();
+  if(vaultChanged&&mode==="stack"&&stackView==="edit")stackRender();
+}
+function openDocumentChanges(){
+  if(!VAULT_CONNECTED||!leaveEditorAllowed(openDocumentChanges))return;
+  captureSessionEdits();SESSION_REVIEW_OPEN=false;CHANGES_OPEN=true;WORKSPACE_SIDEBAR="changes";stackView="edit";stackRender();changeRequest();
+}
+function selectDocumentChange(id){CHANGE_SELECTED=id;CHANGE_DETAIL=null;changeRequest("detail",id)}
+function changeListPane(){return `<div id="changes-pane" role="tabpanel" aria-labelledby="sidebar-changes"${WORKSPACE_SIDEBAR==="changes"?"":" hidden"}></div>`}
+function changeDetailPane(){return `<main id="changedetail" aria-label="문서 변경 내역"></main>`}
+function paintDocumentChanges(){
+  const unread=CHANGES.filter(x=>!x.reviewedAt).length,tab=document.getElementById("sidebar-changes");
+  if(tab)tab.innerHTML=`변경${unread?`<span class="changecount">${unread}</span>`:""}`;
+  const list=document.getElementById("changes-pane");
+  if(list){
+    const rows=CHANGES.filter(x=>CHANGE_FILTER==="all"||!x.reviewedAt);
+    list.innerHTML=`<div class="changefilters"><button class="gbtn${CHANGE_FILTER==="unread"?" p":""}" data-change-filter="unread">미확인 ${unread}</button><button class="gbtn${CHANGE_FILTER==="all"?" p":""}" data-change-filter="all">전체</button></div>${rows.map(x=>`<button class="changeitem${CHANGE_SELECTED===x.id?" selected":""}" data-change-id="${esc(x.id)}" aria-pressed="${CHANGE_SELECTED===x.id}"><strong>${esc(x.title)}</strong><small>${x.operation==="create"?"추가":"수정"} · MCP · ${esc(new Date(x.performedAt*1000).toLocaleString())}${x.restoredAt?" · 복원됨":""}</small></button>`).join("")||`<p class="changeempty">${CHANGE_BUSY?"불러오는 중…":CHANGE_ERROR?esc(CHANGE_ERROR):"확인할 변경이 없습니다."}</p>`}<p class="flowhint">MCP로 추가·수정한 기록입니다.</p>`;
+    list.querySelectorAll?.("[data-change-id]").forEach(b=>b.onclick=()=>selectDocumentChange(b.dataset.changeId));
+    list.querySelectorAll?.("[data-change-filter]").forEach(b=>b.onclick=()=>{CHANGE_FILTER=b.dataset.changeFilter;paintDocumentChanges()});
+  }
+  const pane=document.getElementById("changedetail");if(!pane)return;
+  const d=CHANGE_DETAIL;
+  pane.innerHTML=`<div class="changebar"><span class="changemeta">변경 내역</span><button class="gbtn" id="changeclose">닫기</button></div>${d?`<h1>${esc(d.title)}</h1><div class="changebar"><span class="changemeta">${esc(d.path)}<br/>MCP로 ${d.operation==="create"?"추가":"수정"} · ${esc(new Date(d.performedAt*1000).toLocaleString())}</span><span class="changemeta">${d.restoredAt?"이전 내용으로 복원됨":d.reviewedAt?"확인 완료":"미확인 · 문서에 반영됨"}</span></div><div class="changeversions"><section class="changeversion"><h3>변경 전</h3><pre>${d.before?esc(d.before.title+"\n\n"+d.before.body):"새로 추가한 문서입니다."}</pre></section><section class="changeversion after"><h3>변경 후 · 저장 당시</h3><pre>${esc(d.after.title+"\n\n"+d.after.body)}</pre></section></div><p class="changemeta">저장 당시의 전후 기록입니다. 이후 편집한 내용은 ‘현재 문서 열기’에서 확인할 수 있습니다.</p><div class="changeactions"><button class="gbtn" id="changeopen"${CHANGE_BUSY?" disabled":""}>현재 문서 열기</button>${d.before&&!d.restoredAt?`<button class="gbtn" id="changerestore"${CHANGE_BUSY?" disabled":""}>이전 내용으로 복원…</button>`:""}<button class="gbtn p" id="changereview"${CHANGE_BUSY||d.reviewedAt?" disabled":""}>${d.reviewedAt?"확인 완료":"확인 완료로 표시"}</button></div>`:`<p class="changeempty">${CHANGE_BUSY?"변경 내용을 불러오는 중…":"왼쪽에서 문서를 선택해 변경 전후를 확인하세요."}</p>`}<p class="changestatus changeerror" role="status">${esc(CHANGE_ERROR)}</p>`;
+  document.getElementById("changeclose").onclick=()=>setWorkspaceSidebar("files");
+  const review=document.getElementById("changereview");if(review)review.onclick=()=>changeRequest("review",d.id);
+  const open=document.getElementById("changeopen");if(open)open.onclick=()=>{if(!DOC.fragments.some(x=>x.id===d.fragmentID)){CHANGE_ERROR="현재 저장소에서 이 문서를 찾을 수 없습니다. 이동·삭제 여부를 확인하세요.";paintDocumentChanges();return}setWorkspaceSidebar("files");workspaceOpen(d.fragmentID)};
+  const restore=document.getElementById("changerestore");if(restore)restore.onclick=()=>vaultDialog("이전 내용으로 복원",`<p>‘${esc(d.title)}’을 변경 전 내용으로 되돌립니다.</p><p>이후 다른 편집이 있었다면 복원하지 않습니다.</p>`,"복원",()=>{vaultDialogClose();changeRequest("restore",d.id)});
+}
+let WORKSPACE_SIDEBAR="files",SESSION_RECORD_FILTER="open",SESSION_RECORD_TARGET=null,SESSION_RECORD_REVIEW_PENDING=null;
+function sessionActive(){return !!SESSION&&["preparing","active","paused","finishing"].includes(SESSION.state)}
+function sessionAction(action,extra={}){post("sessionAction",{action,...extra})}
+function sessionText(u){return u.corrections?.length?u.corrections[u.corrections.length-1].text:(u.revisions||[]).slice().sort((a,b)=>b.revision-a.revision)[0]?.text||""}
+function sessionOriginal(u){return (u.revisions||[]).slice().sort((a,b)=>b.revision-a.revision)[0]?.text||""}
+function sessionStateLabel(){return {preparing:"시작 준비 중",active:"수집 중",paused:"일시정지",finishing:"마지막 발화 저장 중",completed:"종료됨",interrupted:"중단된 기록"}[SESSION?.state]||""}
+function onSessionState(record,list){
+  if(record&&["preparing","active"].includes(record.state))SESSION_RECORD_TARGET=null;
+  if(SESSION_RECORD_TARGET&&record&&record.id!==SESSION_RECORD_TARGET&&record.id!==SESSION?.id)return;
+  const previous=SESSION;
+  if(previous?.id!==record?.id)captureSessionEdits();
+  SESSION=record;SESSION_LIST=list||[];
+  for(const u of record?.utterances||[]){const key=record.id+":"+u.id;if(SESSION_CORRECTIONS[key]===sessionText(u))delete SESSION_CORRECTIONS[key]}
+  const selectedRecordReady=!!record&&record.id===SESSION_SELECTING;
+  if(selectedRecordReady)SESSION_SELECTING=null;
+  if(SESSION_RECORD_REVIEW_PENDING&&record?.id===SESSION_RECORD_REVIEW_PENDING.id&&(record.reviewStatus||"open")===SESSION_RECORD_REVIEW_PENDING.status)SESSION_RECORD_REVIEW_PENDING=null;
+  const vaultReset=previous&&!record&&!SESSION_LIST.some(r=>r.id===previous.id);
+  if(vaultReset){WORKSPACE_SIDEBAR="files";SESSION_RECORD_FILTER="open";SESSION_RECORD_TARGET=null;SESSION_RECORD_REVIEW_PENDING=null;SESSION_REVIEW_OPEN=false;SESSION_REVIEW_ID=null;SESSION_REVIEW_RECORD=null;SESSION_PREVIEW_CONTEXT=null;SESSION_SELECTING=null;SESSION_QUERY=null;SESSION_EDITS={};SESSION_DRAFT_OPEN={};if(mode==="stack"&&stackView==="edit"){stackRender();return}}
+  for(const d of record?.drafts||[])if(d.savedAt||d.error)SESSION_SAVING.delete(d.id);
+  if(record){SESSION_LIST=SESSION_LIST.filter(r=>r.id!==record.id);SESSION_LIST.unshift(record)}
+  if(record?.state==="preparing"&&previous?.id!==record.id){SESSION_ERROR="";PREVIEW_MIC=false;CAPTURE={phase:"starting",receiving:[],pending:SESSION_SYSTEM?["me","them"]:["me"],failed:{}};goMode("live")}
+  if(record?.state==="active"&&(previous?.id!==record.id||previous?.state==="preparing")){SESSION_ERROR="";PREVIEW_MIC=false;if(mode!=="live")goMode("live")}
+  if(record&&["completed","interrupted"].includes(record.state)&&mode==="live"){
+    sessionWorkspaceHandoff();goMode("stack");return;
+  }
+  paintSessionControls();
+  const signature=JSON.stringify([record?.id,record?.state,record?.reviewStatus,record?.analysisStatus,record?.drafts,record?.utterances,record?.retrievals,record?.questionReviews,SESSION_LIST.map(r=>[r.id,r.state,r.reviewStatus])]);
+  if(mode==="stack"&&(signature!==SESSION_UI_SIGNATURE||selectedRecordReady)){SESSION_UI_SIGNATURE=signature;if(selectedRecordReady)openSessionRecordDetails();else if(SESSION_REVIEW_OPEN)paintSessionReview();else{paintSessionQuestionEntry();bindSessionReview()}}
+}
+function onSessionError(message){SESSION_ERROR=message||"";SESSION_SELECTING=null;SESSION_RECORD_TARGET=SESSION?.id||null;SESSION_RECORD_REVIEW_PENDING=null;SESSION_SAVING.clear();paintSessionControls();if(mode==="stack"){if(SESSION_REVIEW_OPEN)paintSessionReview();else{paintSessionQuestionEntry();bindSessionReview()}}const e=document.getElementById("sessionerror");if(e)e.textContent=SESSION_ERROR}
+function onCaptureState(value){
+  let state;try{state=typeof value==="string"?JSON.parse(value):value}catch(e){return}if(!state)return;
+  CAPTURE={phase:state.phase||"stopped",receiving:state.receiving||[],pending:state.pending||[],failed:state.failed||{}};
+  for(const who of ["me","them"]){const label=document.getElementById("input-label-"+who),meter=document.getElementById("input-"+who);
+    const text=CAPTURE.failed[who]?"연결 실패":CAPTURE.receiving.includes(who)?"연결됨":CAPTURE.pending.includes(who)?"연결 중":"대기";
+    if(label){label.textContent=(who==="me"?"마이크":"상대")+" · "+text;label.title=CAPTURE.failed[who]||""}
+    if(meter&&!CAPTURE.receiving.includes(who))meter.value=0;
+  }
+  paintSessionControls();
+}
+function onPreviewStopped(){PREVIEW_MIC=false;paintSessionControls();const b=document.getElementById("preview-mic");if(b){b.textContent=SESSION_PREVIEW_CONTEXT?.query?"답변 말해보기":"마이크 시험";b.setAttribute("aria-pressed","false")}}
+function onInputLevel(who,level){
+  const element=document.getElementById("input-"+who);
+  if(element){element.value=Math.min(1,level*10);element.title=level>0.002?"소리 입력 감지됨":"입력 연결됨 · 조용함";const label=document.getElementById("input-label-"+who);if(label)label.textContent=(who==="me"?"마이크":"상대")+" · "+(level>0.002?"입력 중":"연결됨")}
+}
+function paintSessionControls(){
+  const state=document.getElementById("sessionstatus"),pause=document.getElementById("pause"),end=document.getElementById("exit");
+  const failure=Object.entries(CAPTURE.failed).map(([who,message])=>(who==="me"?"마이크":"상대 오디오")+": "+message).join(" · ");
+  if(state)state.textContent=mode==="practice"?(SESSION_ERROR||failure||(!PREVIEW_MIC?"미리 사용 · 수집 안 함":CAPTURE.receiving.includes("me")?"마이크 시험 중":"마이크 연결 중")):(SESSION_ERROR||failure||sessionStateLabel());
+  if(pause){pause.textContent=SESSION?.state==="paused"?"다시 시작":"일시정지";pause.disabled=["preparing","finishing"].includes(SESSION?.state)}
+  if(end)end.disabled=SESSION?.state==="finishing";
+}
+let USE_PREFERENCES_REVISION=0;
+function saveUsePreferences(){
+  USE_PREFERENCES_REVISION++;
+  sessionAction("preferences",{system:SESSION_SYSTEM,scope:LIVE_SUN||""});
+}
+function onUsePreferences(value,revision){
+  if(revision!==USE_PREFERENCES_REVISION||mode!=="stack"||stackView!=="prepare")return;
+  if(typeof value?.system==="boolean")SESSION_SYSTEM=value.system;
+  LIVE_SUN=(liveTree().suns||[]).some(s=>s.id===value?.scope)?value.scope:null;
+  prepareUseRender();
+}
+function openUsePreparation(){
+  if(!VAULT_CONNECTED)return;
+  if(!leaveEditorAllowed())return;
+  if(sessionActive()){goMode("live");return}
+  enterFlow("prepare");post("probeSystem");
+  sessionAction("preferences",{revision:++USE_PREFERENCES_REVISION});
+}
+function prepareUseRender(){
+  const mic={on:"허용됨",ask:"사용할 때 요청",off:"권한 필요"}[SYS.mic]||"확인 중";
+  releaseMarkdownEditors();app.innerHTML=`${flowHeader("사용 시작")}<div id="flowbody" class="flowbody"><div class="flowsection">
+    <h2>대화에서 내 자료 참고하기</h2>
+    <label class="flowrow">자료 범위<select id="prepare-scope"><option value="">전체 저장소</option>${(liveTree().suns||[]).map(s=>`<option value="${esc(s.id)}"${LIVE_SUN===s.id?" selected":""}>${esc(s.name)}</option>`).join("")}</select></label>
+    <label class="flowrow">상대 목소리도 듣기<input id="prepare-system" type="checkbox"${SESSION_SYSTEM?" checked":""}></label>
+    <p id="prepare-input-hint" class="flowhint"></p>
+    <div class="flowrow" id="prepare-speech-row"><span>한국어 받아쓰기</span><span id="speechstate">${esc(speechModelText())}</span><button class="gbtn" id="speechprepare">모델 준비</button></div>
+    <div class="flowrow" id="prepare-index-row"><span>검색</span><span id="indexstate">${INDEX_STATE==="ready"?"준비됨":esc(indexStateText()||"준비 상태 확인 중")}</span></div>
+    <div class="flowrow" id="prepare-mic-row"><span>마이크 권한</span><span id="prepare-mic-state">${mic}</span><button class="gbtn" id="prepare-mic">마이크 권한 설정</button></div>
+    <div class="flowrow" id="prepare-screen-row"><span>상대 목소리 권한</span><span id="prepare-screen-state"></span><button class="gbtn" id="prepare-screen">상대 오디오 권한 설정</button></div>
+    <p class="flowhint">시작을 누른 뒤 목소리를 수집합니다. 창을 숨기거나 자료를 열어도 계속됩니다. 멈출 때는 일시정지 또는 끝내기를 누르세요.</p>
+    <p class="flowhint">음성 파일은 남기지 않습니다. 대화 기록은 이 저장소에 보관하고, 확인해 저장한 내용만 검색에 사용합니다.</p>
+    <div class="flowactions"><button class="gbtn p" id="prepare-start"${bridged()&&SPEECH_STATE==="ready"?"":" disabled"}>시작</button></div>
+    <div id="sessionerror" role="status">${esc(SESSION_ERROR)}</div></div></div>`;
+  bindFlowHeader();
+  document.getElementById("prepare-scope").onchange=e=>{LIVE_SUN=e.target.value||null;saveUsePreferences()};
+  document.getElementById("prepare-system").onchange=e=>{SESSION_SYSTEM=e.target.checked;saveUsePreferences();paintPreparationPermissions()};
+  paintSpeechModel();
+  document.getElementById("prepare-index-row").hidden=INDEX_STATE==="ready";
+  paintPreparationPermissions();
+  document.getElementById("speechprepare").onclick=()=>{if(["required","error"].includes(SPEECH_STATE)){onSpeechModelState("loading","");post("prepareSpeechModel")}};
+  document.getElementById("prepare-mic").onclick=()=>post("openSystem",{what:"mic"});
+  document.getElementById("prepare-screen").onclick=()=>post("openSystem",{what:"screen"});
+  document.getElementById("prepare-start").onclick=()=>{if(bridged()&&SPEECH_STATE==="ready"){saveUsePreferences();sessionAction("start",{system:SESSION_SYSTEM})}};
+}
+function flowHeader(title){return `<div id="top" class="drag hmtop"><button id="flowback" class="gbtn nodrag" aria-label="뒤로가기">${ICO.back}<span>뒤로가기</span></button><strong>${esc(title)}</strong><span style="flex:1"></span><button id="flowhide" class="ibtn nodrag" aria-label="창 숨기기">×</button></div>`}
+function paintPreparationPermissions(){
+  for(const [kind,value] of [["mic",SYS.mic],["screen",SYS.screen]]){
+    const state=document.getElementById("prepare-"+kind+"-state"),button=document.getElementById("prepare-"+kind);
+    if(state)state.textContent=!SYS.ready?"확인 중":({on:"허용됨",ask:"사용할 때 요청",unconfirmed:"시작할 때 확인",off:"권한 필요"}[value]||"확인 중");
+    if(button){button.hidden=value==="on";button.disabled=!SYS.ready}
+  }
+  const micRow=document.getElementById("prepare-mic-row");if(micRow)micRow.hidden=SYS.ready&&SYS.mic==="on";
+  const row=document.getElementById("prepare-screen-row");if(row)row.hidden=!SESSION_SYSTEM||(SYS.ready&&SYS.screen==="on");
+  const hint=document.getElementById("prepare-input-hint");if(hint)hint.textContent=SESSION_SYSTEM?"상대의 질문으로 자료를 찾고, 내 목소리는 대화 기록에 남깁니다.":"내가 말한 질문으로 저장소의 자료를 찾습니다.";
+}
+// 화면 상태의 정본은 기존 전역에 둔다. 복귀 프레임은 사라지는 DOM의 자리만 보존한다.
+function flowElementKey(el){
+  if(!el)return null;
+  if(el.id)return {id:el.id};
+  for(const attr of ["data-session-draft","data-correct","data-import-retry","data-import-open"]){
+    const row=el.closest?.("["+attr+"]");
+    if(row)return {attr,value:row.getAttribute(attr),child:el===row?-1:Array.from(row.querySelectorAll("input,textarea,button,select")).indexOf(el)};
+  }
+  return null;
+}
+function flowElement(key){
+  if(!key)return null;if(key.id)return document.getElementById(key.id);
+  const row=Array.from(app.querySelectorAll?.("["+key.attr+"]")||[]).find(el=>el.getAttribute(key.attr)===key.value);
+  return key.child<0?row:row?.querySelectorAll("input,textarea,button,select")[key.child];
+}
+function captureFlowPosition(){
+  const active=document.activeElement;
+  const ids=["leftlist","left-files-panel","records-pane","sessionquestions","sessionreview","cvrank","right","bo","doc","flowbody","setbody","settingspane","recordcards","docbody"];
+  const nodes=new Set([...ids.map(id=>document.getElementById(id)),...Array.from(app.querySelectorAll?.("[id]")||[])]);
+  return {view:stackView,epoch:FLOW_EPOCH,focus:flowElementKey(active),selection:active&&typeof active.selectionStart==="number"?[active.selectionStart,active.selectionEnd,active.selectionDirection]:null,
+    fields:Object.fromEntries((stackView==="edit"?["workspacequery","cvq"]:[]).map(id=>[id,document.getElementById(id)?.value])),
+    scroll:Array.from(nodes).filter(Boolean).map(el=>({key:flowElementKey(el),top:el.scrollTop||0,left:el.scrollLeft||0})),
+    ingest:stackView==="ingest"?document.getElementById("doc")?.value:null};
+}
+function restoreFlowPosition(frame){
+  if(!frame||frame.epoch!==FLOW_EPOCH||frame.view!==stackView||mode!=="stack")return;
+  if(frame.ingest!=null){const el=document.getElementById("doc");if(el)el.value=frame.ingest}
+  for(const [id,value] of Object.entries(frame.fields||{})){const el=document.getElementById(id);if(el&&value!==undefined)el.value=value}
+  const active=flowElement(frame.focus);
+  if(active&&!active.disabled){active.focus({preventScroll:true});if(frame.selection&&active.setSelectionRange)try{active.setSelectionRange(...frame.selection)}catch(e){}}
+  const scroll=()=>{for(const entry of frame.scroll){const el=flowElement(entry.key);if(el){el.scrollTop=entry.top;el.scrollLeft=entry.left}}};
+  scroll();
+  const token=++FLOW_RESTORE_SEQ;
+  const restoreScrollOnce=()=>{
+    if(token===FLOW_RESTORE_SEQ&&frame.epoch===FLOW_EPOCH&&frame.view===stackView&&(!active||document.activeElement===active))scroll();
+  };
+  if(typeof requestAnimationFrame==="function")requestAnimationFrame(restoreScrollOnce);
+}
+function enterFlow(view){
+  if(stackView===view)return;
+  captureSessionEdits();captureIngestSaveDrafts();explorerCreateCapture();
+  FLOW_RETURN.push(captureFlowPosition());FLOW_RESTORE_SEQ++;clearWorkspaceToast();
+  stackView=view;stackRender();
+}
+function returnFromFlow(){
+  RECSLOT=null;RECMOD=null;document.onkeydown=null;
+  const previous=FLOW_RETURN.pop();
+  stackView=previous?.epoch===FLOW_EPOCH?previous.view:"edit";stackRender();restoreFlowPosition(previous);
+}
+function bindFlowHeader(){document.getElementById("flowback").onclick=returnFromFlow;document.getElementById("flowhide").onclick=()=>post("closeWindow")}
+function previewQuestion(text){
+  const query=String(text||"").trim();if(!query)return;
+  if(SESSION_PREVIEW_CONTEXT&&SESSION_PREVIEW_CONTEXT.query!==query){SESSION_PREVIEW_CONTEXT={...SESSION_PREVIEW_CONTEXT,query,returnReview:false,questionID:null};SESSION_REVIEW_ID=null}
+  mineV=query;heardV=query;CUR.them.c=query;CUR.them.v="";curWho="them";
+  SESSION_QUERY={id:cryptoID(),query,requestedAt:Date.now()/1000};
+  applyRank(true);paintCur();post("embedDraft",{slot:"live-preview",kind:"query",text:query});
+}
+function cryptoID(){return typeof crypto!=="undefined"&&crypto.randomUUID?crypto.randomUUID():"id-"+Date.now()+"-"+Math.random().toString(36).slice(2)}
+function recordSessionRetrieval(){
+  if(!sessionActive()||!heardV.trim())return;
+  if(!SESSION_QUERY||SESSION_QUERY.query!==heardV)SESSION_QUERY={id:cryptoID(),query:heardV,requestedAt:Date.now()/1000};
+  const candidates=ORD.list.map(i=>{const f=DOC.fragments[i],p=ORD.passage?.[i];return f?{id:f.id,title:f.title,path:PATHS[f.id]||"",excerpt:p?.sourceText||f.body,score:ORD.score[i]||0}:null}).filter(Boolean);
+  const status=QUERY_FAILURE?.query===heardV||INDEX_STATE==="error"?"error":INDEX_STATE==="unavailable"?"unavailable":INDEX_STATE==="ready"&&ORD.how==="뜻"?"ready":"pending";
+  const displayedID=openedID||null,displayMode=openedID?(manual?"manual":"auto"):null;
+  const how=ORD.how;
+  const signature=JSON.stringify([SESSION_QUERY.id,candidates,status,how,displayedID,displayMode]);if(signature===SESSION_REC_SIGNATURE)return;SESSION_REC_SIGNATURE=signature;
+  sessionAction("retrieval",{sessionID:SESSION.id,value:{...SESSION_QUERY,scope:LIVE_SUN||"",completedAt:status==="ready"?Date.now()/1000:null,status,how,displayedID,displayMode,candidates}});
+}
+function paintSessionIndex(){
+  app.querySelectorAll?.("[data-session-index]").forEach(e=>{
+    const id=e.dataset.sessionIndex,d=SESSION?.drafts?.find(d=>d.fragmentID===id);if(!d?.savedAt)return;
+    const indexed=INDEX_STATE==="ready"&&DOC.fragments.some(f=>f.id===id)&&!!(VEC?.frags?.[id]||VEC?.passages?.[id]);
+    e.textContent=indexed?"검색 반영됨":INDEX_STATE==="error"||INDEX_STATE==="unavailable"?"파일 저장됨 · 검색 준비 필요":"검색 반영 확인 중…";
+  });
+}
+function openSessions(){setWorkspaceSidebar("records")}
+function setWorkspaceSidebar(tab){
+  if(!["files","records","changes"].includes(tab))return;
+  if(tab==="changes"){openDocumentChanges();return}
+  if(CHANGES_OPEN){CHANGES_OPEN=false;WORKSPACE_SIDEBAR=tab;stackRender()}
+  explorerCreateCapture();WORKSPACE_SIDEBAR=tab;paintWorkspaceSidebar();paintExplorerTools();
+  if(tab==="records"){paintSessionQuestionEntry();bindSessionReview();sessionAction("list")}
+}
+function paintWorkspaceSidebar(){
+  for(const tab of ["files","records","changes"]){
+    const active=WORKSPACE_SIDEBAR===tab,button=document.getElementById("sidebar-"+tab),panel=document.getElementById(tab==="files"?"left-files-panel":tab==="records"?"records-pane":"changes-pane");
+    if(button){button.setAttribute("aria-selected",String(active));button.tabIndex=active?0:-1}
+    if(panel){panel.hidden=!active;panel.inert=!active}
+  }
+}
+function openSessionRecordDetails(){
+  if(!SESSION||SESSION_SELECTING||!leaveEditorAllowed(openSessionRecordDetails))return;
+  captureSessionEdits();SESSION_REVIEW_RECORD=SESSION.id;
+  if(!sessionQuestions(SESSION).some(q=>q.id===SESSION_REVIEW_ID))SESSION_REVIEW_ID=sessionQuestions(SESSION)[0]?.id||null;
+  SESSION_REVIEW_MAP_PENDING=false;SESSION_ARCHIVE_OPEN=false;sessionRender();
+}
+function closeSessionRecordDetails(){captureSessionEdits();SESSION_REVIEW_OPEN=false;stackRender()}
+function setSessionRecordFilter(status){
+  if(status!=="open"&&status!=="done")return;
+  SESSION_RECORD_FILTER=status;paintSessionQuestionEntry();bindSessionReview();
+}
+function reviewSessionRecord(status){
+  if(!SESSION||sessionActive()||SESSION_SELECTING||SESSION_SAVING.size||SESSION_RECORD_REVIEW_PENDING||!["open","done"].includes(status))return;
+  for(const draft of sessionPendingDrafts())sessionAction("draft",{sessionID:SESSION.id,draft});
+  SESSION_ERROR="";SESSION_RECORD_REVIEW_PENDING={id:SESSION.id,status};
+  paintSessionQuestionEntry();bindSessionReview();
+  sessionAction("recordReview",{sessionID:SESSION.id,status});
+}
+function captureSessionEdits(){
+  app.querySelectorAll?.("[data-session-draft]").forEach(row=>{
+    const id=row.dataset.sessionDraft,old=SESSION_EDITS[id]||SESSION?.drafts?.find(d=>d.id===id);
+    if(!id||!old)return;
+    SESSION_EDITS[id]={...old,sessionID:row.closest?.("[data-session-id]")?.dataset.sessionId||old.sessionID||SESSION?.id,title:row.querySelector("input")?.value||"",body:row.querySelector("textarea")?.value||""};
+  });
+}
+function sessionDraftPayload(id){
+  const edit=SESSION_EDITS[id];if(edit?.sessionID&&edit.sessionID!==SESSION?.id)return null;
+  const draft=SESSION?.drafts?.find(d=>d.id===id)||edit;return draft?{...draft,...edit}:null;
+}
+function sessionPendingDrafts(){captureSessionEdits();return (SESSION?.drafts||[]).concat(Object.values(SESSION_EDITS).filter(d=>d.sessionID===SESSION?.id&&!(SESSION?.drafts||[]).some(x=>x.id===d.id))).filter(d=>!d.savedAt&&!SESSION_SAVING.has(d.id)).map(d=>sessionDraftPayload(d.id)).filter(Boolean)}
+let SESSION_REVIEW_OPEN=false,SESSION_REVIEW_ID=null,SESSION_REVIEW_RECORD=null,SESSION_PREVIEW_CONTEXT=null,SESSION_SELECTING=null,SESSION_ARCHIVE_OPEN=false,SESSION_REVIEW_MAP_PENDING=false;
+function sessionQuestions(record){
+  if(!record)return [];
+  const groups=new Map();
+  for(const u of record.utterances||[]){
+    if((u.who!=="them"&&u.questionID!==u.id)||!askable(sessionText(u).replace(/\p{P}/gu,"").trim()))continue;
+    groups.set(u.id,{id:u.id,query:sessionText(u),answers:[],retrievals:[],status:record.questionReviews?.[u.id]||"open"});
+  }
+  for(const r of record.retrievals||[]){
+    const id=r.questionID||r.id;
+    if(!groups.has(id))groups.set(id,{id,query:r.query,answers:[],retrievals:[],status:record.questionReviews?.[id]||"open"});
+    const group=groups.get(id);group.retrievals.push(r);
+    if(!(record.utterances||[]).some(u=>u.id===id))group.query=r.query;
+  }
+  for(const u of record.utterances||[])if(u.who==="me"&&u.questionID&&u.questionID!==u.id&&groups.has(u.questionID)){const text=sessionText(u);if(text.replace(/[\s\p{P}]/gu,""))groups.get(u.questionID).answers.push(text)}
+  // Retrieval state and low relevance only order the review queue; they do not prove missing knowledge.
+  const priority=q=>{const r=q.retrievals.at(-1);if(!r)return 2;if(r.status&&r.status!=="ready")return 0;if(!r.candidates?.length)return 0;return r.status==="ready"&&Math.max(...r.candidates.map(c=>c.score))<SIM_A?1:2};
+  return [...groups.values()].sort((a,b)=>(a.status==="done")-(b.status==="done")||priority(a)-priority(b));
+}
+function resetMaintenanceContext(){
+  SESSION_UI_SIGNATURE="";
+  WORKSPACE_SIDEBAR="files";SESSION_RECORD_FILTER="open";SESSION_RECORD_TARGET=null;SESSION_RECORD_REVIEW_PENDING=null;
+  SESSION=null;SESSION_LIST=[];SESSION_REVIEW_OPEN=false;SESSION_REVIEW_ID=null;SESSION_REVIEW_RECORD=null;SESSION_PREVIEW_CONTEXT=null;SESSION_SELECTING=null;SESSION_ARCHIVE_OPEN=false;SESSION_REVIEW_MAP_PENDING=false;WORKSPACE_PREVIEW_RETURN=null;SESSION_QUERY=null;SESSION_EDITS={};SESSION_DRAFT_OPEN={};SESSION_CORRECTIONS={};CAPTURE={phase:"stopped",receiving:[],pending:[],failed:{}};LIVE_SUN=null;
+}
+function storedSearchQuestions(){
+  return (DOC.asked||[]).filter(a=>a.reviewStatus).map(a=>({id:"search:"+a.id,entryID:a.id,kind:"search",query:a.text,status:a.reviewStatus,answers:[],retrievals:a.reviewRetrieval?[a.reviewRetrieval]:[]}));
+}
+function maintenanceQuestions(){
+  return [...storedSearchQuestions(),...sessionQuestions(SESSION)].sort((a,b)=>(a.status==="done")-(b.status==="done"));
+}
+let WORKSPACE_PREVIEW_RETURN=null;
+function openSearchMaintenance(query,rows,how,scope){
+  if(sessionActive())return;
+  if(!leaveEditorAllowed(()=>openSearchMaintenance(query,rows,how,scope)))return;
+  captureSessionEdits();
+  const text=String(query||"").trim();if(!text)return;
+  const asked=(DOC.asked||[]).slice(),index=asked.findIndex(a=>a.source==="sun"&&a.text===text&&(a.reviewScope||"")===(scope||""));
+  const stamp=Date.now()/1000,id=index>=0?asked[index].id:"a-"+cryptoID();
+  const state=INDEX_STATE==="error"?"error":INDEX_STATE==="unavailable"?"unavailable":how==="뜻"?"ready":"pending";
+  const entry={...(index>=0?asked[index]:{}),id,text,source:"sun",at:index>=0?asked[index].at:now(),reviewStatus:"open",reviewScope:scope||"",reviewRetrieval:{id:cryptoID(),how,query:text,scope:scope||"",requestedAt:stamp,completedAt:state==="ready"?stamp:null,status:state,candidates:(rows||[]).slice(0,3).map(x=>({id:x.p.id,title:x.p.title,path:PATHS[x.p.id]||"",excerpt:x.passage?.sourceText||x.p.body||"",score:Number.isFinite(x.s)?x.s:0}))}};
+  if(index>=0)asked[index]=entry;else asked.push(entry);
+  DOC.asked=asked;SESSION_REVIEW_ID="search:"+id;SESSION_REVIEW_OPEN=true;SESSION_REVIEW_MAP_PENDING=true;
+  save();stackView="edit";stackRender();
+}
+function openSearchPreview(query,scope){
+  if(sessionActive())return;
+  if(!leaveEditorAllowed(()=>openSearchPreview(query,scope)))return;
+  SESSION_PREVIEW_CONTEXT={origin:"workspace",query:String(query||""),scope:scope||"",returnReview:false};
+  LIVE_SUN=scope||null;goMode("practice");
+}
+function sessionSelectedQuestion(){
+  const search=storedSearchQuestions().find(q=>q.id===SESSION_REVIEW_ID);if(search)return search;
+  const questions=sessionQuestions(SESSION);
+  if(SESSION_REVIEW_RECORD!==SESSION?.id){SESSION_REVIEW_RECORD=SESSION?.id;SESSION_REVIEW_ID=null;SESSION_ARCHIVE_OPEN=false}
+  return questions.find(q=>q.id===SESSION_REVIEW_ID)||questions[0]||storedSearchQuestions()[0]||null;
+}
+function sessionQuestionHint(q){
+  const r=q?.retrievals?.at(-1);
+  if(!r)return "검색 기록 없음";
+  if(r.candidates?.length)return "당시 참고 자료 "+r.candidates.length+"개";
+  if(r.status==="error")return "검색 오류 · 자료 부족 여부 미확인";
+  if(r.status==="pending")return "검색 완료 전의 기록";
+  if(r.status==="unavailable")return "검색을 사용할 수 없었던 기록";
+  if(!r.candidates?.length)return "당시 후보 없음";
+  return "당시 참고 자료 "+r.candidates.length+"개";
+}
+function sessionRetrievalNotice(r){
+  if(!r?.candidates?.length)return "";
+  if(r.how==="글자")return r.status==="error"||r.status==="unavailable"?"의미 검색을 사용할 수 없어 글자가 겹치는 자료를 표시했습니다.":"의미 검색 완료 전, 글자가 겹치는 자료를 표시했습니다.";
+  if(r.status==="pending")return "검색이 완료되기 전에 표시된 자료입니다.";
+  if(r.status==="error"||r.status==="unavailable")return "검색 중 문제가 있었지만 표시된 자료는 남아 있습니다.";
+  return "";
+}
+function sessionReviewContextActive(){
+  const q=sessionSelectedQuestion();return SESSION_REVIEW_OPEN||!!(q&&SESSION_REVIEW_ID);
+}
+function sessionRecordReviewStatus(record){return record?.reviewStatus==="done"?"done":"open"}
+function sessionRecordPreview(record){const first=record.utterances?.find(u=>u.who==="them"&&askable(sessionText(u)));return first?sessionText(first):record.retrievals?.[0]?.query||""}
+function sessionReviewEntry(){
+  const records=SESSION_LIST.filter(r=>sessionRecordReviewStatus(r)===SESSION_RECORD_FILTER).sort((a,b)=>b.startedAt-a.startedAt),selected=records.find(r=>r.id===SESSION?.id);
+  const questions=selected?sessionQuestions(SESSION):[],busy=!!SESSION_SELECTING||!!SESSION_RECORD_REVIEW_PENDING||!!SESSION_SAVING.size;
+  return `<div class="reviewentry" id="records-pane" role="tabpanel" aria-labelledby="sidebar-records"${WORKSPACE_SIDEBAR==="records"?"":" hidden"}>
+    <div class="recordfilters" role="group" aria-label="대화 기록 필터"><button id="records-open" aria-pressed="${SESSION_RECORD_FILTER==="open"}">미완료</button><button id="records-done" aria-pressed="${SESSION_RECORD_FILTER==="done"}">완료 기록</button></div>
+    <div id="recordcards" class="recordcards" aria-label="대화 기록 목록">${records.length?records.map(r=>`<button class="recordcard${r.id===SESSION?.id?" selected":""}" data-session-record="${esc(r.id)}" aria-pressed="${r.id===SESSION?.id}"${busy||sessionActive()?" disabled":""}><span>${esc(new Date(r.startedAt*1000).toLocaleString())}</span>${sessionRecordPreview(r)?`<span class="recordpreview" title="${esc(sessionRecordPreview(r))}" aria-label="${esc(sessionRecordPreview(r))}">${esc(sessionRecordPreview(r))}</span>`:""}<small>질문 ${sessionQuestions(r).length}개${r.state==="interrupted"?" · 중단된 대화":""}</small></button>`).join(""):`<p class="flowhint">${SESSION_RECORD_FILTER==="done"?"완료한 대화가 없습니다.":"미완료 대화가 없습니다."}</p>`}</div>
+    ${SESSION_SELECTING?'<p role="status">대화 기록을 여는 중…</p>':selected?`<div class="recordactions"><button class="gbtn" id="record-details"${busy?" disabled":""}>대화 원문·답변</button><button class="gbtn" id="record-complete"${busy||sessionActive()?" disabled":""}>${SESSION_RECORD_REVIEW_PENDING?"저장 중…":SESSION_RECORD_FILTER==="done"?"다시 열기":"확인 완료"}</button></div><nav class="reviewquestions" aria-label="선택한 대화의 질문">${questions.length?questions.map(item=>`<button data-review-question="${esc(item.id)}" class="${item.id===SESSION_REVIEW_ID?"selected":""}"${busy?" disabled":""}><span>${esc(item.query)}</span><small>${item.status==="done"?"확인 완료":esc(sessionQuestionHint(item))}</small></button>`).join(""):'<p class="flowhint">이 대화에는 검색할 질문이 없습니다. 대화 원문을 확인할 수 있습니다.</p>'}</nav>`:""}</div>`;
+}
+function sessionReviewPanel(){
+  const record=SESSION,questions=sessionQuestions(record),q=questions.find(q=>q.id===SESSION_REVIEW_ID)||questions[0],r=q?.retrievals.at(-1);
+  const finished=record&&!sessionActive();
+  const drafts=[...(record?.drafts||[])];
+  for(const draft of Object.values(SESSION_EDITS))if(draft.sessionID===record?.id&&!drafts.some(d=>d.id===draft.id))drafts.push(draft);
+  return `<div class="reviewbar"><strong>대화 기록</strong><button class="ibtn" id="review-close" aria-label="대화 기록 닫기">${ICO.close}</button></div>
+    <div id="sessionerror" role="status">${esc(SESSION_ERROR)}</div>
+    ${record?.events?.some(e=>e.kind==="tailIncomplete")?'<p class="flowhint">마지막 전사가 완전히 확정되기 전에 종료됐습니다. 끝부분을 확인해 주세요.</p>':""}
+    ${sessionActive()?'<p>사용이 끝나면 질문과 당시 자료를 확인할 수 있습니다.</p><button class="gbtn" id="session-return">대화로 돌아가기</button>':q?`<section class="reviewquestion"><small>${q.kind==="search"?"검색에서 남긴 질문":"대화에서 남긴 질문"}</small><h2>${esc(q.query)}</h2>
+    ${q.kind==="search"?"":`<details class="reviewanswers" open><summary>내가 한 답변${q.answers.length?` (${q.answers.length})`:""}</summary>${q.answers.length?q.answers.map(a=>`<p>${esc(a)}</p>`).join(""):'<p class="flowhint">이 질문에 연결된 내 발화가 없습니다. 전체 대화 기록에서 확인할 수 있습니다.</p>'}</details>`}
+    <details class="reviewprevious"><summary>당시 검색 결과 · ${esc(sessionQuestionHint(q))}</summary>${sessionRetrievalNotice(r)?`<p class="flowhint">${esc(sessionRetrievalNotice(r))}</p>`:""}${r?.candidates?.length?r.candidates.map((c,i)=>`<details class="reviewsource"${i===0?" open":""}><summary>${esc(c.title)}${r.displayedID===c.id?" · 펼쳐본 자료":""}</summary><p>${esc(c.excerpt)}</p><small>${esc(c.path)}</small><button class="gbtn" data-review-document="${esc(c.id)}"${workspaceFile(c.id)?"":" disabled"}>현재 문서 열기</button>${workspaceFile(c.id)?"":'<small>이 문서는 현재 저장소에서 열 수 없습니다.</small>'}</details>`).join(""):'<p class="flowhint">당시 검색 근거가 없습니다. 현재 결과에서 자료를 확인하세요.</p>'}
+</details>
+    <div class="reviewactions"><button class="gbtn" id="review-create">새 문서 추가</button></div>
+    <label class="reviewdone"><input id="review-done" type="checkbox"${q.status==="done"?" checked":""}>이 질문 확인 완료</label></section>`:'<section class="reviewquestion"><h2>검색할 질문이 없습니다</h2><p>아래에서 대화 원문을 확인하거나 저장소에 직접 질문할 수 있습니다.</p><button class="gbtn" id="review-free-preview">저장소에서 검색</button></section>'}
+    ${record?`<details class="reviewarchive"${SESSION_ARCHIVE_OPEN?" open":""}><summary>전체 대화·기록 초안</summary><div class="reviewarchivebody">${record?`
+    ${sessionActive()?'<button class="gbtn p" id="session-return">대화로 돌아가기</button>':`
+    <div class="flowactions"><button class="gbtn" id="session-add">직접 기록</button><button class="gbtn" id="session-review"${record.analysisStatus==="running"?" disabled":""}>${record.analysisStatus==="running"?"기록 초안 만드는 중…":"대화에서 기록 초안 만들기"}</button></div>
+    <p class="flowhint">${esc(record.analysisMessage|| (record.analysisStatus==="ready"&&!drafts.length?"추가할 제안을 찾지 못했습니다. 필요한 내용은 직접 남길 수 있습니다.":""))}</p>
+    <div class="sessiondrafts">${drafts.map(d=>{const edit=SESSION_EDITS[d.id]||d;return `<details class="sessiondraft" data-session-draft="${esc(d.id)}"${SESSION_DRAFT_OPEN[record.id+":"+d.id]?" open":""}><summary>${esc(edit.title||"새 문서 초안")} · ${d.savedAt?"저장됨":"미저장"}</summary><label>제목<input aria-label="기록 제목" value="${esc(edit.title)}"${d.savedAt||SESSION_SAVING.has(d.id)?" disabled":""}></label><label>남길 내용<textarea aria-label="남길 내용"${d.savedAt||SESSION_SAVING.has(d.id)?" disabled":""}>${esc(edit.body)}</textarea></label>
+    ${d.sourceIDs?.length?`<details><summary>근거 발화</summary>${d.sourceIDs.map(id=>`<p>${esc(sessionText(record.utterances.find(u=>u.id===id)||{}))}</p>`).join("")}</details>`:""}
+    <div class="flowactions"><button class="gbtn p" data-save-session="${esc(d.id)}"${d.savedAt||SESSION_SAVING.has(d.id)?" disabled":""}>${d.savedAt?"파일 저장 완료":"확인하고 저장"}</button><span class="flowhint" data-session-index="${esc(d.fragmentID)}">${d.savedAt?(INDEX_STATE==="ready"&&DOC.fragments.some(f=>f.id===d.fragmentID)?"검색 반영됨":"검색 반영 확인 중…"):""}</span></div><p role="status">${esc(d.error||"")}</p></details>`}).join("")}</div>`}
+    <details class="sessiondetails"><summary>대화 원문·정정 (${record.utterances.length})</summary>${record.utterances.map(u=>`<div class="utterance"><span>${u.who==="them"?"상대":"나"}</span><p>${esc(sessionText(u))}</p>${u.corrections?.length?`<details><summary>원전사와 수정 이력</summary><p>${esc(sessionOriginal(u))}</p>${u.corrections.map(c=>`<p>${esc(c.text)}</p>`).join("")}</details>`:""}${finished?`<details><summary>발화 정정</summary><label>정정<input data-correct="${esc(u.id)}" aria-label="발화 정정" value="${esc(SESSION_CORRECTIONS[record.id+":"+u.id]??sessionText(u))}"></label><button class="gbtn" data-correct-save="${esc(u.id)}">정정 보관</button></details>`:""}</div>`).join("")}</details>
+    <details class="sessiondetails"><summary>당시 검색 근거 (${record.retrievals.length})</summary>${record.retrievals.map(r=>`<div class="utterance"><strong>${esc(r.query)}</strong>${r.candidates.map(c=>`<details><summary>${esc(c.title)}</summary><p>${esc(c.excerpt)}</p><small>${esc(c.path)}</small></details>`).join("")}</div>`).join("")}</details>
+    `:"<h2>필요한 대화를 다음 작업으로</h2><p>대화를 마치면 여기서 기록을 보완할 수 있습니다.</p>"}</div></details>`:""}`;
+}
+function bindSessionReview(){
+  const q=sessionSelectedQuestion(),record=SESSION;
+  app.querySelectorAll?.("details[data-session-draft]").forEach(row=>row.ontoggle=()=>{if(record)SESSION_DRAFT_OPEN[record.id+":"+row.dataset.sessionDraft]=row.open});
+  const archive=document.querySelector?.(".reviewarchive");if(archive)archive.ontoggle=()=>{SESSION_ARCHIVE_OPEN=archive.open};
+  for(const status of ["open","done"]){const filter=document.getElementById("records-"+status);if(filter)filter.onclick=()=>setSessionRecordFilter(status)}
+  app.querySelectorAll?.("[data-session-record]").forEach(b=>b.onclick=()=>selectSessionReview(b.dataset.sessionRecord));
+  const details=document.getElementById("record-details");if(details)details.onclick=openSessionRecordDetails;
+  const complete=document.getElementById("record-complete");if(complete)complete.onclick=()=>reviewSessionRecord(SESSION?.reviewStatus==="done"?"open":"done");
+  app.querySelectorAll?.("[data-review-question]").forEach(b=>b.onclick=()=>sessionChooseQuestion(b.dataset.reviewQuestion));
+  const close=document.getElementById("review-close");if(close)close.onclick=closeSessionRecordDetails;
+  const history=document.getElementById("review-history");if(history)history.onchange=()=>{if(history.value)selectSessionReview(history.value)};
+  const questions=document.getElementById("review-question-select");if(questions)questions.onchange=()=>sessionChooseQuestion(questions.value);
+  const done=document.getElementById("review-done");if(done)done.onchange=()=>{
+    const status=done.checked?"done":"open";
+    if(q.kind==="search"){DOC.asked=(DOC.asked||[]).map(a=>a.id===q.entryID?{...a,reviewStatus:status}:a);save();paintSessionReview()}
+    else sessionAction("questionReview",{sessionID:record.id,id:q.id,status});
+  };
+  const create=document.getElementById("review-create");if(create)create.onclick=()=>{SESSION_REVIEW_ID=q.id;SESSION_REVIEW_OPEN=false;stackRender();createFromSidebar("document")};
+  const free=document.getElementById("review-free-preview");if(free)free.onclick=()=>{SESSION_REVIEW_OPEN=false;stackRender();document.getElementById("workspacequery")?.focus()};
+  app.querySelectorAll?.("[data-review-document]").forEach(b=>b.onclick=()=>{SESSION_REVIEW_ID=q.id;workspaceOpen(b.dataset.reviewDocument)});
+  const ret=document.getElementById("session-return");if(ret)ret.onclick=()=>goMode("live");
+  const add=document.getElementById("session-add");if(add)add.onclick=()=>{
+    captureSessionEdits();const id=cryptoID();SESSION_DRAFT_OPEN[record.id+":"+id]=true;SESSION_EDITS[id]={id,fragmentID:cryptoID(),sessionID:record.id,title:"",body:"",sourceIDs:[]};sessionAction("draft",{sessionID:record.id,draft:SESSION_EDITS[id]});sessionRender();
+  };
+  const review=document.getElementById("session-review");if(review)review.onclick=()=>sessionAction("review");
+  app.querySelectorAll("[data-save-session]").forEach(b=>b.onclick=()=>{
+    captureSessionEdits();const draft=sessionDraftPayload(b.dataset.saveSession);if(!draft?.title.trim()||!draft?.body.trim()){onSessionError("제목과 남길 내용을 입력해 주세요.");return}
+    b.disabled=true;SESSION_SAVING.add(draft.id);sessionRender();sessionAction("saveDraft",{sessionID:record.id,draft});
+  });
+  app.querySelectorAll("[data-session-draft]").forEach(row=>row.oninput=row.onchange=()=>{captureSessionEdits();const draft=sessionDraftPayload(row.dataset.sessionDraft);if(draft)sessionAction("draft",{sessionID:record.id,draft})});
+  app.querySelectorAll("[data-correct]").forEach(input=>input.oninput=()=>{SESSION_CORRECTIONS[record.id+":"+input.dataset.correct]=input.value});
+  app.querySelectorAll("[data-correct-save]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.correctSave,input=Array.from(app.querySelectorAll("[data-correct]")).find(e=>e.dataset.correct===id);
+    if(input?.value.trim())sessionAction("correct",{sessionID:record.id,id,text:input.value});
+  });
+}
+function selectSessionReview(id){
+  if(SESSION_SELECTING||SESSION_SAVING.size||SESSION_RECORD_REVIEW_PENDING||sessionActive()||!id||!SESSION_LIST.some(r=>r.id===id))return;
+  if(!leaveEditorAllowed(()=>selectSessionReview(id)))return;
+  if(SESSION?.id===id){openSessionRecordDetails();return}
+  for(const draft of sessionPendingDrafts())sessionAction("draft",{sessionID:SESSION.id,draft});
+  SESSION_REVIEW_ID=null;SESSION_REVIEW_MAP_PENDING=false;SESSION_SELECTING=id;SESSION_RECORD_TARGET=id;
+  const pane=document.getElementById("sessionreview");if(pane)pane.inert=true;
+  paintSessionQuestionEntry();bindSessionReview();
+  sessionAction("select",{id});
+}
+function paintSessionReview(){
+  const pane=document.getElementById("sessionreview");
+  if(pane&&(pane.dataset.sessionId!==(SESSION?.id||"")||!document.activeElement?.closest?.("[data-session-draft], [data-correct]"))){captureSessionEdits();pane.innerHTML=sessionReviewPanel();pane.dataset.sessionId=SESSION?.id||""}
+  if(pane)pane.inert=!!SESSION_SELECTING;
+  paintSessionQuestionEntry();
+  bindSessionReview();paintSessionIndex();sessionInitialQuestionOnMap();
+}
+function paintSessionQuestionEntry(){
+  const entry=document.querySelector?.(".reviewentry");if(entry)entry.outerHTML=sessionReviewEntry();
+  paintWorkspaceSidebar();
+}
+function sessionWorkspaceHandoff(){
+  captureSessionEdits();
+  WORKSPACE_SIDEBAR="records";SESSION_RECORD_FILTER=sessionRecordReviewStatus(SESSION);SESSION_RECORD_TARGET=SESSION?.id||null;
+  const questions=sessionQuestions(SESSION);
+  const q=(SESSION_REVIEW_RECORD===SESSION?.id&&questions.find(q=>q.id===SESSION_REVIEW_ID))||questions[0];
+  SESSION_REVIEW_RECORD=SESSION?.id;SESSION_REVIEW_ID=q?.id||null;
+  SESSION_REVIEW_OPEN=false;SESSION_REVIEW_MAP_PENDING=!!q;stackView="edit";
+  paneApply("r",0);
+}
+function sessionInitialQuestionOnMap(){
+  if(!SESSION_REVIEW_MAP_PENDING)return;
+  const q=SESSION_REVIEW_OPEN?sessionSelectedQuestion():maintenanceQuestions().find(q=>q.id===SESSION_REVIEW_ID);
+  if(!q||(!SESSION_REVIEW_MAP_PENDING&&SESSION_REVIEW_ID===q.id))return;
+  SESSION_REVIEW_MAP_PENDING=false;SESSION_REVIEW_ID=q.id;
+  const scope=q.retrievals.at(-1)?.scope||"";if(WORKSPACE_SCOPE!==scope)workspaceEnterFolder(scope);
+  for(const id of ["workspacequery","cvq"]){const field=document.getElementById(id);if(field)field.value=q.query}
+  canvasAsk(q.query,{wave:true});
+}
+function sessionChooseQuestion(id){
+  if(SESSION_SELECTING||SESSION_RECORD_REVIEW_PENDING)return;
+  if(!leaveEditorAllowed(()=>sessionChooseQuestion(id)))return;
+  const q=maintenanceQuestions().find(q=>q.id===id);if(!q)return;
+  captureSessionEdits();WORKSPACE_SIDEBAR="records";SESSION_REVIEW_RECORD=SESSION?.id;SESSION_REVIEW_ID=q.id;
+  SESSION_REVIEW_OPEN=false;SESSION_REVIEW_MAP_PENDING=true;stackView="edit";paneApply("r",0);stackRender();
+}
+function sessionPracticeQuestion(){
+  if(sessionActive()){onSessionError("사용을 끝낸 뒤 같은 질문을 미리 사용할 수 있습니다.");return}
+  const q=sessionSelectedQuestion();if(!q)return;
+  if(!leaveEditorAllowed(sessionPracticeQuestion))return;
+  SESSION_REVIEW_ID=q.id;SESSION_PREVIEW_CONTEXT={sessionID:SESSION?.id,questionID:q.id,query:q.query,returnReview:true};
+  const scope=q.retrievals.at(-1)?.scope;LIVE_SUN=scope||null;
+  goMode("practice");
+}
+function sessionRender(){
+  captureSessionEdits();WORKSPACE_SIDEBAR="records";SESSION_REVIEW_OPEN=true;stackView="edit";stackRender();
+}
+
+let IMPORT_ROWS=[],IMPORT_PROGRESS=null,IMPORT_PICKING=false,IMPORT_DESTINATION=null;
+function openDocumentImport(){if(!VAULT_CONNECTED||!leaveEditorAllowed(openDocumentImport))return;IMPORT_DESTINATION=WORKSPACE_SCOPE||"";enterFlow("import");post("importDocuments",{action:"history"})}
+function onImportProgress(progress){IMPORT_PICKING=false;IMPORT_PROGRESS=progress;if(mode==="stack"&&stackView==="import")documentImportRender()}
+function onImportResults(rows){IMPORT_PICKING=false;for(const row of rows){IMPORT_ROWS=IMPORT_ROWS.filter(r=>r.id!==row.id);IMPORT_ROWS.push(row)}IMPORT_PROGRESS=null;if(mode==="stack"&&stackView==="import")documentImportRender()}
+function importedDocumentID(row){
+  if(!row?.markdownPath||!["success","partial"].includes(row.status))return null;
+  const path=row.markdownPath.normalize("NFC");
+  return DOC.fragments.find(f=>PATHS[f.id]?.normalize("NFC")===path)?.id||null;
+}
+function openImportedDocument(rowID){
+  const row=IMPORT_ROWS.find(r=>r.id===rowID),id=importedDocumentID(row);
+  if(!id||stackView!=="import"||!leaveEditorAllowed(()=>openImportedDocument(rowID)))return false;
+  const position=captureFlowPosition(),workspace=CANV?canvasContext():null;
+  stackView="edit";stackRender();
+  if(!openWorkspaceDocument(id)){stackView="import";documentImportRender();restoreFlowPosition(position);return false}
+  DOCUMENT_RETURN={...(DOCUMENT_RETURN||{}),importReturn:{position,workspace}};
+  paintExplorerTools();return true;
+}
+function documentImportRender(){
+  const previous=document.getElementById("import-destination")?.isConnected?captureFlowPosition():null;
+  const stages={queued:"대기",preserving:"원본 보존",preparing:"변환 도구 준비",converting:"변환",saving:"저장",completed:"완료"};
+  releaseMarkdownEditors();app.innerHTML=`${flowHeader("자료 가져오기")}<div id="flowbody" class="flowbody"><div class="flowsection"><h2>파일을 저장소에 추가</h2><p class="flowhint">Markdown은 바로 사용합니다. PDF·Word는 원본과 변환 문서를 함께 보관합니다. 문서는 이 Mac에서 처리합니다.</p>
+    <label class="flowrow">넣을 폴더<select id="import-destination"><option value="">저장소 최상위</option>${VAULT_FOLDERS.map(p=>`<option value="${esc(p)}"${p===(IMPORT_DESTINATION??WORKSPACE_SCOPE)?" selected":""}>${esc(p)}</option>`).join("")}</select></label>
+    <div class="flowactions"><button class="gbtn p" id="import-pick"${IMPORT_PROGRESS||IMPORT_PICKING?" disabled":""}>파일 선택</button>${IMPORT_PROGRESS?'<button class="gbtn" id="import-cancel">취소</button>':""}</div>
+    <div role="status">${IMPORT_PROGRESS?`${esc(IMPORT_PROGRESS.name)} · ${IMPORT_PROGRESS.stage==="preparing"?"첫 변환에 필요한 도구를 준비하고 있습니다":stages[IMPORT_PROGRESS.stage]||"처리"} (${IMPORT_PROGRESS.completed}/${IMPORT_PROGRESS.total})`:""}</div>
+    ${IMPORT_ROWS.map(r=>`<article class="importrow"><strong>${importedDocumentID(r)?`<button class="importdocument" data-import-open="${esc(r.id)}" aria-label="${esc(r.name)} 문서 열기">${esc(r.name)}</button>`:esc(r.name)}</strong><span>${{success:"완료",partial:"일부 변환 · 확인 필요",failed:"실패",cancelled:"취소됨"}[r.status]}</span><p>${esc(r.message||"")}</p>${r.warnings.map(w=>`<p class="flowhint">${esc(w)}</p>`).join("")}${(r.markdownPath||r.originalPath||"").normalize("NFC")!==r.name.normalize("NFC")?`<small>${esc(r.markdownPath||r.originalPath||"")}</small>`:""}${r.retryable?`<button class="gbtn" data-import-retry="${esc(r.id)}"${IMPORT_PROGRESS||IMPORT_PICKING?" disabled":""}>다시 시도</button>`:""}</article>`).join("")}</div></div>`;
+  bindFlowHeader();document.getElementById("import-destination").value=IMPORT_DESTINATION??WORKSPACE_SCOPE??"";document.getElementById("import-destination").onchange=e=>{IMPORT_DESTINATION=e.target.value};document.getElementById("import-destination").disabled=!!(IMPORT_PICKING||IMPORT_PROGRESS);document.getElementById("import-pick").disabled=!!(IMPORT_PICKING||IMPORT_PROGRESS);document.getElementById("import-pick").onclick=()=>{if(IMPORT_PICKING||IMPORT_PROGRESS)return;IMPORT_PICKING=true;document.getElementById("import-pick").disabled=true;post("importDocuments",{action:"pick",destination:document.getElementById("import-destination").value})};
+  const cancel=document.getElementById("import-cancel");if(cancel)cancel.onclick=()=>post("importDocuments",{action:"cancel"});
+  app.querySelectorAll("[data-import-retry]").forEach(b=>b.onclick=()=>post("importDocuments",{action:"retry",id:b.dataset.importRetry}));
+  app.querySelectorAll("[data-import-open]").forEach(b=>b.onclick=()=>openImportedDocument(b.dataset.importOpen));
+  restoreFlowPosition(previous);
+}
+
 function sizeWindow(){
-  post("resizeWindow",mode==="live"?{w:520,h:380,mode:"live"}
-    :mode==="practice"?{w:760,h:560,mode:"practice"}
+  post("resizeWindow",(mode==="live"||mode==="practice")?{w:560,h:440,mode:mode}
     :{w:1180,h:760,mode:"stack"});
 }
 
 function render(){
   app.className=mode;
+  applyPanelOpacity();
   /* ★ **창 밖으로 떨어뜨린 파일이 화면을 갈아엎지 않게** (#61 A, 왼쪽 칸 드롭의 짝).
      WebView 는 놓인 파일을 **그대로 연다** — `loadHTMLString(baseURL:nil)` 라 그 순간
      화면이 통째로 사라지고 돌아올 주소가 없다. 그래서 문서 전체에서 기본 동작을 막고,
@@ -2502,16 +3361,17 @@ function render(){
   /* ★ 정본이 아직이면 **여는 중**만 그린다 (`RECEIVED` 머리글). 창 크기·모드는 위에서 이미
      보냈으니 창 단추는 제때 켜진다 — 가리는 것은 그림 하나다. */
   if(mode==="stack"&&!RECEIVED){
-    app.innerHTML=`<div id="top" class="drag hmtop"><span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span></div>
-      <div class="opening" role="status">저장소를 여는 중…</div>`;
+    releaseMarkdownEditors();app.innerHTML=`<div id="top" class="drag workspace-top"><div class="workspace-header-start"><div id="workspace-sidebar-head" style="width:${Math.max(114,PANE.l)}px"><button class="ibtn ico nodrag" id="vaultmenu" title="저장소 폴더 변경" aria-label="저장소 폴더 변경">${ICO.folder}</button></div></div><button class="ibtn ico nodrag" id="golive" aria-label="대화에서 사용" disabled>${ICO.live}</button><div></div></div>
+      <div id="stacknotices" role="status"></div><div class="opening" role="status">저장소를 여는 중…</div>`;
+    document.getElementById("vaultmenu").onclick=requestVaultFolder;
+    paintVaultTrouble();
     return;
   }
   /* 귀는 면접·연습에서만 산다 — 쌓는 동안 마이크·시스템 오디오를 물고 있을 이유가 없다.
      ⚠ **연습은 마이크만 연다.** 묻는 것이 앱이라 상대 목소리가 없고, 시스템 오디오를 열면
        화면 기록 권한을 괜히 묻는다. 여기서도 **통로를 안 늘렸다** — 기존 `startListening`
        에 어느 관을 열지를 얹었을 뿐이다(`resizeWindow` 가 `mode` 를 얹은 것과 같은 모양). */
-  if(mode==="stack")post("stopListening");
-  else post("startListening",{system:mode==="live"});
+  // Capture starts only from explicit session/preview actions. Rendering has no audio side effect.
   mode==="live"?liveRender():mode==="practice"?practiceRender():stackRender();
 }
 /* ★ 모드를 바꾸는 **유일한 함수** (라운드 9 잠금). 다른 데서 `mode=` 를 직접 건드리지 않는다.
@@ -2523,7 +3383,7 @@ function render(){
    화면 기록 권한을 괜히 묻는다*)이 깨지는 자리다.
    ⚠ **먼저 누른 쪽이 이긴다.** 뒤 클릭을 큐에 쌓지 않는다 — 쌓으면 두 전환이 잇달아 돌아
      귀를 여닫는 왕복이 그대로 남는다. 사람은 도착한 화면에서 다시 누르면 된다. */
-let morphing=false;
+let morphing=false,SESSION_UI_ACTIVE_ID=null;
 /* ★ **부작용을 세우기 전에 먼저 묻는 자리** (#66 리뷰 발견 ③). `goMode` 의 조기 반환은
    전환만 막았지 **호출부가 이미 돌려버린 부작용**은 못 되돌렸다 — morphing 중에 「쌓기로」를
    누르면 `stopPractice()` 가 연습을 지워 놓고 화면은 연습에 남았고, 「연습」을 누르면
@@ -2533,6 +3393,8 @@ let morphing=false;
      `mode`·`morphing` 을 직접 읽으면 판정이 둘이 된다. */
 function canGoMode(next){return mode!==next&&!morphing}
 function goMode(next){
+  clearWorkspaceToast();
+  if(next==="practice"&&sessionActive()){onSessionError("진행 중인 사용을 먼저 끝내 주세요.");return}
   if(mode==="stack"&&next!=="stack"&&!leaveEditorAllowed(()=>goMode(next)))return;
   if(!canGoMode(next))return;
   /* ★ **기다리던 기록은 화면을 떠날 때 걷는다** (#79 리뷰 (c)2). 벡터는 몇 분 뒤에 올 수 있고
@@ -2540,29 +3402,37 @@ function goMode(next){
      ⚠ `canGoMode` **뒤**다: 전환이 막힌 판(morphing)에서 걷으면 안 떠난 화면의 대기가 사라진다. */
   askLogPending=null;
   /* 면접을 끝내고 나갈 때만 옮긴다 — 면접 중에는 저장소를 안 건드린다 (#22) */
-  if(mode==="live"&&next==="stack")commitHarvest();
+  // Session review owns knowledge writes; navigation does not harvest transcripts.
+  if(mode==="live"&&next!=="live"){openedID=null;openedSnapshot=null;manual=false}
   /* ★ **지난 면접을 안 들고 들어간다** (#66-5, `실측 2026-09-01`: 2회차에 1회차의 전사·카드가
      그대로 살아 있었다). 전 판은 harvest 계열만 비웠다 — 그런데 화면이 드는 것은 전사(`hist`
-     `CUR`)와 검색어(`heardV`·`mineV`), 그리고 그것으로 고른 카드(`ORD`·`opened`·`manual`)다.
+     `CUR`)와 검색어(`heardV`·`mineV`), 그리고 그것으로 고른 카드(`ORD`·`openedID`·`manual`)다.
      ⚠ **나올 때가 아니라 들어갈 때 비운다.** 끝낼 때 비우면 요약·수확이 그 값을 못 읽는다. */
-  if(next==="live"){
+  if(next==="live"&&SESSION?.id!==SESSION_UI_ACTIVE_ID){
+    SESSION_UI_ACTIVE_ID=SESSION?.id;
     harvest=[];harvestPending=[];askedPending=[];notice=null;
     /* 2026-09-07 합의: 준비 중 보던 항성을 자동 승계하지 않는다. 실사용은 전체 저장소로 시작한다. */
-    LIVE_SUN=liveScopeDefault(liveTree(),LAST_SUN);
+    // Keep the scope selected in preparation.
     resetLive();
   }
   /* 연습도 쌓기의 띠를 안 들고 들어간다 (#36). */
-  if(next==="practice")notice=null;
+  if(next==="practice"){notice=null;SESSION_ERROR="";resetLive()}
+  if(mode==="practice"&&next!=="practice"){PREVIEW_MIC=false;post("stopListening")}
   app.classList.add("morph");
   morphing=true;
-  setTimeout(()=>{morphing=false;mode=next;render();app.classList.remove("morph")},200);
+  setTimeout(()=>{morphing=false;
+    if(mode==="stack"&&next!=="stack"){FLOW_RETURN=[];FLOW_RESTORE_SEQ++}
+    if(next==="live"&&SESSION&&["completed","interrupted"].includes(SESSION.state)){mode="stack";sessionWorkspaceHandoff()}
+    else mode=next;
+    render();app.classList.remove("morph")},ACCESSIBILITY.reduceMotion?0:200);
 }
 /* 면접 화면이 드는 것 전부를 첫 상태로. **한 자리에 모은다** — 흩어 두면 새 칸이 생길 때
    한 곳만 고쳐지고 그 칸이 다음 면접까지 산다(그것이 #66-5 의 모양이었다). */
 function resetLive(){
+  QUERY_VECTOR_WAITING=null;QUERY_FAILURE=null;
   hist=[];curWho="them";trouble=null;
   CUR.them.c="";CUR.them.v="";CUR.me.c="";CUR.me.v="";
-  heardV="";mineV="";opened=null;manual=false;
+  heardV="";mineV="";openedID=null;openedSnapshot=null;manual=false;
   ORD.top=null;ORD.list=[];ORD.score={};ORD.color={};ORD.passage={};ORD.how="글자";
 }
 /* ★ **확인 상자 한 벌** (#65 ②). 이 화면엔 네이티브 confirm 이 **없고**(`WKUIDelegate` 0건),
@@ -2572,7 +3442,7 @@ function resetLive(){
    ⚠ **여는 자리와 거는 자리를 갈랐다** — 거는 것은 화면마다 한 번(`bindConfirm`),
      여는 것은 누르는 버튼마다(`openConfirm`)다. */
 function confirmBox(q,yes,no){
-  return `<div id="confirm"><div id="cbox"><p id="confirm-q">${esc(q)}</p>
+  return `<div id="confirm"><div id="cbox" role="alertdialog" aria-modal="true" aria-labelledby="confirm-q"><p id="confirm-q">${esc(q)}</p>
       <div class="crow"><button class="gbtn nodrag" id="cno">${esc(no)}</button>
         <button class="gbtn p nodrag" id="cyes">${esc(yes)}</button></div></div></div>`;
 }
@@ -2583,49 +3453,124 @@ function setConfirmCopy(q,yes,no){
 function bindConfirm(onYes){
   const cf=document.getElementById("confirm");if(!cf)return;
   const y=document.getElementById("cyes"),n=document.getElementById("cno");
-  if(n)n.onclick=()=>cf.classList.remove("on");
-  if(y)y.onclick=()=>{cf.classList.remove("on");onYes()};
+  if(n)n.onclick=()=>closeConfirm();
+  if(y)y.onclick=()=>{closeConfirm(false);onYes()};
+  cf.onkeydown=e=>{
+    if(e.key==="Escape"){e.preventDefault();e.stopPropagation?.();closeConfirm()}
+    else containDialogFocus(cf,e);
+  };
 }
-function openConfirm(){const cf=document.getElementById("confirm");if(cf)cf.classList.add("on")}
+function openConfirm(){
+  const cf=document.getElementById("confirm");if(!cf)return;
+  cf.classList.add("on");beginDialogFocus(cf,document.getElementById("cno"));
+}
+function closeConfirm(restoreFocus=true){
+  const cf=document.getElementById("confirm");if(!cf)return;
+  cf.classList.remove("on");endDialogFocus(cf,restoreFocus);
+}
+// 확인·파일 작업 창은 같은 키보드 경계를 쓴다. 배경을 잠그고 취소하면 호출한 자리로 돌아간다.
+function beginDialogFocus(root,first){
+  if(!root._dialogFocus){
+    const trigger=document.activeElement,row=trigger?.closest?.(".hmit");
+    root._dialogFocus={trigger,id:trigger?.id,rowID:row?.dataset?.id,peers:[]};
+  }
+  // 외부 갱신으로 화면을 다시 그려도 호출자를 보존하고 새 배경을 같은 모달 경계에 넣는다.
+  const saved=root._dialogFocus;
+  const peers=Array.from(app.children||[]).filter(e=>e!==root&&!e.contains?.(root));
+  saved.peers.forEach(({element,inert})=>{if(!peers.includes(element))element.inert=inert});
+  saved.peers=peers.map(element=>saved.peers.find(p=>p.element===element)||{element,inert:!!element.inert});
+  peers.forEach(e=>{e.inert=true});
+  first?.focus?.({preventScroll:true});
+}
+function endDialogFocus(root,restoreFocus=true){
+  const saved=root._dialogFocus;if(!saved)return;
+  root._dialogFocus=null;
+  saved.peers.forEach(({element,inert})=>{element.inert=inert});
+  if(!restoreFocus)return;
+  let trigger=saved.trigger;
+  if(!trigger||trigger.isConnected===false){
+    trigger=saved.id?document.getElementById(saved.id):null;
+    if(!trigger&&saved.rowID)trigger=Array.from(document.querySelectorAll?.(".hmit")||[]).find(e=>e.dataset.id===saved.rowID);
+    if(!trigger)trigger=document.getElementById("vaultmenu");
+  }
+  trigger?.focus?.({preventScroll:true});
+}
+function containDialogFocus(root,e){
+  if(e.key!=="Tab")return;
+  const fields=Array.from(root.querySelectorAll("input,select,textarea,button,[href],[tabindex]"))
+    .filter(f=>!f.disabled&&f.tabIndex>=0&&f.getClientRects().length);
+  const first=fields[0],last=fields[fields.length-1];if(!first)return;
+  if(e.shiftKey&&(document.activeElement===first||!root.contains?.(document.activeElement))){e.preventDefault();last.focus()}
+  else if(!e.shiftKey&&(document.activeElement===last||!root.contains?.(document.activeElement))){e.preventDefault();first.focus()}
+}
 function liveRender(){
-  app.innerHTML=`<div id="hist" class="drag"></div>
-    <div id="cur" class="drag"><span id="curw" class="nodrag" title="눌러서 누가 말하는지 바꾼다">면접관</span>
-      <div id="curbox"><div id="curtx" class="nodrag" spellcheck="false"
-        data-ph="상대 질문이 여기 받아적힌다"></div></div></div>
-    <div class="hsep"></div><div id="recs"></div><div id="trouble"></div>
-    <div class="bottom"><span class="ld" title="듣는 중"></span>
-      <button class="ibtn nodrag" id="lscope" title="오늘의 범위 — 누르면 다음 항성으로, 끝은 갤럭시"></button>
-      <button class="gbtn nodrag" id="exit">끝내기</button>
-      <span style="flex:1"></span>
-      <button class="ibtn nodrag" id="x">✕</button></div>
-    ${confirmBox("면접 모드를 끝낼까","끝낸다","계속한다")}`;
+  const preview=mode==="practice";
+  releaseMarkdownEditors();app.innerHTML=`<div id="hist" class="drag"></div>
+    <div id="cur" class="drag"><button id="curw" class="nodrag" type="button" aria-label="발화자 전환">상대</button>
+      <div id="curbox"><div id="curtx" class="nodrag" spellcheck="false" data-ph="상대 질문을 기다리는 중…"></div></div></div>
+    ${preview?'<form class="previewinput" id="preview-form"><input id="preview-question" aria-label="시험할 질문" placeholder="자료에 물어볼 질문"><button class="gbtn" type="submit">질문</button></form>':""}
+    <div class="hsep"></div><div id="recs"></div><div id="trouble"></div><div id="livequerynotice" class="trouble" role="status" hidden></div>
+    <div class="inputmeters"><span id="input-label-me">마이크 · 대기</span><meter id="input-me" min="0" max="1" value="0" aria-label="마이크 입력"></meter>${!preview&&SESSION_SYSTEM?'<span id="input-label-them">상대 · 대기</span><meter id="input-them" min="0" max="1" value="0" aria-label="상대 입력"></meter>':""}<span id="sessionstatus" role="status"></span></div>
+    <div class="bottom">
+      <button class="ibtn nodrag" id="lscope" title="참고할 자료 범위"></button>
+      ${preview?'<button class="gbtn" id="preview-mic">마이크 시험</button>':'<button class="gbtn nodrag" id="pause">일시정지</button>'}
+      <button class="gbtn nodrag" id="exit">${preview?(SESSION_PREVIEW_CONTEXT?.returnReview!==false&&SESSION_PREVIEW_CONTEXT?"자료 보완으로 돌아가기":"저장소로 돌아가기"):"끝내기"}</button><span style="flex:1"></span>
+      <details class="overlayappearance nodrag"><summary>배경</summary><div class="overlayappearancepanel"><label for="overlay-opacity">배경 불투명도</label><input type="range" id="overlay-opacity" min="0.35" max="1" step="0.05" value="${WSTYLE.opacity}" aria-describedby="overlay-appearance-note"><output id="overlay-opacity-value" for="overlay-opacity"></output><p id="overlay-appearance-note"${ACCESSIBILITY.reduceTransparency?"":" hidden"}>macOS의 투명도 줄이기가 적용되어 있습니다.</p></div></details>
+      <button class="ibtn nodrag" id="x" aria-label="창 숨기기" title="창 숨기기 · 수집은 유지">×</button></div>
+    ${confirmBox("수집을 끝내고 기록을 확인할까요?","끝내고 확인","계속 사용")}`;
   const tx=document.getElementById("curtx");
   /* ★ 타이핑은 **브리지가 없을 때만** 열린다 (박선호 2026-08-28: *"채팅창처럼 입력이 가능하게 왜 해둔거야?"*).
      앱에서는 귀가 받아적는 자리라 사람이 칠 일이 없고, 오히려 **눌러서 포커스가 가면 전사 갱신이 멈춘다.**
      브라우저 단독에서는 이게 유일한 입력 수단이라 거기서만 연다 — `cue.html` 개발 동선이 이 길로 산다. */
   if(!bridged()){
+    tx.setAttribute("role","textbox");tx.setAttribute("aria-label","현재 발화 입력");
     tx.setAttribute("contenteditable","plaintext-only");
     tx.oninput=()=>{const t=tx.textContent;CUR[curWho].c=t;CUR[curWho].v="";
-      if(curWho==="them"){heardV=t;opened=null;manual=false;applyRank(true)}
+      if(curWho==="them"){
+        if(t!==heardV)mineV="";
+        heardV=t;
+        // Preserve the text being read until another confident choice is available.
+        applyRank(true)
+      }
       else{mineV=t;if(!manual)autoPick()}};
     document.getElementById("curw").onclick=()=>{curWho=curWho==="them"?"me":"them";paintCur()};
   }
+  if(bridged())document.getElementById("curw").disabled=true;
   /* 나가는 길 하나 — 확인을 거쳐야 모드가 풀린다. 조각을 아무리 눌러도 모드는 안 바뀐다 */
-  bindConfirm(()=>goMode("stack"));
-  document.getElementById("exit").onclick=openConfirm;
+  bindConfirm(()=>sessionAction("finish"));
+  document.getElementById("exit").onclick=()=>{
+    if(preview){
+      SESSION_REVIEW_OPEN=!!SESSION_PREVIEW_CONTEXT&&SESSION_PREVIEW_CONTEXT.returnReview!==false;
+      SESSION_REVIEW_MAP_PENDING=SESSION_REVIEW_OPEN;
+      if(!SESSION_REVIEW_OPEN&&SESSION_PREVIEW_CONTEXT)WORKSPACE_PREVIEW_RETURN={query:document.getElementById("preview-question")?.value??SESSION_PREVIEW_CONTEXT.query,scope:LIVE_SUN||""};
+      stackView="edit";goMode("stack");
+    }else openConfirm();
+  };
+  const pause=document.getElementById("pause");if(pause)pause.onclick=()=>sessionAction(SESSION?.state==="paused"?"resume":"pause",{system:SESSION_SYSTEM});
+  if(preview){
+    document.getElementById("preview-form").onsubmit=e=>{e.preventDefault();previewQuestion(document.getElementById("preview-question").value)};
+    const button=document.getElementById("preview-mic");button.textContent=PREVIEW_MIC?"시험 멈춤":SESSION_PREVIEW_CONTEXT?.query?"답변 말해보기":"마이크 시험";
+    button.setAttribute("aria-pressed",String(PREVIEW_MIC));
+    button.onclick=()=>{PREVIEW_MIC=!PREVIEW_MIC;if(PREVIEW_MIC)SESSION_ERROR="";onCaptureState({phase:PREVIEW_MIC?"starting":"stopped",pending:PREVIEW_MIC?["me"]:[]});button.setAttribute("aria-pressed",String(PREVIEW_MIC));post(PREVIEW_MIC?"startListening":"stopListening",{system:false});button.textContent=PREVIEW_MIC?"시험 멈춤":SESSION_PREVIEW_CONTEXT?.query?"답변 말해보기":"마이크 시험";paintSessionControls()};
+  }
+  paintSessionControls();
+  const opacity=document.getElementById("overlay-opacity");
+  if(opacity)opacity.oninput=()=>{WSTYLE.opacity=Math.max(.35,clamp01(opacity.value,1));applyPanelOpacity();paintAppearanceSettings();post("setWindowStyle",{...WSTYLE})};
+  paintAppearanceSettings();
   document.getElementById("x").onclick=()=>post("closeWindow");
   /* ★ 범위 칩 하나 — **면접 중에 바꿀 수 있는 유일한 자리**다 (#79 결재: *"켤 때 한 번 바꿀 수 있음"*).
      갤럭시 → 항성들 → 갤럭시 순환. ⚠ 범위가 바뀌면 보던 카드는 남의 항성 것일 수 있어서
-     `opened`·`manual` 을 놓는다 — 안 놓으면 범위 밖 조각이 펼쳐진 채로 남는다. */
+     `openedID`·`openedSnapshot`·`manual` 을 놓는다 — 안 놓으면 범위 밖 조각이 펼쳐진 채로 남는다. */
   const paintScope=()=>{const b=document.getElementById("lscope");
     if(b)b.textContent="범위: "+liveScopeName(liveTree(),LIVE_SUN)};
   document.getElementById("lscope").onclick=()=>{
     LIVE_SUN=liveScopeCycle(liveTree(),LIVE_SUN);
-    opened=null;manual=false;
+    openedID=null;openedSnapshot=null;manual=false;
     paintScope();applyRank(true);
   };
   paintScope();
   paintCur();applyRank(true);
+  if(preview&&SESSION_PREVIEW_CONTEXT){document.getElementById("preview-question").value=SESSION_PREVIEW_CONTEXT.query;previewQuestion(SESSION_PREVIEW_CONTEXT.query)}
   if(trouble)onEarTrouble(trouble);
 }
 /* 지난 발화 두 줄 + 현재 발화. **확정 글자는 다시 안 그려도 같은 글자**고, 꼬리만 흐리다 */
@@ -2634,10 +3579,10 @@ function paintCur(){
   if(!h||!tx)return;
   const cur=CUR[curWho];
   h.innerHTML=hist.slice(-2).map(u=>
-    `<div class="hl"><span class="w">${u.who==="me"?"나":"면접관"}</span>${esc(u.text)}</div>`).join("");
+    `<div class="hl"><span class="w">${u.who==="me"?"나":"상대"}</span>${esc(u.text)}</div>`).join("");
   c.className="drag"+(curWho==="me"?" me":"");
-  document.getElementById("curw").textContent=curWho==="me"?"나":"면접관";
-  tx.dataset.ph=curWho==="me"?"답을 시작하면 하나가 펼쳐진다":"상대 질문이 여기 받아적힌다";
+  document.getElementById("curw").textContent=curWho==="me"?"나":"상대";
+  tx.dataset.ph=curWho==="me"?"답변을 말하면 관련 자료를 표시합니다":"상대 질문을 기다리는 중…";
   if(document.activeElement===tx)return;   /* 손으로 치는 중엔 안 건드린다 — 커서가 날아간다 */
   tx.innerHTML=esc(cur.c)+(cur.v?`<span class="vol">${cur.c?" ":""}${esc(cur.v)}</span>`:"");
   const box=document.getElementById("curbox");if(box)box.scrollTop=box.scrollHeight;
@@ -2661,134 +3606,144 @@ function applyRank(force){
      「저장소가 못 덮는 질문」이 아니다. */
   const r=rank(heardV,undefined,undefined,liveScopeIds(liveTree(),LIVE_SUN)),ids=r.map(x=>x.i);
   /* 색을 점수와 **같이** 받아 둔다 — 여기서 다시 재면 어느 눈금인지 또 물어야 한다 (#34) */
+  const oldList=ORD.list.slice();
   const oldPassage=ORD.passage||{};
   ORD.score={};ORD.color={};ORD.passage={};
   r.forEach(x=>{ORD.score[x.i]=x.s;ORD.color[x.i]=x.c;ORD.passage[x.i]=x.passage||null});
   ORD.how=r.length?r[0].how:scorer(heardV,QVEC,VEC);
-  if(!ids.length){ORD.top=null;ORD.list=[];paintRecs();return}
+  if(!ids.length){ORD.top=null;ORD.list=[];autoPick(false);paintRecs();recordSessionRetrieval();return}
   const first=ORD.top===null,swapped=!first&&ids[0]!==ORD.top;
   if(first||swapped){ORD.top=ids[0];ORD.list=ids.slice(0,3)}
   else{ORD.list=[ORD.top].concat(ids.filter(i=>i!==ORD.top)).slice(0,3)}
   /* 첫 그림은 안 흐린다 — 없던 것이 생기는 것은 교체가 아니다 */
+  const listChanged=oldList.length!==ORD.list.length||oldList.some((i,k)=>i!==ORD.list[k]);
   const passageChanged=ORD.list.some(i=>(oldPassage[i]||null)!==(ORD.passage[i]||null));
-  if(first||swapped||force||passageChanged)paintRecs(swapped&&!force);
-  else paintDots();   /* 카드는 그대로 두고 색만 따라온다 */
+  /* 질문 임베딩·색인이 내 발화보다 늦어도 새 후보에서 자동 펼침을 이어간다. */
+  const openedChanged=autoPick(false);
+  if(first||swapped||force||listChanged||passageChanged||openedChanged)paintRecs(swapped&&!force);
+  else paintDots();
+  recordSessionRetrieval();
+}
+/* 수동으로 읽은 본문은 추천 슬롯과 분리해 **문서 id·당시 표시 글자**를 보존한다.
+   추천 슬롯은 새 질문에 맞춰 움직여도, 이 판은 명시적으로 다른 자료를 고르거나 닫을 때까지 남는다. */
+function readingSnapshotAt(index){
+  const p=DOC.fragments[index];if(!p)return null;
+  const hit=ORD.passage&&ORD.passage[index];
+  return {id:p.id,title:p.title||"",body:(hit&&hit.sourceText)||p.body||"",passageID:hit&&hit.id||null};
+}
+function closeManualReading(){
+  openedID=null;openedSnapshot=null;manual=false;paintRecs();recordSessionRetrieval();
+}
+function toggleRecommendation(id,visibleSnapshot){
+  const target=String(id||"");if(!target)return false;
+  const index=DOC.fragments.findIndex(p=>p&&p.id===target);
+  if(index<0)return false;
+  /* 페이드 도중에는 새 순위가 먼저 도착할 수 있다. 클릭한 화면의 글자를 보존한다. */
+  const visible=visibleSnapshot&&visibleSnapshot.id===target
+    &&typeof visibleSnapshot.title==="string"&&typeof visibleSnapshot.body==="string";
+  if(!visible&&!ORD.list.some(i=>DOC.fragments[i]?.id===target))return false;
+  const snapshot=visible?{id:target,title:visibleSnapshot.title,body:visibleSnapshot.body,
+    passageID:visibleSnapshot.passageID||null}:readingSnapshotAt(index);
+  if(!snapshot)return false;
+  if(openedID===target&&openedSnapshot?.passageID===snapshot.passageID){closeManualReading();return true}
+  openedID=target;openedSnapshot=snapshot;manual=true;paintRecs();recordSessionRetrieval();return true;
 }
 /* 내 말이 시작되면 맞는 조각을 편다 (라운드 8 Q3-나). **수동 클릭이 이걸 덮는다** */
-function autoPick(){
-  if(!mineV.trim()||!ORD.list.length)return;
-  let best=null,bs=.02;
+function autoPick(repaint=true){
+  if(manual||!mineV.trim())return false;
+  let best=null,bs=.02,second=.02;
   ORD.list.forEach(i=>{const p=DOC.fragments[i];if(!p)return;
-    const sc=Math.max(sim(mineV,p.title),sim(mineV,p.body||""));if(sc>bs){bs=sc;best=i}});
-  if(best!==null&&best!==opened){opened=best;paintRecs()}
+    const anchors=retrievalAnchors(heardV);if(anchors.size&&retrievalAnchorCoverage(heardV,p.title+"\n"+p.body)<1)return;
+    const sc=Math.max(sim(mineV,p.title),sim(mineV,p.body||""));if(sc>bs){second=bs;bs=sc;best=i}else if(sc>second)second=sc});
+  if(best===null||bs-second<.04)return false;
+  const next=readingSnapshotAt(best);if(!next)return false;
+  // 새 답변이 같은 문서의 다른 문단을 선택할 수 있다. 같은 발췌는 다시 그리지 않는다.
+  if(next.id===openedID&&next.passageID===openedSnapshot?.passageID)return false;
+  openedID=next.id;openedSnapshot=next;
+  if(repaint){paintRecs();recordSessionRetrieval()}
+  return true;
 }
 /* ★ 색만 따로 칠한다 — **재배열과 독립**이다 (#20 인수 조건 3).
    글자·순서는 1위가 바뀔 때만 갈아끼우지만(라운드 8 Q2-다), 색은 어절마다 따라온다.
    그래야 「지금 이 후보가 얼마나 위험한가」가 실시간으로 보이면서도 카드는 안 움직인다. */
 function paintDots(){
   const box=document.getElementById("recs");if(!box||box.dataset.n!=="3")return;
-  [...box.children].forEach((el,k)=>{
+  [...box.querySelectorAll(".rec[data-k]")].forEach((el,k)=>{
     const i=ORD.list[k],d=el.querySelector(".dot");
     if(i===undefined||!d)return;
     d.className="dot "+(ORD.color[i]||"r");
   });
 }
+function paintManualReading(box){
+  const panel=box&&box.querySelector?box.querySelector("[data-manual-read]"):null;
+  if(!panel)return;
+  const active=!!(openedSnapshot&&openedID===openedSnapshot.id);
+  panel.hidden=!active;
+  panel.classList.toggle("open",active);
+  if(!active){panel.dataset.readingKey="";return}
+  const key=JSON.stringify([openedSnapshot.id,openedSnapshot.passageID]);
+  const changed=panel.dataset.readingKey!==key;panel.dataset.readingKey=key;
+  panel.dataset.id=openedSnapshot.id;
+  const title=panel.querySelector(".rt"),meta=panel.querySelector(".rs"),body=panel.querySelector(".rb");
+  if(title&&title.textContent!==openedSnapshot.title)title.textContent=openedSnapshot.title;
+  const position=ORD.list.findIndex(i=>DOC.fragments[i]?.id===openedSnapshot.id);
+  if(meta)meta.textContent=(position>=0?"추천 "+(position+1)+" · ":"")+"읽는 중";
+  /* 같은 본문은 다시 쓰지 않는다 — 읽던 위치와 텍스트 선택을 보존한다. */
+  const excerpt=displayExcerpt(openedSnapshot.body);
+  if(body&&body.textContent!==excerpt){body.textContent=excerpt;body.scrollTop=0}
+  if(changed&&!canvasSystemReduced())panel.animate?.([{opacity:.6,transform:"translateY(4px)"},{opacity:1,transform:"translateY(0)"}],{duration:220,easing:"cubic-bezier(.2,.8,.2,1)"});
+  const close=panel.querySelector("[data-manual-close]");if(close)close.onclick=closeManualReading;
+}
 /* 카드 셋은 **한 번만 짓고 내용만 갈아끼운다** — 매 어절 다시 지으면 화면이 끊긴다 */
 function paintRecs(fade){
   const box=document.getElementById("recs");if(!box)return;
-  if(!ORD.list.length){
-    box.innerHTML=`<div class="empty">${heardV.trim()?"추천할 답변이 없어요":"질문을 기다리는 중…"}</div>`;
-    box.dataset.n="0";return}
   if(box.dataset.n!=="3"){
-    box.innerHTML=[0,1,2].map(k=>`<div class="rec" data-k="${k}"><div class="in">
-      <div class="rt"></div><div class="rs"></div><div class="rb"></div></div><span class="rn">${k+1}</span></div>`).join("");
+    box.innerHTML=`<div class="rec manual-read" data-manual-read hidden><div class="in">
+      <div class="rt"></div><div class="rs"></div><div class="rb"></div></div>
+      <button class="ibtn nodrag" data-manual-close aria-label="읽던 자료 닫기" title="읽던 자료 닫기">×</button></div>`
+      +[0,1,2].map(k=>`<div class="rec" role="button" tabindex="0" data-k="${k}"><div class="in">
+      <div class="rt"></div><div class="rs"></div><div class="rb"></div></div><span class="rn">${k+1}</span></div>`).join("")
+      +`<div class="empty" data-live-empty hidden></div>`;
     box.dataset.n="3";
-    box.querySelectorAll(".rec").forEach(el=>el.onclick=()=>{
-      const i=+el.dataset.i;if(isNaN(i))return;manual=true;opened=(opened===i?null:i);paintRecs()});
+    box.querySelectorAll(".rec[data-k]").forEach(el=>{
+      el.onclick=()=>toggleRecommendation(el.dataset.id,{
+        id:el.dataset.id,title:el.querySelector(".rt").textContent,body:el.querySelector(".rb").textContent,
+        passageID:el.dataset.passageId||null});
+      el.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();el.click()}};
+    });
   }
+  paintManualReading(box);
+  const empty=box.querySelector?box.querySelector("[data-live-empty]"):null;
+  if(empty){empty.hidden=!!ORD.list.length;empty.textContent=heardV.trim()?"현재 범위에서 추천할 자료를 찾지 못했어요":"질문을 기다리는 중…"}
   paintDots();
-  const fill=()=>{[...box.children].forEach((el,k)=>{
+  const slots=()=>[...box.querySelectorAll(".rec[data-k]")];
+  const fill=()=>{slots().forEach((el,k)=>{
     const i=ORD.list[k],p=DOC.fragments[i];
     if(i===undefined||!p){el.style.display="none";return}
-    const sc=ORD.score[i];
-    el.style.display="";el.dataset.i=i;
-    el.classList.toggle("open",opened===i);
-    el.classList.toggle("dim",opened!==null&&opened!==i);
+    const hit=ORD.passage&&ORD.passage[i];
+    // 펼친 발췌를 후보에 반복하지 않는다. 같은 문서의 다른 발췌는 선택할 수 있다.
+    if(openedSnapshot?.id===p.id&&(openedSnapshot.passageID||null)===(hit?.id||null)){el.style.display="none";return}
+    el.style.display="";el.dataset.i=i;el.dataset.id=p.id;el.setAttribute("aria-label",p.title+" 펼치기");el.setAttribute("aria-expanded",String(openedID===p.id));
+    el.classList.toggle("open",!openedSnapshot&&openedID===p.id);
+    el.classList.toggle("dim",!manual&&openedID!==null&&openedID!==p.id);
     el.classList.toggle("lead",k===0);
     el.querySelector(".rt").textContent=p.title;
-    /* ★ **유사도 숫자를 사람에게 안 보인다** (#61 E, 박선호). 면접 중에 읽을 것은
-       「이 카드가 준비된 답인가」이고 그건 **점**이 든다 — 0.884 는 사람이 아니라
-       우리가 자를 검증할 때 보는 수다. 그래서 QA 노출 게이트에서만 붙인다.
-       ⚠ 점(신호등)은 그대로다. 숨긴 것은 숫자 하나뿐이고 뜻은 안 사라졌다. */
-    el.querySelector(".rs").innerHTML=`<span class="dot ${ORD.color[i]||"r"}"></span>`
-      +((sc===undefined||!QAVIS)?"":" · "+sc.toFixed(3));
-    const hit=ORD.passage&&ORD.passage[i];
-    el.querySelector(".rb").textContent=(hit&&hit.sourceText)||p.body||"";
+    /* 점은 관련도 구간이다. 답의 존재·사실·숫자 일치를 보증하지 않는다. */
+    el.querySelector(".rs").innerHTML=`<span class="dot ${ORD.color[i]||"r"}"></span>`;
+    el.dataset.passageId=hit&&hit.id||"";
+    el.querySelector(".rb").textContent=displayExcerpt((hit&&hit.sourceText)||p.body||"");
   })};
-  if(!fade){ORD.seq=(ORD.seq||0)+1;fill();[...box.children].forEach(el=>el.classList.remove("fade"));return}
+  if(!fade){ORD.seq=(ORD.seq||0)+1;fill();slots().forEach(el=>el.classList.remove("fade"));return}
   /* 교체는 크로스페이드로. ⚠ 앞의 페이드가 아직 안 끝났으면 그것을 버린다 — 안 그러면 흐린 채로 굳는다 */
-  const mine=ORD.seq=(ORD.seq||0)+1,slots=[...box.children];
-  slots.forEach(el=>el.classList.add("fade"));
-  setTimeout(()=>{if(mine!==ORD.seq)return;fill();slots.forEach(el=>el.classList.remove("fade"))},240);
+  const mine=ORD.seq=(ORD.seq||0)+1,fadeSlots=slots();
+  fadeSlots.forEach(el=>el.classList.add("fade"));
+  setTimeout(()=>{if(mine!==ORD.seq)return;fill();fadeSlots.forEach(el=>el.classList.remove("fade"))},240);
 }
 /* ★ 연습 화면 (#36). **면접 화면의 골격을 그대로 쓴다** — 위 막대 · 한 칸짜리 답 · 신호등.
    다른 것은 큰 글씨가 「상대가 한 말」이 아니라 **앱이 묻는 질문**이라는 것뿐이다.
    ⚠ 이 함수는 **판정선 검사의 진입점**이다 (`tests/check_interview_offline.py` 의 ROOTS) —
      이름을 바꾸면 연습이 통째로 검사 밖에 남으므로 거기 목록도 같이 고쳐라. */
-function practiceRender(){
-  const qid=practiceQid();
-  if(!qid)return practiceSummaryRender();
-  /* ⚠ **`practiceGaps()` 가 아니다** — 그건 칩만 세어서, 받기가 막 앉힌 답을 「없다」고
-     말한다(`practiceUnprepared` 머리글). 순서를 정하는 자리(`startPractice`)는 그대로
-     `practiceGaps()` 다: 거기서 세는 것은 **칩이 빈 질문**이고 그건 여전히 참인 사실이다. */
-  const q=DOC.questions.find(x=>x.id===qid)||askedById(qid)||{text:""},
-        hole=practiceUnprepared(qid,DOC.fragments,VEC);
-  /* ★ 기록 줄이면 **어디서 온 물음인지와 그때의 색**을 붙인다 (#79) — 「왜 이걸 또 묻나」의 답이다.
-     ⚠ 색은 다시 재지 않는다. 여기 뜨는 점은 **그때** `rank()` 가 낸 것이다. */
-  const A=askedById(qid);
-  const src=A?`<span class="foot">${A.source==="interview"?"면접에서 들은 질문":"저장소에서 찾은 질문"} · ${
-      String(A.at||"").slice(5,10).replace("-","/")}${A.color?` · <span class="dot ${A.color}"></span>그때 ${
-      A.color==="g"?"초록":A.color==="a"?"주황":"빨강"}`:""}</span>`:"";
-  app.innerHTML=`<div id="top" class="drag"><span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span>
-      <span id="stat">연습 · ${prac.k+1}/${prac.ids.length}</span><span style="flex:1"></span>
-      <button class="gbtn nodrag" id="pend">끝내기</button>
-      <button class="ibtn nodrag" id="x">✕</button></div>
-    <div id="pr">
-      <div><span class="fl">앱이 묻는다 · 소리 내어 답한다${
-        hole?' · <span style="color:var(--warn)">이 질문엔 준비된 답변이 없다</span>':""}</span>
-        <div class="pq">${esc(q.text)}</div>${src}</div>
-      <div><span class="fl">내 답 · ${bridged()?"말하면 여기에 표시돼요":"직접 입력"}</span>
-        <div id="pans" spellcheck="false" data-ph="${
-          bridged()?"소리 내어 답하면 여기 받아적힌다":"여기에 답을 친다"}"></div></div>
-      <div id="pscore"></div>
-      <div class="prow"><button class="gbtn p" id="pgrade">채점</button>
-        <button class="gbtn" id="pnext">다음 질문</button>
-        <span style="flex:1"></span>
-        <span class="foot">답변은 이 Mac에서만 처리돼요.</span></div>
-      <div class="pn">준비한 답변과 얼마나 비슷한지 봅니다 — 정답을 채점하는 기능은 아니에요.</div>
-    </div>`;
-  const a=document.getElementById("pans");
-  /* ★ 타이핑은 **브리지가 없을 때만** 열린다 — `liveRender` 와 같은 규율·같은 이유:
-     앱에서는 귀가 받아적는 자리라 사람이 칠 일이 없고, 눌러서 포커스가 가면 갱신이 멈춘다.
-     브라우저 단독에서는 이것이 유일한 입력 수단이라 **연습 로직 전체가 이 길로 돈다.** */
-  if(!bridged()){
-    a.setAttribute("contenteditable","plaintext-only");
-    a.oninput=()=>{prac.head=a.textContent;prac.headq=a.textContent;prac.cur="";prac.vol="";prac.curq=""};
-  }
-  document.getElementById("pgrade").onclick=()=>{gradePractice();paintPractice()};
-  /* 넘기기 전에 **아직 안 매겼으면 매긴다** — 안 그러면 요약에서 그 문항이 통째로 빠진다 */
-  document.getElementById("pnext").onclick=()=>{
-    if(!prac.res[qid])gradePractice();
-    nextPractice();practiceRender()};
-  document.getElementById("pend").onclick=()=>{
-    if(!prac.res[qid])gradePractice();
-    prac.done=true;practiceRender()};
-  document.getElementById("x").onclick=()=>post("closeWindow");
-  paintPractice();
-}
-/* 답과 채점만 **제자리에서** 고쳐 쓴다. ⚠ **다시 그리지 않는다** — 브라우저 단독에서는 `#pans`
-   가 사람이 치고 있는 칸이고 통째로 갈아끼우면 그 글자와 커서가 날아간다
-   (`paintCur`·`paintNotice`·`paintReady` 가 같은 이유로 같은 모양을 쓴다). */
+function practiceRender(){liveRender()}
 function paintPractice(){
   if(!prac)return;
   const a=document.getElementById("pans");
@@ -2805,7 +3760,7 @@ function paintPractice(){
   if(!r){box.innerHTML="";return}
   box.innerHTML=`<div class="pres ${r.c}"><div><span class="dot ${r.c}"></span>${
       r.prepared?esc(r.hitTitle)+" · "+r.s.toFixed(3)
-                :"준비한 답변이 없어요 — 연습이 끝나면 채울 수 있어요."}</div>`
+                :"이 질문에 연결된 자료가 없어요."}</div>`
     +(r.prepared&&!r.onTarget
       ?`<div class="pn" style="margin-top:6px">가장 비슷한 답변은 ${esc(r.topTitle)}입니다.</div>`:"")
     +`</div>`;
@@ -2817,16 +3772,15 @@ function practiceSummaryRender(){
      `stopEars` 는 몇 번 불려도 안전하다(그 함수 머리글). */
   post("stopListening");
   const s=practiceSummary(),ids=(prac&&prac.ids)||[],res=(prac&&prac.res)||{};
-  /* 빨강 중 **답이 아예 없는 것**을 따로 센다 — 「고쳐 쓸 것」과 갈려야 그 줄이 참이다.
-     ⚠ **버튼이 아니라 문장이다** (#74 C5): 채우기 흐름이 죽어서 데려갈 자리가 없다. */
+  // 기존 질문 중 연결된 자료가 없는 항목을 구분한다. 낮은 유사도만으로 답의 부재나 수정 필요를 단정하지 않는다.
   const redGaps=s.red.filter(id=>practiceGaps().some(q=>q.id===id));
-  app.innerHTML=`<div id="top" class="drag"><span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span>
+  releaseMarkdownEditors();app.innerHTML=`<div id="top" class="drag"><span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span>
       <span id="stat">연습 끝</span><span style="flex:1"></span>
       <button class="ibtn nodrag" id="x">✕</button></div>
     <div id="pr">
       <div class="pq">${s.n}문항 중 ${s.g}개가 초록이었다</div>
       <div class="pn">주황 ${s.a} · 빨강 ${s.r}${
-        s.red.length>redGaps.length?` · 빨강 중 ${s.red.length-redGaps.length}개는 답변이 이미 있다(고쳐 쓸 것)`:""}</div>
+        s.red.length>redGaps.length?` · 빨강 중 ${s.red.length-redGaps.length}개는 비교한 자료를 다시 확인해 보세요`:""}</div>
       <div>${ids.map(id=>{const v=res[id];return `<div class="sumrow"><span class="dot${
         v?" "+v.c:""}"></span><span>${esc(qtext(id))}</span>${
         v?"":'<span class="pn">· 안 답했다</span>'}</div>`}).join("")}</div>
@@ -2865,16 +3819,20 @@ function practiceSummaryRender(){
    ⚠ 이 이름은 **판정선 검사의 선언된 경계**다 (`tests/check_interview_offline.py` 의 `BOUNDARY`) —
      바꾸면 거기 목록도 같이 고쳐라. 여기 아래로 붙는 것은 면접 모드로 안 세어진다. */
 function stackRender(){
+  explorerCreateCapture();
   vaultMenuClose(false);
-  if(!VAULT_CONNECTED)return folderStartRender();
+  if(stackView==="settings")return settingsRender();
   /* ★ 수확 질문 정돈 (#47) — **이 자리가 전부다.** 여기(판정선의 선언된 경계) 아래에서만
      `tidyQuestion` 통로가 열린다. 여러 번 불려도 안전하다(`pumpTidy` 가 줄을 본다). */
-  pumpTidy();
+  if(VAULT_CONNECTED)pumpTidy();
   /* ★ **설정을 떠나면 키를 도로 놔준다** (2026-08-31 설정 통합). 녹화 중에 「쌓기로」를 누르면
      `recKey` 가 `preventDefault` 를 계속 물어 **글 쓰는 키가 통째로 죽는다.** 녹화가 설정
      화면 안에서만 사는 것을 여기 한 줄이 보증한다 — 화면마다 걷는 것보다 자리가 하나다. */
   if(stackView!=="settings"){RECSLOT=null;RECMOD=null;RECCLASH=null;document.onkeydown=null}
-  if(stackView==="settings")return settingsRender();
+  if(stackView==="prepare")return prepareUseRender();
+  if(stackView==="sessions")return sessionRender();
+  if(stackView==="import")return documentImportRender();
+  if(stackView==="connection")return aiConnectionRender();
   if(stackView==="ingest")return ingestRender();
   const cur=sel!==null?DOC.fragments[sel]:null;
   /* ★ 머리글 = **아이콘만** (#74 C4 · design.md §5: *"글자는 툴팁에"*).
@@ -2883,55 +3841,60 @@ function stackRender(){
      ⚠ **아이콘 폰트도 이모지도 안 쓴다**: 폰트는 자산이라 못 부르고, 이모지는 기기마다
        다른 그림이 떠서 「같은 뜻」이 안 된다.
      ⚠ **준비도 줄이 죽었다** (#74 C4) — 셀 질문이 없다. 머리에 남는 것은 동사 넷뿐이다. */
-  app.innerHTML=`<div id="top" class="drag hmtop">${explorerToggleButton()}<span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span><span id="indexstate" style="font-size:11px;color:var(--t3)">${esc(indexStateText())}</span>
-      <div class="hmmid nodrag"><button class="ibtn ico act" id="golive" title="면접" aria-label="면접">${ICO.live}</button>
-        <button class="ibtn ico" id="gopractice" title="연습" aria-label="연습">${ICO.practice}</button></div>
-      <span style="flex:1"></span>
-      <button class="ibtn ico nodrag" id="gear" title="설정" aria-label="설정">${ICO.gear}</button>
-      <button class="ibtn ico nodrag" id="x" title="닫기" aria-label="닫기">${ICO.close}</button></div>
-    <div id="stacknotices" role="status">${notice?`<div class="wb" id="nb">${esc(notice)}</div>`:""}</div>
-    <div id="cols" class="${PANE.r?"document-open":""}">${explorerPane()}
-    ${canvasPane()}
-    <button class="rzr" id="rzr" data-zip="${PANE.r?0:1}"
-        title="끌어서 폭을 바꿔요 — 좁히면 접혀요"></button>
-    <div id="right"${PANE.r?"":' class="zip"'} style="width:${PANE.r}px">${editPanel(cur)}</div></div>`;
-  bindExplorerPane();
+  releaseMarkdownEditors();app.innerHTML=`<div id="top" class="drag workspace-top">
+      <div class="workspace-header-start"><div id="workspace-sidebar-head" style="width:${Math.max(114,PANE.l)}px">
+        <button class="ibtn ico nodrag" id="vaultmenu" title="${VAULT_CONNECTED?"저장소 폴더 변경":"폴더 연결"}" aria-label="${VAULT_CONNECTED?"저장소 폴더 변경":"폴더 연결"}">${ICO.folder}</button>
+        <span id="vaultheading" title="${VAULT_CONNECTED?esc(SYS.vault||""):""}">${VAULT_CONNECTED?esc((SYS.vault||"").split("/").filter(Boolean).pop()||"저장소"):""}</span>
+      </div><div id="cvnav" class="nodrag"></div></div>
+      <button class="ibtn ico act nodrag" id="golive" title="대화에서 사용" aria-label="대화에서 사용">${ICO.live}</button>
+      <div class="workspace-header-end"><span id="indexstate" role="status">${esc(indexStateText())}</span>
+      <button class="ibtn ico nodrag" id="cvjoy" aria-label="별빛 흩뿌리기" title="별빛 흩뿌리기">${ICO.sparkle}</button>
+      ${bridged()?"":`<button class="ibtn ico nodrag" id="gear" title="설정" aria-label="설정">${ICO.gear}</button><button class="ibtn ico nodrag" id="x" title="닫기" aria-label="닫기">${ICO.close}</button>`}</div></div>
+    <div id="stacknotices" role="status">${notice?`<div class="wb" id="nb" role="alert">${esc(notice)}</div>`:""}${SESSION_REVIEW_OPEN?"":`<div id="sessionerror" role="alert">${esc(SESSION_ERROR)}</div>`}</div>
+    <div id="cols" class="${PANE.r&&!SESSION_REVIEW_OPEN&&!CHANGES_OPEN?"document-open":""}${workspaceQueryContextActive()?" query-context":""}">${explorerPane()}
+    <div id="workspacetoast" role="status" aria-live="polite" aria-atomic="true" hidden></div>${CHANGES_OPEN?changeDetailPane():canvasPane()}
+    ${CHANGES_OPEN?"":SESSION_REVIEW_OPEN?`<aside id="sessionreview" data-session-id="${esc(SESSION?.id||"")}" aria-label="대화 기록">${sessionReviewPanel()}</aside>`:`<button class="rzr" id="rzr" data-zip="${PANE.r?0:1}" title="끌어서 폭을 바꿔요 — 좁히면 접혀요"></button><div id="right"${PANE.r?"":' class="zip"'} style="width:${PANE.r}px">${editPanel(cur)}</div>`}</div>`;
+  bindExplorerPane();paintWorkspaceToast();paintDocumentChanges();
   /* ★ 가운데 칸을 세운다 — **홈을 그릴 때마다 한 번**이다. `canvasMount` 가 SVG 알맹이를
      짓고 그 뒤로는 속성만 바뀐다(그 함수 머리글). 배치(`CANV`)는 서명이 같으면 살아 있어서
      사람이 끌어 둔 위상이 저장 한 번에 안 날아간다. */
-  canvasBindPane();
-  bindResizer("rzr","right","r");
-  document.getElementById("golive").onclick=()=>goMode("live");
+  if(!CHANGES_OPEN)canvasBindPane();
+  else {const joy=document.getElementById("cvjoy");if(joy)joy.disabled=true}
+  if(!CHANGES_OPEN&&!SESSION_REVIEW_OPEN)bindResizer("rzr","right","r");
+  bindSessionReview();
+  document.getElementById("golive").onclick=openUsePreparation;
   /* 연습으로 가는 문 (#36). ⚠ **여는 데 실패하면 모드를 안 바꾼다** — 질문이 0개면
      빈 화면으로 들어가는 대신 여기 띠 한 줄로 말한다.
      ★ **새 볼트에서 0개가 이제 기본이다** (#74 C5) — 씨앗 질문을 안 심으므로 「예상 질문이
        없다」가 정직한 첫 답이고, 질문은 면접에서 수확될 때 생긴다.
      ⚠ **전환이 거부될 상황이면 `startPractice` 도 안 돈다** (#66 리뷰 발견 ③). */
-  document.getElementById("gopractice").onclick=()=>{
-    if(!leaveEditorAllowed())return;
-    if(!canGoMode("practice"))return;
-    if(startPractice())goMode("practice");else stackRender()};
+
   /* ★ 톱니가 여는 것이 **프론트 설정**이다 (#61 C). */
-  document.getElementById("gear").onclick=openSettingsScreen;
-  document.getElementById("x").onclick=()=>post("closeWindow");
-  bindEditPanel(cur,saveChips(cur,null));
+  const gear=document.getElementById("gear");if(gear)gear.onclick=openSettingsScreen;
+  const close=document.getElementById("x");if(close)close.onclick=()=>post("closeWindow");
+  if(!CHANGES_OPEN&&!SESSION_REVIEW_OPEN)bindEditPanel(cur,saveChips(cur,null));
+  paintWorkspaceQueryContext();
+  sessionInitialQuestionOnMap();
+  paintWorkspaceConnectionState();
+  if(WORKSPACE_PREVIEW_RETURN&&!SESSION_REVIEW_OPEN){const q=WORKSPACE_PREVIEW_RETURN;WORKSPACE_PREVIEW_RETURN=null;if(WORKSPACE_SCOPE!==q.scope)workspaceEnterFolder(q.scope);for(const id of ["workspacequery","cvq"]){const field=document.getElementById(id);if(field)field.value=q.query}canvasAsk(q.query,{wave:false})}
+}
+function paintWorkspaceConnectionState(){
+  const disconnected=!VAULT_CONNECTED;
+  for(const id of ["golive","nw","newfolder","explorerimport","explorerconnection","explorerhome","lfind","workspacequery","workspaceask","cvq","emptycreate"]){
+    const control=document.getElementById(id);if(control)control.disabled=disconnected;
+  }
+  paintExplorerTools();
+  if(disconnected)for(const id of ["foldall","explorerback"]){
+    const control=document.getElementById(id);if(control)control.disabled=true;
+  }
+  const vaultMenu=document.getElementById("vaultmenu");if(vaultMenu){
+    const label=disconnected?"폴더 연결":"저장소 폴더 변경";
+    vaultMenu.disabled=false;vaultMenu.title=label;vaultMenu.setAttribute("aria-label",label);
+  }
 }
 function explorerNewFolderParent(){
-  const scoped=CANV&&CANV.focusPath;
-  if(scoped&&VAULT_FOLDERS.includes(scoped))return scoped;
-  const current=sel!==null?DOC.fragments[sel]:null,path=current&&PATHS[current.id]||"";
-  const slash=path.lastIndexOf("/");
-  return slash<0?"":path.slice(0,slash);
+  return WORKSPACE_SCOPE;
 }
-function explorerToggleButton(){
-  return `<button class="ibtn ico nodrag" id="toggleexplorer" aria-controls="left" aria-expanded="${PANE.l>0}" aria-label="${PANE.l>0?"탐색기 접기":"탐색기 펼치기"}" title="${PANE.l>0?"탐색기 접기":"탐색기 펼치기"}"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5" stroke="currentColor"/><path d="M6 3v10" stroke="currentColor"/></svg></button>`;
-}
-function paintExplorerToggle(){
-  const b=document.getElementById("toggleexplorer");if(!b)return;
-  const label=PANE.l>0?"탐색기 접기":"탐색기 펼치기";
-  b.setAttribute("aria-expanded",String(PANE.l>0));b.setAttribute("aria-label",label);b.title=label;
-}
-function explorerToggle(){paneApply("l",PANE.l>0?0:EXPLORER_WIDTH);canvasFit()}
 function explorerExpandAll(){LZIP={};paintHomeList()}
 function explorerCollapseAll(){
   const tree=vaultTree(DOC.fragments||[],PATHS||{},null,VAULT_FOLDERS,VAULT_ENTRIES);
@@ -2939,63 +3902,153 @@ function explorerCollapseAll(){
   vaultRows(tree,{}).filter(r=>r.folder).forEach(r=>{next[r.path]=true});
   LZIP=next;paintHomeList();
 }
-function vaultNewDocument(parent){
-  if(!leaveEditorAllowed(()=>vaultNewDocument(parent)))return;
-  const base=parent||"";
-  vaultDialog("새 문서",`<p class="foot">${esc(base||"저장소")}</p><input id="vname" aria-label="파일 이름" placeholder="파일 이름" value="">`,"만들기",()=>{
-    let name=document.getElementById("vname").value.trim();if(!name)return;
-    if(!/\.(md|markdown)$/i.test(name))name+=".md";
-    vaultRequest({action:"createFile",path:[base,name].filter(Boolean).join("/")});
-  });
+function vaultNewDocument(parent){explorerStartCreate("file",parent)}
+function vaultNewFolder(parent){explorerStartCreate("folder",parent)}
+function explorerStartCreate(kind,parent){
+  if(!VAULT_CONNECTED)return;
+  if(VAULT_ACTION||VAULT_CREATE?.pending)return;
+  if(!leaveEditorAllowed(()=>explorerStartCreate(kind,parent)))return;
+  vaultMenuClose(false);vaultDialogClose();
+  if(stackView!=="edit"){stackView="edit";stackRender()}
+  paneOpen("l");
+  VAULT_CREATE={kind,parent:parent||"",name:"",error:"",pending:false,refocus:true};
+  LFIND="";const find=document.getElementById("lfind");if(find)find.value="";
+  LZIP=treeReveal(LZIP,parent);if(parent)delete LZIP[parent];
+  paintHomeList();
+  VAULT_CREATE.row?.scrollIntoView({block:"nearest",inline:"nearest"});
 }
-function vaultNewFolder(parent){
-  if(!leaveEditorAllowed(()=>vaultNewFolder(parent)))return;
-  const base=parent||"";
-  vaultDialog("새 폴더",'<input id="vname" aria-label="폴더 이름" placeholder="이름">',"만들기",()=>{
-    const name=document.getElementById("vname").value.trim();if(!name)return;
-    vaultRequest({action:"createFolder",path:[base,name].filter(Boolean).join("/")});
-  });
+/* 이름 입력은 실제 DOM을 재사용한다. 비동기 색인 갱신이 조합 중인 한글을 끊지 않는다. */
+function explorerCreateCapture(){
+  const state=VAULT_CREATE,input=state?.row?.querySelector("input");
+  if(!input||document.activeElement!==input)return;
+  state.name=input.value;state.refocus=true;
+  state.selection=[input.selectionStart,input.selectionEnd,input.selectionDirection];
+}
+function explorerCancelCreate(){
+  const state=VAULT_CREATE;if(!state||state.pending)return;
+  state.row?.remove();VAULT_CREATE=null;
+  document.getElementById(state.kind==="folder"?"newfolder":"nw")?.focus();
+}
+function explorerCreatePath(kind,parent,value){
+  let name=value.trim();
+  if(!name)return {error:"이름을 입력해 주세요"};
+  if(name==="."||name===".."||/[\\/\u0000-\u001f\u007f]/.test(name))return {error:"파일 이름에 쓸 수 없는 문자가 있어요"};
+  if(kind==="file"&&!/\.(md|markdown)$/i.test(name))name+=".md";
+  const path=[parent,name].filter(Boolean).join("/");
+  const key=p=>p.normalize("NFC").toLowerCase();
+  if([...Object.values(PATHS),...VAULT_FOLDERS,...VAULT_ENTRIES.map(e=>e.path)].some(p=>key(p)===key(path)))return {error:"같은 이름이 이미 있어요"};
+  return {path};
+}
+function explorerCommitCreate(){
+  const state=VAULT_CREATE;if(!state||state.pending||state.composing)return;
+  explorerCreateCapture();
+  const result=explorerCreatePath(state.kind,state.parent,state.name);
+  state.error=result.error||"";
+  if(!result.error){
+    state.path=result.path;
+    state.pending=vaultRequest({action:state.kind==="folder"?"createFolder":"createFile",path:result.path});
+    if(!state.pending)state.error=notice||"파일 처리가 끝난 뒤 다시 시도해 주세요";
+  }
+  paintExplorerCreation();
+}
+function paintExplorerCreation(){
+  const state=VAULT_CREATE,box=document.getElementById("leftlist");if(!state||!box)return;
+  let row=state.row;
+  if(!row){
+    row=document.createElement("div");row.className="explorer-create";row.setAttribute("role","treeitem");state.row=row;
+    row.innerHTML=`<div class="create-line">${state.kind==="folder"?ICO.folder:ICO.file}<input id="createname" aria-label="${state.kind==="folder"?"새 폴더 이름":"새 문서 이름"}" placeholder="${state.kind==="folder"?"폴더 이름":"문서 이름"}" aria-describedby="createhint createerror"></div><small id="createhint"></small><small id="createerror" role="alert"></small>`;
+    const input=row.querySelector("input");input.value=state.name;
+    input.oninput=()=>{state.name=input.value;state.error="";row.querySelector("#createerror").textContent=""};
+    input.oncompositionstart=()=>{state.composing=true};
+    input.oncompositionend=()=>{state.composing=false;state.name=input.value;explorerCreateCapture();if(state.renderPending){state.renderPending=false;stackRender()}else paintHomeList()};
+    input.onkeydown=ev=>{
+      if(ev.isComposing||ev.keyCode===229)return;
+      if(ev.key==="Escape"){ev.preventDefault();ev.stopPropagation();explorerCancelCreate()}
+      if(ev.key==="Enter"){ev.preventDefault();ev.stopPropagation();explorerCommitCreate()}
+    };
+  }
+  row.style.paddingLeft=String(28+state.parent.split("/").filter(Boolean).length*20)+"px";
+  row.setAttribute("aria-level",String(state.parent.split("/").filter(Boolean).length+1));
+  if(!box.contains(row)){
+    const parent=Array.from(box.querySelectorAll("[data-fold]")).find(r=>r.dataset.fold===state.parent);
+    if(parent)parent.after(row);else box.prepend(row);
+  }
+  const input=row.querySelector("input");input.readOnly=state.pending;
+  row.querySelector("#createhint").textContent=state.pending?"만드는 중…":"Enter로 만들기 · Esc로 취소";
+  row.querySelector("#createerror").textContent=state.error;
+  if(state.refocus){input.focus({preventScroll:true});if(state.selection)input.setSelectionRange(...state.selection);state.refocus=false}
+}
+function paintExplorerTools(){
+  const back=document.getElementById("explorerback");
+  if(back)back.disabled=!CHANGES_OPEN&&!SESSION_REVIEW_OPEN&&!(PANE.r>0&&DOCUMENT_RETURN)&&!CANV?.navStack?.length;
+  const undo=document.getElementById("explorerundo");if(undo){undo.hidden=false;undo.disabled=!VAULT_CONNECTED||!VAULT_LAST_OPERATION;undo.title=VAULT_LAST_OPERATION_LABEL||"파일 작업 되돌리기";undo.setAttribute("aria-label",undo.title)}
+  const fold=document.getElementById("foldall");if(!fold)return;
+  const tree=CANV?.tree||vaultTree(DOC.fragments||[],PATHS||{},null,VAULT_FOLDERS,VAULT_ENTRIES);
+  const folders=vaultRows(tree,{}).filter(r=>r.folder);
+  const collapsed=folders.length>0&&folders.every(r=>LZIP[r.path]);
+  fold.disabled=!VAULT_CONNECTED||WORKSPACE_SIDEBAR!=="files"||!folders.length;fold.title=fold.ariaLabel=collapsed?"모두 펼치기":"모두 접기";
+  fold.innerHTML=collapsed?ICO.expand:ICO.collapse;
+  fold.onclick=()=>{if(!fold.disabled)(collapsed?explorerExpandAll:explorerCollapseAll)()};
 }
 function explorerPane(){
-  const name=(SYS.vault||"").split("/").filter(Boolean).pop()||"저장소";
   return `<div id="left"${PANE.l?"":' class="zip"'} style="width:${PANE.l}px">
-    <div id="lefttop"><div class="vaulttitle"><div class="vaultheading" id="vaultheading" title="${esc(SYS.vault)}">${esc(name)}</div>
-      <button class="ibtn ico" id="vaultmenu" title="저장소 폴더 변경" aria-label="저장소 폴더 변경">${ICO.folder}</button></div>
-      <div class="ltools" role="toolbar" aria-label="탐색기 도구">
-        <button class="ibtn ico" id="nw" title="새 문서" aria-label="새 문서">${ICO.file}</button>
+    <div id="lefttop"><div class="ltools explorer-nav" role="toolbar" aria-label="탐색 이동">
+        <button class="ibtn ico" id="explorerback" aria-label="이전 탐색으로" title="이전 탐색으로">${ICO.back}</button>
+        <button class="ibtn ico" id="explorerhome" title="전체 저장소" aria-label="전체 저장소">${ICO.home}</button>
+      </div><div class="ltools" role="toolbar" aria-label="파일 작업">
+        <button class="ibtn ico" id="nw" title="새 문서" aria-label="새 문서">${ICO.filePlus}</button>
         <button class="ibtn ico" id="newfolder" title="새 폴더" aria-label="새 폴더">${ICO.folderPlus}</button>
-        <button class="ibtn ico" id="collapseall" title="모두 접기" aria-label="모두 접기">${ICO.collapse}</button>
-        <button class="ibtn ico" id="expandall" title="모두 펼치기" aria-label="모두 펼치기"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 6l5-4 5 4M3 10l5 4 5-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button class="ibtn" id="vaultundo" aria-label="파일 작업 되돌리기" ${VAULT_LAST_OPERATION?"":"disabled"}>↶</button>
+        <button class="ibtn ico" id="foldall" title="모두 접기" aria-label="모두 접기">${ICO.collapse}</button>
+        <button class="ibtn ico" id="explorerimport" title="자료 가져오기" aria-label="자료 가져오기">${ICO.import}</button>
+        <button class="ibtn ico" id="explorerundo" title="파일 작업 되돌리기" aria-label="파일 작업 되돌리기"${VAULT_LAST_OPERATION?"":" disabled"}>${ICO.undo}</button>
       </div>
-      <div class="lrow"><input id="lfind" type="search" aria-label="파일 찾기" placeholder="파일 찾기" value="${esc(LFIND)}"></div>
-      <span class="lhits" id="lhits"></span></div>
-    <div id="leftlist" role="tree" aria-label="파일 탐색기"></div>
-
-    </div><button class="rzr" id="rzl" data-zip="${PANE.l?0:1}" title="탐색기 너비 조절"></button>`;
+      <div class="sidebartabs" role="tablist" aria-label="저장소 탐색"><button id="sidebar-files" role="tab" aria-controls="left-files-panel" aria-selected="${WORKSPACE_SIDEBAR==="files"}" tabindex="${WORKSPACE_SIDEBAR==="files"?0:-1}">파일</button><button id="sidebar-records" role="tab" aria-controls="records-pane" aria-selected="${WORKSPACE_SIDEBAR==="records"}" tabindex="${WORKSPACE_SIDEBAR==="records"?0:-1}">기록</button><button id="sidebar-changes" role="tab" aria-controls="changes-pane" aria-selected="${WORKSPACE_SIDEBAR==="changes"}" tabindex="${WORKSPACE_SIDEBAR==="changes"?0:-1}">변경</button></div></div>
+    <div id="left-files-panel" role="tabpanel" aria-labelledby="sidebar-files"${WORKSPACE_SIDEBAR==="files"?"":" hidden"}><div class="lrow"><input id="lfind" type="search" aria-label="파일 찾기" placeholder="파일 찾기" value="${esc(LFIND)}"></div><span class="lhits" id="lhits"></span><div id="leftlist" role="tree" aria-label="파일 탐색기"></div></div>${sessionReviewEntry()}${changeListPane()}
+    <div class="ltools explorer-secondary" role="toolbar" aria-label="연결 및 설정">
+      <button class="ibtn ico" id="explorerconnection" title="외부 AI 연결" aria-label="외부 AI 연결">${ICO.link}</button>
+      <button class="ibtn ico" id="explorersettings" title="설정" aria-label="설정">${ICO.gear}</button>
+    </div></div><button class="rzr" id="rzl" data-zip="${PANE.l?0:1}" title="탐색기 너비 조절"></button>`;
 }
 function bindExplorerPane(){
   paintHomeList();bindResizer("rzl","left","l");bindExplorerRoot();
-  document.getElementById("nw").onclick=()=>vaultNewDocument(explorerNewFolderParent());
+  for(const tab of ["files","records","changes"]){const button=document.getElementById("sidebar-"+tab);if(button){button.onclick=()=>setWorkspaceSidebar(tab);button.onkeydown=e=>{if(!["ArrowLeft","ArrowRight","Home","End"].includes(e.key))return;e.preventDefault();const tabs=["files","records","changes"],next=e.key==="Home"?tabs[0]:e.key==="End"?tabs[2]:tabs[(tabs.indexOf(tab)+(e.key==="ArrowRight"?1:2))%3];setWorkspaceSidebar(next);document.getElementById("sidebar-"+next)?.focus()}}}
+  paintWorkspaceSidebar();
+  const back=document.getElementById("explorerback");if(back)back.onclick=()=>CHANGES_OPEN?setWorkspaceSidebar("files"):canvasGoBack();
+  const home=document.getElementById("explorerhome");if(home)home.onclick=explorerGoHome;
+  const settings=document.getElementById("explorersettings");if(settings)settings.onclick=openSettingsScreen;
+  document.getElementById("nw").onclick=()=>createFromSidebar("document");
   const nf=document.getElementById("newfolder");
-  if(nf)nf.onclick=()=>vaultNewFolder(explorerNewFolderParent());
-  const ca=document.getElementById("collapseall");
-  if(ca)ca.onclick=explorerCollapseAll;
-  const undo=document.getElementById("vaultundo");if(undo)undo.onclick=()=>{if(VAULT_LAST_OPERATION)vaultRequest({action:"undo",operationID:VAULT_LAST_OPERATION})};
-  const ea=document.getElementById("expandall");if(ea)ea.onclick=explorerExpandAll;
-  const toggle=document.getElementById("toggleexplorer");if(toggle)toggle.onclick=explorerToggle;
+  if(nf)nf.onclick=()=>createFromSidebar("folder");
+  const importer=document.getElementById("explorerimport");if(importer)importer.onclick=openDocumentImport;
+  const connection=document.getElementById("explorerconnection");if(connection)connection.onclick=openAIConnectionScreen;
+  const undo=document.getElementById("explorerundo");if(undo)undo.onclick=explorerUndoFileOperation;
   const lf=document.getElementById("lfind");
   if(lf)lf.oninput=()=>{LFIND=lf.value;paintHomeList()};
   const vaultMenu=document.getElementById("vaultmenu");
   if(vaultMenu)vaultMenu.onclick=requestVaultFolder;
-
+}
+function explorerGoHome(){
+  if(!VAULT_CONNECTED||!leaveEditorAllowed(explorerGoHome))return;
+  captureSessionEdits();SESSION_REVIEW_OPEN=false;
+  canvasGoHome();
+  setWorkspaceSidebar("files");LFIND="";const find=document.getElementById("lfind");if(find)find.value="";stackRender();
+}
+function createFromSidebar(kind){
+  if(!leaveEditorAllowed(()=>createFromSidebar(kind)))return;
+  setWorkspaceSidebar("files");
+  if(kind==="folder")vaultNewFolder(explorerNewFolderParent());else vaultNewDocument(explorerNewFolderParent());
+}
+function explorerUndoFileOperation(){
+  if(!VAULT_LAST_OPERATION)return;
+  const run=()=>{if(VAULT_LAST_OPERATION)vaultRequest({action:"undo",operationID:VAULT_LAST_OPERATION})};
+  if(leaveEditorAllowed(run))run();
 }
 function requestVaultFolder(){
-  if(VAULT_CONNECTED&&!leaveEditorAllowed(requestVaultFolder))return;
+  if(RECEIVED&&VAULT_CONNECTED&&!leaveEditorAllowed(requestVaultFolder))return;
   if(!pickTake(PICKING,"vault"))return;
-  paintPicking("vaultmenu","vault");paintPicking("connectvault","vault");
+  paintPicking("vaultmenu","vault");
   post("openSystem",{what:"vault"});
-  setTimeout(()=>{pickFree(PICKING,"vault");paintPicking("vaultmenu","vault");paintPicking("connectvault","vault")},PICK_FREE_MS);
+  setTimeout(()=>{pickFree(PICKING,"vault");paintPicking("vaultmenu","vault")},PICK_FREE_MS);
 }
 /* 파일 정리: 디스크 확인 전에는 문서·경로를 먼저 바꾸지 않는다. */
 function leaveEditorAllowed(next){
@@ -3037,30 +4090,95 @@ function vaultHasDraft(){
   return !!(SAVE_FLIGHT||SAVE_PENDING||changedFragmentIDs(VAULT_BASE,DOC).length||
     (d&&(d.titleDirty||d.bodyDirty)));
 }
-function vaultRequest(command,confirmed){
+/* 목적지 탐색과 파일 정리는 방문 이력이 아니다. 성공한 자기 요청의 reload에서만 맥락을 이어간다. */
+function workspaceMutationContext(){
+  return {frame:canvasContext(),nav:(CANV?.navStack||[]).slice(),forward:(CANV?.forwardStack||[]).slice(),
+    paths:Object.fromEntries(workspaceFiles().map(f=>[f.p.id,f.path]))};
+}
+function workspaceRemapVisit(frame,oldPaths,operation,preserveDraft){
+  // FileManager can return a decomposed Korean name after a move. Compare equivalent
+  // paths canonically, then retain the exact path and ID from the new disk snapshot.
+  const norm=p=>typeof p==="string"?p.normalize("NFC"):p,from=norm(operation.sourcePath),to=norm(operation.destinationPath);
+  const path=p=>{const value=norm(p);return typeof value==="string"&&from&&typeof to==="string"&&(value===from||value.startsWith(from+"/"))?to+value.slice(from.length):value};
+  const files=workspaceFiles(),folders=new Map(VAULT_FOLDERS.map(p=>[norm(p),p]));
+  VAULT_ENTRIES.filter(e=>e.kind==="folder").forEach(e=>folders.set(norm(e.path),e.path));
+  let scope=path(frame.path)||"";
+  while(scope&&!folders.has(scope))scope=scope.split("/").slice(0,-1).join("/");
+  const diskScope=folders.get(scope)||"",file=id=>id?files.find(f=>norm(f.path)===path(oldPaths[id])):null;
+  const selected=file(frame.selectedID),related=file(frame.relatedID);
+  const inView=f=>f&&norm(f.path.split("/").slice(0,-1).join("/"))===scope;
+  const selectedID=selected&&(inView(selected)||preserveDraft)?selected.p.id:null;
+  const relatedID=related&&inView(related)?related.p.id:null;
+  let zip=Object.fromEntries(Object.entries(frame.zip||{}).map(([p,v])=>[folders.get(path(p)),v]).filter(([p])=>p));
+  if(diskScope&&norm(frame.path)!==scope)zip=treeReveal(zip,diskScope);
+  const followID=frame.follow?.id===frame.selectedID?selectedID:
+    frame.follow?.id?.startsWith("@folder/")?workspaceFolderID(folders.get(path(frame.follow.id.slice(8)))||""):file(frame.follow?.id)?.p.id;
+  return {...frame,path:diskScope||null,id:diskScope?workspaceFolderID(diskScope):null,scoped:diskScope||null,
+    selectedID,relatedID,pane:selectedID?frame.pane||0:0,
+    follow:followID?{...frame.follow,id:followID}:null,
+    zip,
+    documentReturn:frame.documentReturn?workspaceRemapVisit(frame.documentReturn,oldPaths,operation,false):null};
+}
+function workspaceApplyMutationContext(context,operation,preserveDraft){
+  const remap=frame=>workspaceRemapVisit(frame,context.paths,operation,false);
+  const frame=workspaceRemapVisit(context.frame,context.paths,operation,preserveDraft);
+  frame.query=CANVQ;frame.queryVector=CQV;frame.find=LFIND;
+  WORKSPACE_SCOPE=frame.path||"";WORKSPACE_SELECTED_ID=frame.selectedID;
+  const i=DOC.fragments.findIndex(p=>p.id===frame.selectedID);sel=i<0?null:i;
+  CANVQ=frame.query;CQV=frame.queryVector;LFIND=frame.find;LZIP=frame.zip;PANE.r=frame.pane;
+  DOCUMENT_RETURN=frame.documentReturn||null;
+  if(CANV){
+    CANV.focusPath=frame.path;CANV.focusID=frame.id;CANV.scoped=frame.scoped;
+    CANV.relatedID=frame.relatedID;CANV.vt={...frame.vt};CANV.follow=frame.follow;CANV.glide=null;
+    CANV.navStack=context.nav.map(remap);CANV.forwardStack=context.forward.map(remap);
+  }
+}
+function vaultRequest(command,confirmed,workspaceContext){
   if(VAULT_ACTION)return false;
   if(!bridged()){onIndexNotice("파일 정리는 앱에서 폴더를 연결한 뒤 사용할 수 있어요.");return false}
-  if(vaultHasDraft()){onIndexNotice("편집 중인 내용을 저장한 뒤 파일을 정리해 주세요.");return false}
+  const orbitAction=command.action==="joinOrbit"||command.action==="splitOrbit";
+  if(!orbitAction&&vaultHasDraft()){onIndexNotice("편집 중인 내용을 저장한 뒤 파일을 정리해 주세요.");return false}
+  if(orbitAction&&(SAVE_FLIGHT||SAVE_PENDING)){onIndexNotice("문서 저장이 끝나면 다시 묶어 주세요.");return false}
   if(!VAULT_REVISION)return false;
   const requestID=++VAULT_ACTION_SEQ;
   const revision=command.expectedRevision||VAULT_REVISION;
-  VAULT_ACTION={requestID:requestID,command:command,revision:revision};
+  const moving=["moveEntry","moveFile","moveFolder","nestFile","renameEntry","renameFile","renameFolder","undo"].includes(command.action);
+  VAULT_ACTION={requestID:requestID,command:command,revision:revision,
+    workspaceContext:moving?(workspaceContext||workspaceMutationContext()):null};
   post("vaultAction",Object.assign({},command,{requestID:requestID,revision:revision,phase:confirmed?"apply":"preview"}));
   const b=document.getElementById("vsubmit");if(b){b.disabled=true;b.textContent="확인 중…"}
   return true;
 }
 function onVaultAction(result){
   if(!result||!VAULT_ACTION||result.requestID!==VAULT_ACTION.requestID)return;
-  const command=Object.assign({},VAULT_ACTION.command,{expectedRevision:VAULT_ACTION.revision});VAULT_ACTION=null;
+  const command=Object.assign({},VAULT_ACTION.command,{expectedRevision:VAULT_ACTION.revision}),workspaceContext=VAULT_ACTION.workspaceContext;VAULT_ACTION=null;
+  const creation=VAULT_CREATE?.pending&&VAULT_CREATE.path===command.path?VAULT_CREATE:null;
   const b=document.getElementById("vsubmit");if(b){b.disabled=false;b.textContent="적용"}
-  if(result.error){onIndexNotice(result.error);const e=document.getElementById("verror");if(e)e.textContent=result.error;return}
+  if(result.error){
+    onIndexNotice(result.error,{kind:"error"});const e=document.getElementById("verror");if(e)e.textContent=result.error;
+    if(creation){creation.pending=false;creation.error=result.error;creation.refocus=true;paintExplorerCreation()}
+    return;
+  }
   if(result.preview){
-    if(!(result.impacts||[]).length){vaultRequest(command,true);return}
-    vaultDialog("링크 영향 확인",`<p>이동하면 다음 링크의 대상 경로가 달라져요. 링크는 자동으로 고치지 않아요.</p><ul>${result.impacts.map(x=>`<li>${esc(x.markdownPath)} · ${esc(x.reference)}</li>`).join("")}</ul>`,"계속 이동",()=>vaultRequest(command,true));return;
+    const apply=()=>{
+      if(vaultRequest(command,true,workspaceContext))return;
+      // 미리보기를 기다리는 사이 편집을 시작했으면 생성 입력을 다시 고칠 수 있어야 한다.
+      if(creation&&VAULT_CREATE===creation){creation.pending=false;creation.error=notice||"파일 처리가 끝난 뒤 다시 시도해 주세요";creation.refocus=true;paintExplorerCreation()}
+    };
+    if(!(result.impacts||[]).length){apply();return}
+    vaultDialog("링크 영향 확인",`<p>이동하면 다음 링크의 대상 경로가 달라져요. 링크는 자동으로 고치지 않아요.</p><ul>${result.impacts.map(x=>`<li>${esc(x.markdownPath)} · ${esc(x.reference)}</li>`).join("")}</ul>`,"계속 이동",apply);return;
+  }
+  if(command.action==="joinOrbit"||command.action==="splitOrbit"){
+    ORBIT_GROUPS=orbitNormalize(result.orbitGroups||[],workspaceFiles().map(f=>f.path));
+    ORBIT_ERROR=null;vaultDialogClose();orbitRefresh();
+    onIndexNotice(command.action==="joinOrbit"?"같은 궤도로 묶었어요.":"단독 궤도로 분리했어요.",{kind:"success"});return;
   }
   if(command.action==="openEntry")return;
-  VAULT_LAST_OPERATION=command.action==="undo"?null:result.operationID||null;const undo=document.getElementById("vaultundo");if(undo)undo.disabled=!VAULT_LAST_OPERATION;
-  vaultDialogClose();onIndexNotice("파일 정리를 적용했어요.");
+  if(creation){creation.row?.remove();VAULT_CREATE=null;LZIP=treeReveal(LZIP,command.path);paintHomeList()}
+  VAULT_LAST_OPERATION=command.action==="undo"?null:result.operationID||null;
+  VAULT_LAST_OPERATION_LABEL=VAULT_LAST_OPERATION?({moveEntry:"이동 되돌리기",moveFile:"이동 되돌리기",moveFolder:"이동 되돌리기",nestFile:"이동 되돌리기",renameEntry:"이름 변경 되돌리기",renameFile:"이름 변경 되돌리기",renameFolder:"이름 변경 되돌리기",createFile:"새 문서 만들기 되돌리기",createFolder:"새 폴더 만들기 되돌리기",trashEntry:"휴지통 이동 되돌리기",restore:"복원 되돌리기",trash:"휴지통 이동 되돌리기",restoreEntry:"복원 되돌리기"}[command.action]||"파일 작업 되돌리기"):"";
+  paintExplorerTools();
+  vaultDialogClose();onIndexNotice("파일 정리를 적용했어요.",{kind:"success"});
   if(result.createdID){
     openWorkspaceDocument(result.createdID);
     const body=document.getElementById("bo");if(body)body.focus();
@@ -3077,7 +4195,10 @@ function vaultMenuClose(restoreFocus=true){
   if(M.menu&&M.menu.remove)M.menu.remove();
   if(restoreFocus&&M.trigger&&M.trigger.focus)M.trigger.focus({preventScroll:true});
 }
-function vaultDialogClose(){const e=document.getElementById("vaultdialog");if(e)e.remove()}
+function vaultDialogClose(restoreFocus=true){
+  const e=document.getElementById("vaultdialog");if(!e)return;
+  e.remove();endDialogFocus(e,restoreFocus);
+}
 function vaultDialog(title,body,button,submit){
   vaultMenuClose(false);
   vaultDialogClose();
@@ -3086,15 +4207,10 @@ function vaultDialog(title,body,button,submit){
   app.appendChild(box);document.getElementById("vcancel").onclick=()=>{if(!VAULT_ACTION)vaultDialogClose()};
   if(button)document.getElementById("vsubmit").onclick=submit;
   box.onkeydown=ev=>{
-    if(ev.key==="Escape"&&!VAULT_ACTION){ev.preventDefault();vaultDialogClose()}
-    if(ev.key==="Tab"){
-      const fields=Array.from(box.querySelectorAll("input,select,button")).filter(e=>!e.disabled&&e.getClientRects().length);
-      const first=fields[0],last=fields[fields.length-1];
-      if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus()}
-      else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus()}
-    }
+    if(ev.key==="Escape"&&!VAULT_ACTION){ev.preventDefault();ev.stopPropagation?.();vaultDialogClose()}
+    else containDialogFocus(box,ev);
   };
-  const field=box.querySelector("input,select,button");if(field)field.focus();
+  beginDialogFocus(box,box.querySelector("input,select,button"));
 }
 /* 파일 조작은 기존 리비전·미리보기·복구 브리지를 사용한다. */
 function vaultMenuPosition(menu,anchor){
@@ -3120,22 +4236,23 @@ function vaultMenuPosition(menu,anchor){
   menu.style.left=Math.round(left)+"px";menu.style.top=Math.round(top)+"px";
 }
 function vaultFileMenu(row,anchor){
+  if(!row)return;
   if(!leaveEditorAllowed(()=>vaultFileMenu(row,anchor)))return;
   vaultMenuClose(false);
   const folder=row&&row.folder,kind=folder?"Folder":"File";
   const actions=[];
-  if(!row)actions.push({text:"저장소 폴더 변경…",run:requestVaultFolder});
   if(row&&row.path){
     actions.push({text:"이름 변경",run:()=>vaultNameDialog(row)});
     actions.push({text:"이동…",run:()=>vaultMoveDialog(row)});
     if(!folder)actions.push({text:workspaceFile(row.id)?.p.entry?"외부 앱으로 열기":"편집",run:()=>workspaceOpen(row.id)});
+    if(!folder&&workspaceFile(row.id)?.p.entry?.manageable!==false){
+      actions.push({text:"같은 궤도로 묶기…",run:()=>orbitGroupDialog(row.path)});
+      if(orbitGroupAt(row.path))actions.push({text:"단독 궤도로 분리",run:()=>orbitRequest(row.path,null)});
+    }
   }
-  if(!row||folder){
-    actions.push({text:"새 문서",run:()=>vaultNewDocument(row?row.path:"")});
-    actions.push({text:"새 폴더",run:()=>vaultNewFolder(row?row.path:"")});
-  }
-  if(!row){
-    if(VAULT_LAST_OPERATION)actions.push({text:"파일 작업 되돌리기",run:()=>vaultRequest({action:"undo",operationID:VAULT_LAST_OPERATION})});
+  if(folder){
+    actions.push({text:"새 문서",run:()=>vaultNewDocument(row?row.path:explorerNewFolderParent())});
+    actions.push({text:"새 폴더",run:()=>vaultNewFolder(row?row.path:explorerNewFolderParent())});
   }
   const menu=document.createElement("div");menu.id="vaultcontextmenu";menu.className="vaultpopover";
   menu.setAttribute("role","menu");menu.setAttribute("aria-label",row?`${row.path} 파일 작업`:"저장소 메뉴");
@@ -3258,26 +4375,17 @@ function bindExplorerRoot(){
   };
 }
 
-function speechModelText(){return SPEECH_MESSAGE||{unknown:"상태 확인 중…",required:"모델 준비 필요",unsupported:"이 Mac에서 사용할 수 없어요",loading:"모델 준비 중…",ready:"준비됨",error:"모델 준비에 실패했어요"}[SPEECH_STATE]||""}
+function speechModelText(){return SPEECH_MESSAGE||{unknown:"상태 확인 중…",required:"모델 준비 필요",unsupported:"이 Mac에서 사용할 수 없습니다",loading:"모델 준비 중…",ready:"준비됨",error:"모델을 준비하지 못했습니다"}[SPEECH_STATE]||""}
 function paintSpeechModel(){
   const e=document.getElementById("speechstate"),b=document.getElementById("speechprepare");
   if(e)e.textContent=speechModelText();
   if(b){b.disabled=["unknown","loading","ready","unsupported"].includes(SPEECH_STATE);b.textContent=SPEECH_STATE==="loading"?"준비 중…":SPEECH_STATE==="error"?"다시 준비":"모델 준비"}
+  const row=document.getElementById("prepare-speech-row");if(row)row.hidden=SPEECH_STATE==="ready";
+  const start=document.getElementById("prepare-start");if(start)start.disabled=!bridged()||SPEECH_STATE!=="ready";
 }
 function onSpeechModelState(state,message){SPEECH_STATE=state;SPEECH_MESSAGE=message||"";paintSpeechModel()}
-function indexStateText(){return {indexing:"검색 준비 중…",ready:"",unavailable:"검색 모델을 불러올 수 없어요",error:"검색 준비에 실패했어요"}[INDEX_STATE]||""}
-function onIndexState(state){INDEX_STATE=state;const e=document.getElementById("indexstate");if(e){e.textContent=indexStateText();e.title=state==="indexing"?"파일을 읽고 있어요. 준비 중에도 문서를 보거나 수정할 수 있어요.":""}}
-function folderStartRender(){
-  app.innerHTML=`<div id="top" class="drag hmtop"><span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span>
-    <span style="flex:1"></span><button class="ibtn ico nodrag" id="x" title="닫기" aria-label="닫기">${ICO.close}</button></div>
-    <div id="folderstart" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
-      <button class="gbtn p" id="connectvault">폴더 연결…</button>
-      <span class="foot" id="foldererror">${esc(vaultTrouble||"")}</span>
-    </div>`;
-  document.getElementById("connectvault").onclick=requestVaultFolder;
-  document.getElementById("x").onclick=()=>post("closeWindow");
-  paintPicking("connectvault","vault");
-}
+function indexStateText(){return {indexing:"검색 준비 중…",ready:"",unavailable:"검색 모델을 불러올 수 없습니다",error:"검색을 준비하지 못했습니다"}[INDEX_STATE]||""}
+function onIndexState(state){INDEX_STATE=state;const row=document.getElementById("prepare-index-row");if(row)row.hidden=state==="ready";paintSessionIndex();const e=document.getElementById("indexstate");if(e){e.textContent=mode==="stack"&&stackView==="prepare"&&state==="ready"?"준비됨":indexStateText();e.title=state==="indexing"?"파일을 읽는 중입니다. 준비 중에도 문서를 보거나 수정할 수 있습니다.":""}}
 /* ★ 오른쪽 상세 판 — **한 벌뿐이다.** 3단의 오른쪽 칸이 곧 이것이고, 왼쪽 트리에서 골라도
    가운데 별을 눌러도 **같은 판**이 열린다.
    ⚠ **새 판을 안 지었다.** 지도가 자기 상세 판을 가지면 저장·지우기가 **두 벌**이 되고,
@@ -3286,34 +4394,65 @@ function folderStartRender(){
      그림을 가리키던 한 줄(`#hmhint`) · 채우기 띠(`.fbar`) · 「지금 채우기」.
      남는 것은 **칸 둘·버튼 둘**이고, 무엇을 쓰는 칸인지는 placeholder 가 든다.
    ⚠ **볼트 사고 띠는 남는다** — 사고는 어휘 밖이다(`paintVaultTrouble`). */
-function editPanel(cur){
-  return `<div class="dochead">
-      <div class="docidentity"><span class="docpath">${cur?esc(PATHS[cur.id]||cur.title):"새 문서"}</span>
-        <span id="docsavestate" class="docsavestate" role="status" aria-live="polite">${esc(editorSaveStateText(EDITOR_SAVE_STATE))}</span></div>
-      <button class="ibtn ico" id="docmore" aria-haspopup="menu" aria-label="문서 메뉴" title="문서 메뉴">${ICO.more}</button>
-      <button class="ibtn ico" id="closedoc" aria-label="문서 닫기" title="문서 닫기">${ICO.close}</button></div>
-    <div><input id="ti" aria-label="문서 제목" placeholder="제목" value="${cur?esc(cur.title):""}"></div>
-    <div class="docbody"><textarea id="bo" aria-label="문서 내용" placeholder="">${cur?esc(cur.body):""}</textarea>
-      ${sourceButtons(cur)}</div>`;
+function editorLocation(cur){
+  const path=cur&&PATHS[cur.id];if(!path)return "";
+  const parts=path.split("/"),file=parts.pop();
+  return file.replace(/\.(md|markdown)$/i,"").normalize("NFC")===String(cur.title||"").normalize("NFC")?parts.join("/"):path;
 }
-function closeWorkspaceDocument(){
-  if(!leaveEditorAllowed(()=>closeWorkspaceDocument()))return false;
-  canvasRemember();paneApply("r",0);paintCanvasNavigation();return true;
+function editPanel(cur){
+  const location=editorLocation(cur);
+  return `<div class="dochead">
+      <div class="docidentity">${location?`<span class="docpath" title="${esc(PATHS[cur.id])}">${esc(location)}</span>`:""}
+        <span id="docsavestate" class="docsavestate" role="status" aria-live="polite">${esc(editorSaveStateText(EDITOR_SAVE_STATE))}</span>
+        <button class="docrelated" id="docretry"${EDITOR_SAVE_STATE==="failed"?"":" hidden"}>다시 저장</button></div>
+      ${cur?'<button class="docrelated" id="docrelated">관련 자료</button>':""}
+      ${cur?'<button class="docrelated" id="docrename" title="파일 이름 변경">이름 변경</button>':""}
+      <button class="ibtn ico" id="closedoc" aria-label="문서 닫기" title="문서 닫기">${ICO.close}</button></div>
+    <div id="doctitle"><input id="ti" aria-label="문서 제목" placeholder="제목" value="${cur?esc(cur.title):""}"></div>
+    <div id="docbody" class="docbody"><textarea id="bo" aria-label="문서 내용" placeholder="">${cur?esc(cur.body):""}</textarea></div>`;
+}
+function closeWorkspaceDocument(options={}){
+  if(!leaveEditorAllowed(()=>closeWorkspaceDocument(options)))return false;
+  const frame=DOCUMENT_RETURN;
+  if(frame?.importReturn){
+    const {position,workspace}=frame.importReturn;
+    paneApply("r",0);if(workspace)canvasRestore(workspace);
+    stackView="import";documentImportRender();restoreFlowPosition(position);return true;
+  }
+  paneApply("r",0);
+  if(frame&&(!frame.path||vaultRows(canvasUniverse().tree,{}).some(r=>r.folder&&r.path===frame.path))){
+    /* 읽는 중 직접 바꾼 파일 찾기는 이전 값으로 덮지 않는다. */
+    const list=options.restoreSearch||frame.find===LFIND?{}:{find:LFIND,zip:LZIP,scroll:document.getElementById("leftlist")?.scrollTop||0};
+    canvasRestore({...frame,...list,pane:0,
+      selectedID:workspaceFile(frame.selectedID)?frame.selectedID:null,
+      relatedID:workspaceFile(frame.relatedID)?frame.relatedID:null});
+    // 닫기는 문서를 열기 전 방문으로 복귀한다. 같은 위치를 뒤로 가기에서 다시 밟지 않는다.
+    if(Number.isInteger(frame.navDepth)){CANV.navStack=(CANV.navStack||[]).slice(0,frame.navDepth);CANV.forwardStack=[];paintExplorerTools()}
+  }else paintCanvasNavigation();
+  if(frame?.reviewQuestionID&&maintenanceQuestions().some(q=>q.id===frame.reviewQuestionID)){
+    SESSION_REVIEW_ID=frame.reviewQuestionID;SESSION_REVIEW_OPEN=true;SESSION_REVIEW_MAP_PENDING=false;stackRender();
+  }
+  return true;
 }
 function openWorkspaceDocument(id){
-  if(PANE.r>0&&sel!==null&&DOC.fragments[sel]?.id===id)return true;
+  const reviewQuestionID=SESSION_REVIEW_OPEN?sessionSelectedQuestion()?.id:null;
+  if(SESSION_REVIEW_OPEN){captureSessionEdits();SESSION_REVIEW_OPEN=false;stackRender()}
+  if(!reviewQuestionID&&PANE.r>0&&sel!==null&&DOC.fragments[sel]?.id===id)return true;
   if(!leaveEditorAllowed(()=>openWorkspaceDocument(id)))return false;
   const i=DOC.fragments.findIndex(p=>p.id===id);if(i<0)return false;
-  const parent=(PATHS[id]||"").split("/").slice(0,-1).join("/");if(parent!==WORKSPACE_SCOPE)workspaceEnterFolder(parent);
+  /* 문서를 여러 장 이어 읽어도 닫기는 처음 열기 전의 위치·질문으로 돌아간다.
+     파일의 폴더로 들어가기 전에 보존하고, 명시적으로 지도를 탐색하면 paneApply가 해제한다. */
+  if((PANE.r===0||reviewQuestionID)&&CANV)DOCUMENT_RETURN={...canvasContext(),navDepth:CANV.navStack?.length||0,...(reviewQuestionID?{reviewQuestionID}:{} )};
   if(sel!==i||PANE.r===0)canvasRemember();
+  const parent=(PATHS[id]||"").split("/").slice(0,-1).join("/");if(!workspaceQueryContextActive()&&parent!==WORKSPACE_SCOPE)workspaceEnterFolder(parent);
   sel=i<0?null:i;WORKSPACE_SELECTED_ID=id;revealWorkspaceFile(id);paneOpen("r");
   if(CANV?.els){CANV.follow=null;CANV.glide=null;CANV.nodes.forEach(n=>CANV.els.node[n.id].setAttribute("class",canvasNodeClass(n.id)))}
   if(stackView==="settings"){stackView="edit";stackRender()}else{canvasPaintPanel();paintHomeList()}
-  treeScrollSel();return true;
+  treeScrollSel();paintCanvasNavigation();return true;
 }
 
-/* 본문 속 Markdown 링크 중 볼트 파일 상대경로만 상세 판 아래에 놓는다.
-   웹 주소·이미지·숨은 경로·지원하지 않는 형식은 여기서부터 버튼이 아니다. 네이티브는 눌렀을 때
+/* 본문 Markdown 링크의 상대경로를 현재 볼트 안에서 해석한다.
+   이미지·숨은 경로·지원하지 않는 형식은 파일 이동 대상이 아니다. 네이티브는 열 때
    실제 파일·symlink·실행 권한을 다시 검사한다(`VaultReferenceResolver`). */
 const SOURCE_EXTS=new Set(["md","markdown","txt","pdf","docx","hwpx"]);
 function markdownLinkTarget(raw){
@@ -3350,107 +4489,89 @@ function markdownSourceLinks(body,fromPath,paths){
   if(!fromPath)return [];
   const byPath=new Map(Object.entries(paths||{}).map(([id,path])=>[
     (path||"").normalize("NFC").toLowerCase(),id]));
-  const out=[],re=/(?<!!)\[([^\]\n]+)\]\(([^)\n]+)\)/g;
-  let m;
-  while((m=re.exec(body||""))){
-    const reference=markdownLinkTarget(m[2]),path=sourceReferencePath(fromPath,reference);
-    if(!path)continue;
+  return ClonieMarkdownEditor.links(body||"").flatMap(link=>{
+    const reference=markdownLinkTarget(link.target),path=sourceReferencePath(fromPath,reference);
+    if(!path)return [];
     const ext=path.split(".").pop().toLowerCase();
-    out.push({label:m[1],reference,path,
-      targetID:(ext==="md"||ext==="markdown")?byPath.get(path.toLowerCase())||null:null});
-  }
-  return out;
-}
-function sourceLinksFor(cur){return cur?markdownSourceLinks(cur.body,PATHS[cur.id],PATHS):[]}
-function sourceButtons(cur){
-  const links=sourceLinksFor(cur);
-  return links.length?`<div class="srefs">${links.map((link,i)=>
-    `<button class="sref" id="sref${i}" title="${esc(link.path)}">${esc(link.label)}</button>`
-  ).join("")}</div>`:"";
-}
-function openSourceReference(link,fromPath){
-  const draft=takeEditorDraft();
-  if(draft&&(draft.titleDirty||draft.bodyDirty)){
-    onVaultTrouble("수정한 내용을 저장한 뒤 출처를 여세요.");return;
-  }
-  if(link.targetID){
-    openWorkspaceDocument(link.targetID);return;
-  }
-  post("openSystem",{what:"source",fromPath,reference:link.reference});
-}
-function bindSourceButtons(cur){
-  sourceLinksFor(cur).forEach((link,i)=>{
-    const button=document.getElementById(`sref${i}`);
-    if(button)button.onclick=()=>openSourceReference(link,PATHS[cur.id]);
+    return [{label:link.label,reference,path,
+      targetID:(ext==="md"||ext==="markdown")?byPath.get(path.toLowerCase())||null:null}];
   });
 }
-function editorManualSave(){
-  clearEditorAutosave();
-  if(!saveEditorValue("manual"))return false;
-  stackRender();return true;
+function openSourceReference(link,fromPath){
+  const run=()=>{
+    if(link.targetID){openWorkspaceDocument(link.targetID);return}
+    post("openSystem",{what:"source",fromPath,reference:link.reference});
+  };
+  if(leaveEditorAllowed(run))run();
 }
-function editorMenu(anchor){
-  vaultMenuClose(false);
-  const cur=sel===null?null:DOC.fragments[sel],actions=[];
-  if(cur)actions.push({text:"이름 변경",run:()=>{
-    const run=()=>vaultNameDialog({id:cur.id,path:PATHS[cur.id],folder:false});
-    if(leaveEditorAllowed(run))run();
-  }});
-  if(cur)actions.push({text:"관련 자료",run:()=>{
-    const run=()=>canvasNavigateFile(cur.id);
-    if(leaveEditorAllowed(run))run();
-  }});
-  actions.push({text:"수동 저장",run:editorManualSave});
-  if(EDITOR_SAVE_STATE==="failed")actions.push({text:"다시 저장",run:editorManualSave});
-  const menu=document.createElement("div");menu.id="doccontextmenu";menu.className="vaultpopover";
-  menu.setAttribute("role","menu");menu.setAttribute("aria-label","문서 메뉴");
-  menu.innerHTML=actions.map(a=>`<button type="button" role="menuitem" tabindex="-1">${esc(a.text)}</button>`).join("");
-  menu.style.visibility="hidden";app.appendChild(menu);
-  const trigger=anchor&&anchor.trigger&&anchor.trigger.focus?anchor.trigger:null;
-  const M={menu:menu,trigger:trigger,items:Array.from(menu.querySelectorAll('[role="menuitem"]')),outside:null,keydown:null};
-  VAULT_MENU=M;
-  M.outside=ev=>{
-    if(!VAULT_MENU||VAULT_MENU.menu!==menu)return;
-    const target=ev&&ev.target;
-    if(target&&menu.contains&&menu.contains(target))return;
-    vaultMenuClose();
-  };
-  M.keydown=ev=>{
-    if(!VAULT_MENU||VAULT_MENU.menu!==menu)return;
-    if(ev.key==="Escape"){ev.preventDefault();vaultMenuClose();return}
-    if(ev.key==="Tab"){vaultMenuClose();return}
-    if(!(ev.target&&menu.contains&&menu.contains(ev.target)))return;
-    const items=M.items;if(!items.length)return;
-    const current=document.activeElement,index=Math.max(0,items.indexOf(current));
-    if(ev.key==="ArrowDown"||ev.key==="ArrowUp"||ev.key==="Home"||ev.key==="End"){
-      ev.preventDefault();
-      const next=ev.key==="Home"?0:ev.key==="End"?items.length-1:Math.max(0,Math.min(items.length-1,index+(ev.key==="ArrowDown"?1:-1)));
-      items[next].focus({preventScroll:true});
-    }else if(ev.key==="Enter"){ev.preventDefault();items[index].click()}
-  };
-  if(document.addEventListener){
-    document.addEventListener("pointerdown",M.outside,true);
-    document.addEventListener("click",M.outside,true);
-    document.addEventListener("keydown",M.keydown,true);
+function openMarkdownLink(link,cur){
+  const target=markdownLinkTarget(link?.target);if(!target||!cur)return false;
+  if(/^https?:\/\//i.test(target)){
+    let url;try{url=new URL(target)}catch(e){onIndexNotice("링크 주소를 확인해 주세요.");return false}
+    if(!url.hostname||url.username||url.password){onIndexNotice("링크 주소를 확인해 주세요.");return false}
+    post("openSystem",{what:"webLink",url:url.href});return true;
   }
-  M.items.forEach((item,i)=>item.onclick=()=>{if(VAULT_MENU&&VAULT_MENU.menu===menu){vaultMenuClose();actions[i].run()}});
-  vaultMenuPosition(menu,anchor);
-  menu.style.visibility="visible";
-  if(M.items[0])M.items[0].focus({preventScroll:true});
+  const fromPath=PATHS[cur.id],path=sourceReferencePath(fromPath,target);
+  if(!path){onIndexNotice("이 링크는 현재 저장소에서 열 수 없습니다.");return false}
+  const targetID=Object.keys(PATHS).find(id=>PATHS[id].normalize("NFC")===path)||null;
+  openSourceReference({reference:target,path,targetID},fromPath);return true;
+}
+function editorManualSave(){
+  // 조합 중인 글자를 확정하거나 편집기를 다시 만들지 않는다. 조합 완료 뒤 자동 저장한다.
+  if(EDITOR_COMPOSING)return false;
+  clearEditorAutosave();
+  // auto는 저장 확인 때 현재 편집 DOM을 유지하는 경로다. 단축키는 기다리지 않고 즉시 보낸다.
+  return saveEditorValue("auto");
+}
+function performEditorHistory(direction){
+  if(direction!=="undo"&&direction!=="redo")return false;
+  if(typeof ClonieMarkdownEditor!=="undefined"&&ClonieMarkdownEditor.performHistory(direction))return true;
+  return !!document.execCommand?.(direction);
+}
+function editorRename(){
+  const cur=sel===null?null:DOC.fragments[sel];if(!cur)return;
+  const run=()=>vaultNameDialog({id:cur.id,path:PATHS[cur.id],folder:false});
+  if(leaveEditorAllowed(run))run();
 }
 /* 그 판의 손잡이 전부. **판을 다시 그린 쪽이 곧바로 이것을 부른다** — 안 부르면 저장 버튼이
    조용히 죽는다(#66-1 이 그 모양이었다). */
+function releaseMarkdownEditors(){
+  if(typeof ClonieMarkdownEditor!=="undefined")ClonieMarkdownEditor.destroyAll();
+}
+function resetMarkdownEditors(){
+  if(typeof ClonieMarkdownEditor!=="undefined")ClonieMarkdownEditor.reset();
+}
+function leadingMarkdownTitle(body){
+  const match=String(body||"").match(/^(?:[ \t]*\n)*[ \t]{0,3}# +(.+?)(?:[ \t]+#+)?[ \t]*(?:\n|$)/);
+  return match?match[1].trim():null;
+}
+function mountMarkdownEditor(cur){
+  const body=document.getElementById("bo");
+  if(!body||typeof ClonieMarkdownEditor==="undefined"||!body.ownerDocument?.defaultView)return body;
+  return ClonieMarkdownEditor.mount(body,{documentID:cur?.id||"new-document",title:"",
+    onOpenLink:link=>openMarkdownLink(link,cur)});
+}
 function bindEditPanel(cur,pre){
   /* ★ 볼트 사고 띠 (블로커 F1). 렌더가 오른쪽 칸을 새로 지었으니 **띠도 다시 앉힌다** —
      들고 있던 말이 렌더 한 번에 사라지면 「저장이 안 됐다」가 조용해진다. */
   paintVaultTrouble();
-  bindSourceButtons(cur);
   const close=document.getElementById("closedoc");if(close)close.onclick=closeWorkspaceDocument;
+  const related=document.getElementById("docrelated");if(related&&cur)related.onclick=()=>{const run=()=>canvasNavigateFile(cur.id);if(leaveEditorAllowed(run))run()};
   const back=document.getElementById("docback");if(back)back.onclick=canvasGoBack;
   const forward=document.getElementById("docforward");if(forward)forward.onclick=canvasGoForward;
-  const more=document.getElementById("docmore");if(more)more.onclick=ev=>editorMenu({element:ev.currentTarget,trigger:ev.currentTarget,placement:"bottom"});
-  const ti=document.getElementById("ti"),bo=document.getElementById("bo");
+  const rename=document.getElementById("docrename");if(rename&&cur)rename.onclick=editorRename;
+  const retry=document.getElementById("docretry");if(retry)retry.onclick=editorManualSave;
+  const ti=document.getElementById("ti"),bo=mountMarkdownEditor(cur);
+  const firstTitle=leadingMarkdownTitle(bo?.value);
+  const titleFromBody=!!(bo?.classList?.contains("cm-content")&&firstTitle&&firstTitle.normalize("NFC")===(cur?.title||"").normalize("NFC"));
+  const titleRow=document.getElementById("doctitle");
+  if(titleRow)titleRow.hidden=titleFromBody;
   const remember=()=>{
+    if(titleFromBody){
+      const heading=leadingMarkdownTitle(bo.value);
+      if(heading&&ti)ti.value=heading;
+      if(titleRow)titleRow.hidden=!!heading;
+    }
     if(cur){holdDirty([cur.id],VAULT_REVISION);syncDirtyRevisionPins()}
     setEditorSaveState("dirty");if(!EDITOR_COMPOSING)scheduleEditorAutosave();
   };
@@ -3459,7 +4580,10 @@ function bindEditPanel(cur,pre){
   const compositionStart=()=>{EDITOR_COMPOSING=true;clearEditorAutosave()};
   const compositionEnd=()=>{EDITOR_COMPOSING=false;remember()};
   if(ti){ti.oncompositionstart=compositionStart;ti.oncompositionend=compositionEnd}
-  if(bo){bo.oncompositionstart=compositionStart;bo.oncompositionend=compositionEnd}
+  if(bo?.classList?.contains("cm-content")){
+    bo.addEventListener("compositionstart",compositionStart);
+    bo.addEventListener("compositionend",compositionEnd);
+  }else if(bo){bo.oncompositionstart=compositionStart;bo.oncompositionend=compositionEnd}
   const editorKey=ev=>{
     if((ev.metaKey||ev.ctrlKey)&&ev.key.toLowerCase()==="s"){ev.preventDefault();editorManualSave()}
     if(ev.key==="Escape"){ev.preventDefault();closeWorkspaceDocument()}
@@ -3483,9 +4607,65 @@ function bindEditPanel(cur,pre){
 /* 접힌 폴더 — **세션에만 산다.** 파일에 안 남긴다: 볼트가 바뀌면 그 키가 통째로 낡는다.
    `{경로:true}` = 접힘. 기본은 전부 펴짐이다(처음 여는 사람이 빈 칸을 보면 안 된다). */
 let LZIP={};
+/* 수동 궤도는 실제 파일 경로의 관계만 저장한다. 폴더·본문·검색 순위와 분리한다. */
+let ORBIT_GROUPS=[],ORBIT_ERROR=null;
+const orbitParent=path=>String(path||"").split("/").slice(0,-1).join("/");
+function orbitNormalize(groups,paths){
+  const available=new Set(paths||[]),used=new Set(),ids=new Set(),out=[];
+  for(const group of Array.isArray(groups)?groups:[]){
+    if(!group||typeof group.id!=="string"||!group.id||ids.has(group.id)||!Array.isArray(group.paths))continue;
+    const members=[...new Set(group.paths)].filter(p=>typeof p==="string"&&available.has(p)&&!used.has(p));
+    if(members.length<2||members.some(p=>orbitParent(p)!==orbitParent(members[0])))continue;
+    out.push({id:group.id,paths:members});ids.add(group.id);members.forEach(p=>used.add(p));
+  }
+  return out;
+}
+function orbitOrderedFiles(files,groups){
+  const sorted=(files||[]).slice().sort((a,b)=>a.path.localeCompare(b.path)),byPath=new Map(sorted.map(f=>[f.path,f]));
+  const membership=new Map(),emitted=new Set(),out=[];
+  orbitNormalize(groups,sorted.map(f=>f.path)).forEach(g=>g.paths.forEach(p=>membership.set(p,g)));
+  for(const f of sorted){
+    const group=membership.get(f.path),key=group?"group:"+group.id:"file:"+f.path;
+    if(emitted.has(key))continue;emitted.add(key);
+    const members=group?group.paths.map(p=>byPath.get(p)).sort((a,b)=>a.path.localeCompare(b.path)):[f];
+    out.push({key,files:members,shared:members.length>1});
+  }
+  return out;
+}
+function orbitEdit(groups,path,targetPath,newID){
+  const next=(groups||[]).map(g=>({id:g.id,paths:g.paths.slice()}));
+  const source=next.find(g=>g.paths.includes(path)),target=targetPath&&next.find(g=>g.paths.includes(targetPath));
+  if(targetPath&&(path===targetPath||orbitParent(path)!==orbitParent(targetPath)||source&&source===target))return next;
+  if(source)source.paths=source.paths.filter(p=>p!==path);
+  if(targetPath){if(target)target.paths.push(path);else next.push({id:newID,paths:[targetPath,path]})}
+  return next.filter(g=>g.paths.length>1);
+}
+function orbitGroupAt(path){return ORBIT_GROUPS.find(g=>g.paths.includes(path))||null}
+function orbitBrowserKey(){return "clonie.orbit-groups.v1:"+(SYS.vault||"preview")}
+function orbitRefresh(){
+  canvasRefresh();paintHomeList();canvasWake();
+}
+function orbitRequest(path,targetPath){
+  if(ORBIT_ERROR){onIndexNotice(ORBIT_ERROR);return false}
+  const files=workspaceFiles(),source=files.find(f=>f.path===path),target=files.find(f=>f.path===targetPath);
+  if(!source||source.p.entry?.manageable===false||targetPath&&(!target||target.p.entry?.manageable===false||orbitParent(path)!==orbitParent(targetPath)))return false;
+  if(targetPath&&(path===targetPath||orbitGroupAt(path)&&orbitGroupAt(path)===orbitGroupAt(targetPath)))return false;
+  if(!targetPath&&!orbitGroupAt(path))return false;
+  if(bridged())return vaultRequest({action:targetPath?"joinOrbit":"splitOrbit",path,targetPath:targetPath||""},true);
+  const next=orbitEdit(ORBIT_GROUPS,path,targetPath,uid("orbit"));
+  try{localStorage.setItem(orbitBrowserKey(),JSON.stringify(next))}catch(e){onIndexNotice("궤도 묶음을 저장하지 못했어요.");return false}
+  ORBIT_GROUPS=next;orbitRefresh();vaultDialogClose();return true;
+}
+function orbitGroupDialog(path){
+  const source=orbitGroupAt(path);
+  const peers=workspaceFiles().filter(f=>f.path!==path&&orbitParent(f.path)===orbitParent(path)&&f.p.entry?.manageable!==false&&(!source||orbitGroupAt(f.path)!==source));
+  if(!peers.length){onIndexNotice("이 폴더에 함께 묶을 다른 파일이 없어요.");return}
+  const names=workspaceDisplayNames();
+  vaultDialog("같은 궤도로 묶기",`<label for="orbit-peer">함께 돌 문서</label><select id="orbit-peer">${peers.map(f=>`<option value="${esc(f.path)}">${esc(names[f.path]||f.path.split("/").pop())}</option>`).join("")}</select>`,"묶기",()=>orbitRequest(path,document.getElementById("orbit-peer").value));
+}
 /* 트리를 **한 줄씩 편 것** — 순수 함수라 `node --test` 가 잠근다.
    ⚠ 접힘은 인자로 받는다(전역을 안 읽는다) — 그래야 시험이 갈아끼운다. */
-function vaultRows(tree,zip){
+function vaultRows(tree,zip,groups){
   const Z=zip||{},out=[];
   const walk=(dir,depth,parent)=>{
     Object.keys(dir.dirs||{}).sort().forEach(name=>{
@@ -3493,9 +4673,10 @@ function vaultRows(tree,zip){
       out.push({k:"sun",id:path,path:path,t:name,depth:depth,parent:parent||null,folder:true,zip:!!Z[path]});
       if(!Z[path])walk(dir.dirs[name],depth+1,path);
     });
-    (dir.files||[]).slice().sort((a,b)=>a.path.localeCompare(b.path)).forEach(f=>{
-      out.push({k:"planet",id:f.p.id,path:f.path,t:f.file,depth:depth,parent:parent||null,folder:false,zip:false});
-    });
+    orbitOrderedFiles(dir.files,groups).forEach(orbit=>orbit.files.forEach(f=>{
+      out.push({k:"planet",id:f.p.id,path:f.path,t:f.file,depth:depth,parent:parent||null,folder:false,zip:false,
+        orbitGroup:orbit.shared?orbit.key:null});
+    }));
   };
   if(tree&&tree.filesystem)walk(tree.filesystem,0,"");
   return out;
@@ -3532,6 +4713,8 @@ function listFilter(rows,q){
    ⚠ 편집기(`#ti`·`#bo`)는 **안 건드린다** — 이 함수가 손대는 것은 왼쪽 칸 하나뿐이다. */
 function paintHomeList(){
   const box=document.getElementById("leftlist");if(!box)return;
+  explorerCreateCapture();
+  if(VAULT_CREATE?.composing)return;
   /* ★ **판을 여기서 세운다** — 트리를 두 벌로 들면 한쪽이 낡는다 (`canvasUniverse` 는
      서명이 같으면 들고 있던 판을 그대로 돌려준다). 전 판은 `CANV` 를 그냥 읽었는데,
      `stackRender` 가 이 함수를 **가운데 칸보다 먼저** 불러서 문서가 갈린 직후 한 번은
@@ -3540,13 +4723,15 @@ function paintHomeList(){
   const focusPath=focused&&box.contains&&box.contains(focused)?focused.getAttribute("title"):null;
   const focusMore=!!(focusPath&&active.classList.contains("filemore"));
   const L=canvasUniverse();
+  const names=workspaceDisplayNames();
   /* 켜진 색은 **지도가 낸 그것**이다 — 없으면(쉼) 점이 아예 안 붙는다 */
   const lit=L.last?L.last.by:null;
-  const all=vaultRows(L.tree,LFIND.trim()?{}:LZIP).map(r=>{
+  const all=vaultRows(L.tree,LFIND.trim()?{}:LZIP,ORBIT_GROUPS).map(r=>{
     const f=vaultRowFrag(r);
     return Object.assign({},r,f?{i:f.i,t:(PATHS[f.p.id]||"").split("/").pop()||f.p.title,body:f.p.body||"",seed:isSeed(f.p)}:{body:""});
   });
   const rows=explorerFilter(all,LFIND);
+  const orbitCounts=new Map();rows.forEach(r=>{if(r.orbitGroup)orbitCounts.set(r.orbitGroup,(orbitCounts.get(r.orbitGroup)||0)+1)});
   /* 몇 개가 걸렸나 — **거르개를 쓸 때만** 뜬다. 안 쓸 때 총계를 적으면 목록이 이미 말하는
      것을 글자로 한 번 더 말하는 자리가 된다. */
   const hb=document.getElementById("lhits");
@@ -3565,8 +4750,8 @@ function paintHomeList(){
     return `<span class="dot ${it.c==="n"?"hmn":it.c}"></span>`;
   };
   const treeIconOf=r=>`<span class="treeicon" aria-hidden="true">${r.folder?ICO.folder:(typeof workspaceFileIcon==="function"?workspaceFileIcon(r.path):ICO.file)}${r.folder?"":dotOf(r.id)}</span>`;
-  box.innerHTML=(rows.length?rows.map(r=>{
-      const pad=`style="padding-left:${8+r.depth*20}px;min-width:${220+r.depth*20}px"`;
+  box.innerHTML=(rows.length?rows.map((r,index)=>{
+      const pad=`style="padding-left:8px;--tree-indent:${r.depth*20}px;min-width:calc(min(220px, 100%) + ${r.depth*20}px)"`;
       const twisty=r.folder?`<button class="tw" aria-label="${esc(r.t)} ${r.zip?"펼치기":"접기"}" aria-expanded="${!r.zip}">${r.zip?"▸":"▾"}</button>`:`<span class="tw empty" aria-hidden="true"></span>`;
       /* ★ 항성 줄은 **범위 지정의 문**이기도 하다 (#75 4) — 지금 범위면 그렇다고 보인다.
          화살표(`.tw`)는 접기, 줄의 나머지는 범위 + 글라이드. 아래 손잡이가 그 둘을 가른다. */
@@ -3575,8 +4760,10 @@ function paintHomeList(){
         +` data-k="${r.k}" data-id="${esc(r.id)}" ${pad}`
         +` title="${esc(r.path)}">${twisty}${treeIconOf(r)}`
         +`<span class="hmtx">${esc(r.t)}</span><button class="filemore" title="${esc(r.t)} 작업" aria-label="${esc(r.t)} 작업">···</button></div>`;
-      return `<div class="hmit${workspaceSelectedID()===r.id?" sel":""}" data-i="${r.i}" data-id="${esc(r.id)}" data-path="${esc(r.path)}" ${pad}`
-        +` title="${esc(r.path)}">${twisty}${treeIconOf(r)}<span class="hmtx">${esc(r.t)}</span>`
+      const grouped=orbitCounts.get(r.orbitGroup)>1;
+      const mark=grouped?`<span class="orbit-mark${rows[index-1]?.orbitGroup!==r.orbitGroup?" first":""}${rows[index+1]?.orbitGroup!==r.orbitGroup?" last":""}" aria-hidden="true"></span>`:"";
+      return `<div class="hmit${workspaceSelectedID()===r.id?" sel":""}" data-i="${r.i}" data-id="${esc(r.id)}" data-path="${esc(r.path)}"${grouped?` data-orbit-group="${esc(r.orbitGroup)}" aria-description="같은 궤도의 문서 ${orbitCounts.get(r.orbitGroup)}개"`:""} ${pad}`
+        +` title="${esc(r.path)}">${mark}${twisty}${treeIconOf(r)}<span class="hmtx">${esc(names[r.path]||r.t)}</span>`
         +`${r.seed?'<span class="seedtag">예시</span>':""}<button class="filemore fileedit" title="${esc(r.t)} 편집" aria-label="${esc(r.t)} ${r.i===undefined?"외부 앱으로 열기":"편집"}">${r.i===undefined?"열기":"편집"}</button></div>`;
     }).join("")
     /* ★ 빈 상태 — **한 줄뿐이다.** 넣는 문은 이 칸의 위아래 버튼이 이미 들고 있다.
@@ -3613,7 +4800,15 @@ function paintHomeList(){
     const target=focusMore&&row?row.querySelector(".filemore"):row;
     if(target)target.focus({preventScroll:true});
   }
-
+  paintExplorerTools();paintExplorerCreation();
+}
+/* Markdown의 확장자는 표시에서만 줄인다. 동명 형제와 다른 형식은 실제 이름을 유지한다. */
+function workspaceDisplayNames(){
+  const paths=workspaceFiles().map(f=>f.path),counts={},names={};
+  const key=path=>path.replace(/\.(md|markdown)$/i,"").normalize("NFC").toLowerCase();
+  paths.forEach(path=>{const k=key(path);counts[k]=(counts[k]||0)+1});
+  paths.forEach(path=>{const name=path.split("/").pop().normalize("NFC");names[path]=counts[key(path)]===1?name.replace(/\.(md|markdown)$/i,""):name});
+  return names;
 }
 /* ══ 뜻 지도 (#67) — 점 하나 = md 조각 하나, 물어보면 그 뜻의 점이 켜진다 ════════════
    박선호 2026-09-02: *"점 형태의 여러 md 파일들이 캔버스에 있고, 검색하면 해당되는 점들이 빛나는."*
@@ -3783,8 +4978,8 @@ function liveScopeDefault(tree,last){
 function liveScopeIds(tree,sunId){
   if(!sunId)return null;
   const sun=(((tree||{}).suns)||[]).find(s=>s.id===sunId);
-  if(!sun)return null;
-  return new Set(sunMembers(sun).map(m=>m.id));
+  if(sun)return new Set(sunMembers(sun).map(m=>m.id));
+  return new Set(Object.entries(PATHS||{}).filter(([,path])=>path.startsWith(sunId+"/")).map(([id])=>id));
 }
 /* 갤럭시 → 항성들(트리 순서 = 이름 정렬) → 다시 갤럭시. 항성이 없으면 갤럭시에 머문다. */
 function liveScopeCycle(tree,sunId){
@@ -3794,9 +4989,9 @@ function liveScopeCycle(tree,sunId){
   return k<0?suns[0].id:(k+1<suns.length?suns[k+1].id:null);
 }
 function liveScopeName(tree,sunId){
-  if(!sunId)return "갤럭시";
+  if(!sunId)return "전체 저장소";
   const sun=(((tree||{}).suns)||[]).find(s=>s.id===sunId);
-  return sun?sun.name:"갤럭시";
+  return sun?sun.name:sunId;
 }
 /* 면접이 보는 트리 한 판. **캐시 없다** — 면접 중에는 문서가 안 바뀌고, 캐시를 두면
    「언제 버리나」가 새 규칙으로 생긴다. */
@@ -3974,8 +5169,8 @@ function orbitLayout(tree,opts){
 /* 한 바퀴에 몇 초 — **안쪽이 빠르다**(케플러 느낌). 항성 6분 · 행성 3분 · 위성 1.5분.
    ⚠ 작은 중심은 행성과 **같은 고리**라 같은 주기다 — 다르면 같은 고리 위 두 몸이 서로를 통과한다. */
 const ORBIT_PERIOD={sun:360,center:180,planet:180,moon:90};
-/* 스치면 그 계가 1/4 속도 · 켜지면 2배로 시작해 2.5초에 걸쳐 제 속도로 (design.md §4) */
-const ORBIT_HOVER=.25,ORBIT_BOOST=2,ORBIT_BOOST_MS=2500;
+/* 선택한 계가 완만하게 활성화되고 제 속도로 돌아온다. 호버는 그 속도의 1/4이다. */
+const ORBIT_HOVER=.25,ORBIT_ACTIVATION=.3,ORBIT_ACTIVATION_MS=1200;
 /* ★ 각도 = **기준각 + 흘러간 시간의 위상.** 결정론·주기적이다.
    ⚠ 나머지 연산으로 접는다 — `t` 와 `t+period` 가 **같은 부동소수**를 내야 「한 바퀴 뒤
      같은 자리」가 참이 된다. 음수 `t` 도 접힌다(rAF 시각이 t0 보다 앞설 수 있다). */
@@ -3983,29 +5178,29 @@ function orbitAngle(base,t,period){
   const P=period>0?period:1,u=((((t||0)%P)+P)%P)/P;
   return (base||0)+2*Math.PI*u;
 }
-/* 몸 하나의 속도 배수 — **호버(계 단위)와 가속(몸 단위)이 곱해진다.**
-   `boostAge` = 켜진 뒤 지난 ms(안 켜졌으면 `null`). 2.5초가 지나면 정확히 1로 돌아온다. */
-function orbitFactor(hover,boostAge){
-  const h=hover?ORBIT_HOVER:1;
-  /* ⚠ `null>=0` 은 **참**이다(0 으로 강제된다) — 안 켜진 몸이 조용히 2배로 도는 자리라
-     `null`·`undefined` 를 먼저 걷어낸다. */
-  if(boostAge===null||boostAge===undefined||!(boostAge>=0)||boostAge>=ORBIT_BOOST_MS)return h;
-  const k=1-boostAge/ORBIT_BOOST_MS;
-  return h*(1+(ORBIT_BOOST-1)*k*k);
+/* 선택 활성화는 시작·끝에서 속도와 기울기가 연속인 sin² 곡선이다. 검색만으로 가속하지 않는다. */
+function orbitFactor(hover,age){
+  const active=age!==null&&age!==undefined&&age>=0&&age<ORBIT_ACTIVATION_MS;
+  return (hover?ORBIT_HOVER:1)*(1+(active?ORBIT_ACTIVATION*Math.sin(Math.PI*age/ORBIT_ACTIVATION_MS)**2:0));
 }
-/* 카메라 글라이드 — **400ms · ease-out** (#75 4). 파동의 감속(`1-(1-u)²`)과 같은 곡선이다:
-   움직임 어휘를 하나로 둔다 (design.md §4). */
-const GLIDE_MS=400;
+/* 카메라는 출발·도착에서 완만한 700ms 이동 후 감쇠 추적으로 이어진다. 체감 조정용 값이다. */
+const GLIDE_MS=700,FOLLOW_TAU=.28,FOLLOW_MAX_SPEED=180;
 const cvEase=u=>{const c=Math.max(0,Math.min(u||0,1));return 1-(1-c)*(1-c)};
 /* 뷰 변환 한 걸음 — **순수 보간.** 원본을 안 건드린다(프레임마다 부르는 자리다) */
 function glideVT(from,to,u){
-  const e=cvEase(u);
+  const c=Math.max(0,Math.min(u||0,1)),e=c*c*(3-2*c);
   return {k:from.k+(to.k-from.k)*e,x:from.x+(to.x-from.x)*e,y:from.y+(to.y-from.y)*e};
 }
 /* 그 몸을 판 한가운데 놓는 뷰 변환. **줌은 들고 있던 것 그대로** — 글라이드는 옮기기지 확대가 아니다 */
 function glideTarget(b,w,h,k){
   const z=k>0?k:1;
   return {k:z,x:w/2-b.x*z,y:h/2-b.y*z};
+}
+/* 화면 좌표에서 지수 감쇠하고 초당 이동량을 제한해 갑작스러운 추적 점프를 막는다. */
+function followVT(from,to,dt){
+  const step=Math.max(0,Math.min(.05,dt||0)),dx=to.x-from.x,dy=to.y-from.y,d=Math.hypot(dx,dy);
+  const a=d>0?Math.min(1-Math.exp(-step/FOLLOW_TAU),FOLLOW_MAX_SPEED*step/d):0;
+  return {k:from.k,x:from.x+dx*a,y:from.y+dy*a};
 }
 /* ★ 루프가 자는 조건 — **넷이다.** 순수 함수라 시험이 그 넷을 그대로 잰다
    (`document.hidden`·`matchMedia` 를 흉내내기 시작하면 화면 코드를 복제하게 된다).
@@ -4147,7 +5342,7 @@ const canvasSig=(fragments,paths)=>(fragments||[]).map(p=>p.id+">"+(((paths||{})
 /* 한 판을 세운다. 서명이 같으면 **살려 둔다** — 사람이 끌어 둔 위상이 저장 한 번에 안 날아가게. */
 /* 서명은 **여기 한 자리**에서만 잰다 — 묻는 쪽과 짓는 쪽이 다른 무리를 쓰면 씨앗 한 장에
    판이 매번 다시 지어진다(#74·#75 리뷰). 무리 = 씨앗 포함 `DOC.fragments`. */
-const canvasSigNow=()=>canvasSig(DOC.fragments||[],PATHS)+"/folders:"+VAULT_FOLDERS.join("|")+"/entries:"+VAULT_ENTRIES.map(e=>e.id+":"+e.path).join("|")+"/scope:"+WORKSPACE_SCOPE;
+const canvasSigNow=()=>canvasSig(DOC.fragments||[],PATHS)+"/folders:"+VAULT_FOLDERS.join("|")+"/entries:"+VAULT_ENTRIES.map(e=>e.id+":"+e.path).join("|")+"/scope:"+WORKSPACE_SCOPE+"/orbits:"+JSON.stringify(ORBIT_GROUPS);
 function workspaceFolderID(path){return "@folder/"+path}
 /* A fixed projection keeps map controls two dimensional. Nested, separated ellipses
    encode file orbits; folders are stationary destinations beyond this system. */
@@ -4166,7 +5361,28 @@ function workspaceOrbitPath(n){
   const still=Object.assign({},n,{viewRoll:0});
   return Array.from({length:73},(_,i)=>{const p=workspaceOrbitPoint(still,i/72*2*Math.PI);return `${i?"L":"M"}${p.x.toFixed(2)} ${p.y.toFixed(2)}`}).join(" ")+" Z";
 }
-function workspaceScene(tree,path){
+/* 밀집 장면은 서로 다른 반지름을 유지한 채 빈 각도를 찾는다. 의미를 추정해 묶지 않는다.
+   같은 속도로 돌리는 평면 투영이므로 배치 때 확보한 간격이 공전 중에도 유지된다. */
+function workspaceOrbitLayout(units,dense){
+  const points=[],out=[];let previousRadius=0;
+  units.forEach((unit,j)=>{
+    const count=unit.files.length;
+    let radius=160+j*104,angle=j*1.37;
+    if(dense){
+      radius=Math.max(previousRadius+2,Math.sqrt(160*160+points.length*2600),count>1?76/(2*Math.sin(Math.PI/count)):0);
+      search:for(;;radius+=16){
+        for(let attempt=0;attempt<24;attempt++){
+          angle=j*2.3999632297+attempt*2.3999632297;
+          const candidate=Array.from({length:count},(_,i)=>({x:radius*Math.cos(angle+i*2*Math.PI/count),y:radius*Math.sin(angle+i*2*Math.PI/count)}));
+          if(candidate.every(p=>points.every(q=>(p.x-q.x)**2+(p.y-q.y)**2>=76*76))){points.push(...candidate);break search}
+        }
+      }
+    }
+    previousRadius=radius;out.push({...unit,radius,angle});
+  });
+  return out;
+}
+function workspaceScene(tree,path,groups){
   let dir=tree.filesystem;
   for(const segment of (path||"").split("/").filter(Boolean)){dir=dir?.dirs?.[segment];if(!dir)return null}
   const center={x:CV_W/2,y:CV_H/2},bodies=[];
@@ -4174,14 +5390,8 @@ function workspaceScene(tree,path){
   if(path)bodies.push({id,kind:"sun",path,name:path.split("/").pop(),parent:null,r:26,ring:0,ang:0,cx:center.x,cy:center.y,x:center.x,y:center.y});
   const folders=Object.keys(dir.dirs||{}).sort();
   const files=(dir.files||[]).slice().sort((a,b)=>a.path.localeCompare(b.path));
-  const rings=[];
-  let capacity=0;
-  for(let i=0;i<Math.max(1,files.length)&&(capacity<files.length||i<Math.min(3,files.length));i++){
-    const radius=160+i*104,cap=Math.max(4,Math.floor(2*Math.PI*radius*.62/76));
-    rings.push({radius,cap,files:[]});capacity+=cap;
-  }
-  let cursor=0;
-  files.forEach(f=>{while(rings[cursor%rings.length].files.length>=rings[cursor%rings.length].cap)cursor++;rings[cursor++%rings.length].files.push(f)});
+  const units=orbitOrderedFiles(files,groups),dense=units.length>10||files.length>36;
+  const rings=workspaceOrbitLayout(units,dense);
   const outer=rings.length?rings[rings.length-1].radius:160;
   const starRadius=Math.max(outer+150,folders.length*84/(2*Math.PI*.72));
   const place=(n,ring,ang,extra)=>{
@@ -4190,8 +5400,8 @@ function workspaceScene(tree,path){
     bodies.push(n);
   };
   folders.forEach((name,i)=>place({id:workspaceFolderID(path?path+"/"+name:name),path:path?path+"/"+name:name,name,kind:"sun",r:18},starRadius,2*Math.PI*i/Math.max(1,folders.length)-.65,{fixed:!!path,flatten:.72,tilt:-.18,period:ORBIT_PERIOD.sun}));
-  const dense=files.length>36;
-  rings.forEach((ring,j)=>ring.files.forEach((f,i)=>place({id:f.p.id,path:f.path,name:f.file,kind:"planet",r:14},ring.radius,2*Math.PI*i/ring.files.length+j*1.37,{flatten:dense?.62:.28+(j%3)*.15,tilt:dense?-.18:-.5+(j%3)*.44,period:dense?100+j*65:34+j*14,orbitIndex:j,perspectiveBase:dense?0:outer})));
+  rings.forEach((ring,j)=>ring.files.forEach((f,i)=>place({id:f.p.id,path:f.path,name:f.file,kind:"planet",r:14},ring.radius,2*Math.PI*i/ring.files.length+ring.angle,{flatten:dense?.62:.28+(j%3)*.15,tilt:dense?-.18:-.5+(j%3)*.44,period:dense?100:34+j*14,orbitIndex:j,perspectiveBase:dense?0:outer,
+    orbitKey:ring.key,sharedOrbit:ring.shared,orbitCount:ring.files.length,motionKey:dense?"packed-system":ring.shared?ring.key:null})));
   return {bodies,center};
 }
 function canvasUniverse(){
@@ -4201,19 +5411,22 @@ function canvasUniverse(){
   const F=DOC.fragments||[],sig=canvasSigNow();
   if(CANV&&CANV.sig===sig&&CANV.vault===SYS.vault)return CANV;
   const previous=CANV&&CANV.vault===SYS.vault?CANV:null;
+  if(CANV?.drag)canvasCancelOrbitDrag(CANV);
   /* ⚠ **옛 판의 루프를 먼저 끊는다** (matt Standards 리뷰 #75). 안 끊으면 저장·받기마다 새 판이
      생기는데 옛 프레임이 새 판을 읽고 다시 예약해 루프가 둘, 셋으로 는다 — CPU 0 이 거짓이 된다. */
   canvasStop();
   const tree=vaultTree(F,PATHS,null,VAULT_FOLDERS,VAULT_ENTRIES);
-  let lay=workspaceScene(tree,WORKSPACE_SCOPE);if(!lay){WORKSPACE_SCOPE="";lay=workspaceScene(tree,"")}
+  let lay=workspaceScene(tree,WORKSPACE_SCOPE,ORBIT_GROUPS);if(!lay){WORKSPACE_SCOPE="";lay=workspaceScene(tree,"",ORBIT_GROUPS)}
   const by={};
   lay.bodies.forEach(b=>{by[b.id]=b});
   /* ★ 공전이 몸마다 드는 것 넷 (#75). **배치는 안 건드린다** — `base` 가 `orbitLayout` 이 낸
      그 각도이고, 시계(`clk`)가 0 인 첫 프레임은 #74 의 그 그림이다.
-     `phase` = 사람이 끌어 놓은 위상 · `boost` = 켜진 시각(0 = 안 켜짐) ·
+     `phase` = 사람이 끌어 놓은 위상 ·
      `sun` = 그 몸의 계(호버 슬로우가 계 단위다) · `reach` = 갤럭시 중심에서 닿는 최대 거리. */
   lay.bodies.forEach(b=>{
-    b.base=b.ang;b.phase=0;b.clk=0;b.boost=0;
+    b.base=b.ang;b.phase=0;b.clk=0;
+    const old=previous?.by[b.id];
+    if(old&&old.orbitKey===b.orbitKey&&old.orbitCount===b.orbitCount&&old.period===b.period){b.clk=old.clk;b.phase=old.phase;b.ang=orbitAngle(b.base+b.phase,b.clk,b.period)}
     b.sun=WORKSPACE_SCOPE||"@workspace-root";b.period=b.period||ORBIT_PERIOD.planet;
     if(!b.ring)b.fixed=true;
     const p=b.parent?by[b.parent]:null;
@@ -4221,6 +5434,7 @@ function canvasUniverse(){
   });
   CANV={sig:sig,vault:SYS.vault,tree:tree,nodes:lay.bodies,by:by,gc:lay.center,scoped:null,
         vt:{k:1,x:0,y:0},els:null,last:null,wave:null,src:null,
+        viewClock:previous?.viewClock||0,viewRoll:previous?.viewRoll||0,
         /* 공전 루프가 드는 것 — 프레임 id · 지난 프레임 시각 · 스치고 있는 몸 · 카메라 글라이드 */
         anim:{raf:0,last:0},hover:null,glide:null};
   if(previous){
@@ -4236,6 +5450,7 @@ function canvasUniverse(){
     CANV.vt=Object.assign({},kept.vt);CANV.follow=kept.follow||null;CANV.restoreVT=true;
   }
   CANV.focusPath=WORKSPACE_SCOPE||null;CANV.focusID=WORKSPACE_SCOPE?workspaceFolderID(WORKSPACE_SCOPE):null;CANV.scoped=WORKSPACE_SCOPE||null;
+  canvasReflow();
   return CANV;
 }
 /* 그림에 앉는 **조각 몸**(행성·위성)만. 항성·작은 중심은 파일이 아니라 폴더다 */
@@ -4288,13 +5503,61 @@ function beamStyle(c,s,green,amber){
    반지름은 안 건드린다 — 크기는 **층**(항성>행성>위성)이라 측정이 그것을 흔들면 층이 거짓말이 된다. */
 const isSelId=id=>workspaceSelectedID()===id;
 const litOpacity=(lit,t,id)=>lit?String(Math.round((.55+.45*Math.max(0,Math.min(t,1)))*100)/100):(isSelId(id)?".7":".24");
+function canvasBodyOpacity(g,d,opacity){
+  d.setAttribute("opacity",opacity);
+  // 현재 보이는 표면·광륜도 같은 검색 밝기를 받아야 한다.
+  g.setAttribute("opacity",opacity);
+}
 /* 사람에게 보이는 수 — **원값이 아니라 준비선 대비 %** 다 (#67 확정 ⑤ · #61 E). */
 const readyPct=(s,green)=>Math.round(s/green*100);
 
 /* ── 그리기 ─────────────────────────────────────────────────────────────── */
 /* `prefers-reduced-motion` — **함수 안에서 묻는다.** 최상위에서 물으면 `matchMedia` 가 없는
    자리(`tests/screen-load.mjs`)에서 화면 전체가 안 떠진다. */
-const cvReduced=()=>{try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}};
+let CANVAS_MOTION_QUERY=null;
+const canvasSystemReduced=()=>{if(ACCESSIBILITY.reduceMotion)return true;try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}};
+const cvReduced=()=>canvasSystemReduced();
+function canvasMotionChanged(){
+  const wrap=document.getElementById("cvwrap");wrap?.classList.toggle("rm",cvReduced());
+  if(cvReduced()){
+    canvasStop();canvasWaveCancel();
+    if(CANV){CANV.glide=null;CANV.follow=null}
+  }
+  if(document.hidden||!canvasShown())canvasClearShower();
+  paintCanvasNavigation();canvasWake();
+}
+function canvasVisibilityChanged(){
+  document.body.classList.toggle("window-hidden",!!document.hidden);
+  if(document.hidden)canvasClearShower();
+  canvasWake();
+}
+function canvasClearShower(){
+  const sky=document.getElementById("canvas-star-shower");
+  sky?.getAnimations?.({subtree:true}).forEach(animation=>animation.cancel());sky?.remove();
+}
+function canvasStarShower(){
+  const stage=document.getElementById("cvstage");if(!stage||document.hidden||!canvasShown())return;
+  canvasClearShower();
+  const box=stage.getBoundingClientRect(),w=box.width,h=box.height;if(!w||!h)return;
+  const ns="http://www.w3.org/2000/svg",sky=document.createElementNS(ns,"svg");sky.id="canvas-star-shower";
+  sky.setAttribute("viewBox",`0 0 ${w} ${h}`);sky.setAttribute("aria-hidden","true");stage.append(sky);
+  const reduced=canvasSystemReduced(),animations=[];
+  for(let i=0;i<24;i++){
+    const angle=i*2.39996,inner=Math.min(w,h)*(.03+(i%3)*.01),outer=Math.min(w,h)*(.28+(i%5)*.043);
+    const x=w/2+Math.cos(angle)*inner,y=h/2+Math.sin(angle)*inner;
+    const ex=w/2+Math.cos(angle+.35)*outer,ey=h/2+Math.sin(angle+.35)*outer*.7;
+    const tail=document.createElementNS(ns,"path");
+    tail.setAttribute("d",`M${x} ${y} Q${w/2+Math.cos(angle-.25)*outer*.65} ${h/2+Math.sin(angle-.25)*outer*.65} ${ex} ${ey}`);
+    tail.setAttribute("fill","none");tail.setAttribute("stroke",i%4===0?"var(--t2)":"var(--t1)");tail.setAttribute("stroke-width",String(i%3===0?2:1));
+    tail.setAttribute("stroke-linecap","round");tail.style.opacity="0";sky.append(tail);
+    const length=tail.getTotalLength();tail.style.strokeDasharray=`${reduced?length:12+i%4*4} ${length}`;
+    const animation=tail.animate(reduced?[{opacity:0},{opacity:.25},{opacity:0}]:[
+      {strokeDashoffset:String(24),opacity:0},{offset:.18,opacity:.8},{strokeDashoffset:String(-length),opacity:0}
+    ],{duration:reduced?650:1100+i%4*140,delay:reduced?0:i*15,easing:"cubic-bezier(.2,.6,.3,1)"});
+    animations.push(animation.finished.catch(()=>{}));
+  }
+  Promise.all(animations).then(()=>sky.remove());
+}
 /* ★ **지금 자리가 아니라 궤도가 상자를 정한다** (#75). 공전이 붙기 전에는 순간 좌표의
    경계 상자였는데, 그러면 몸이 돌 때마다 상자가 숨쉬고 **다음 「화면 맞춤」마다 줌이 튄다** —
    같은 볼트가 프레임에 따라 다른 크기로 뜨는 자리다. 그래서 **각 몸이 닿을 수 있는 최대
@@ -4332,7 +5595,7 @@ function canvasNodeClass(id){
 function canvasApplyVT(){
   const L=CANV;if(!L||!L.els)return;
   L.els.root.setAttribute("transform",`translate(${L.vt.x} ${L.vt.y}) scale(${L.vt.k})`);
-
+  canvasLabels();
 }
 /* 몸을 궤도 위에 다시 앉힌다 — **각도와 부모 좌표에서 좌표를 다시 낸다.**
    끌기가 바꾸는 것은 `ang` 하나이고 `ring` 은 안 건드린다(#74 C1: *"위상만"*). */
@@ -4347,14 +5610,14 @@ function canvasReflow(){
     n.x=n.cx+pos.x;n.y=n.cy+pos.y;n.depth=pos.z;n.displayScale=pos.scale;
   });
 }
-/* 선의 양 끝을 조금씩 잘라 둔다 — 구슬과 몸의 발광에 안 닿게 */
+/* 천체·궤도·파동 위치를 현재 장면에 맞춘다. */
 function canvasPlace(){
   const L=CANV;if(!L||!L.els)return;
   const C=canvasCenter();
   L.els.orb.setAttribute("transform",`translate(${C.x} ${C.y})`);
-  /* ★ 파동과 빔의 **근원**은 둘 중 하나다 — 갤럭시의 태양(질문) 또는 고른 별(`L.src`).
+  /* ★ 파동의 **근원**은 둘 중 하나다 — 갤럭시의 태양(질문) 또는 고른 별(`L.src`).
      태양은 근원이 별이어도 제자리다: 커맨드 센터는 안 움직인다. */
-  const S=L.src?L.by[L.src]:null,O=S?{x:S.x,y:S.y}:C,sr=S?15:34;
+  const S=L.src?L.by[L.src]:null,O=S?{x:S.x,y:S.y}:C;
   L.els.ripple.setAttribute("cx",O.x);L.els.ripple.setAttribute("cy",O.y);
   /* ★ **고리도 따라간다** (#75) — 항성이 갤럭시를 돌면 그 항성의 행성 고리도 같이 움직여야
      한다. 안 옮기면 고리만 제자리에 남아 「폴더 = 중심체」라는 그림이 그 순간 거짓말이 된다.
@@ -4364,23 +5627,40 @@ function canvasPlace(){
     const tilt=L.els.ringTilt?.[k]?(L.viewRoll||0):0;
     L.els.ring[k].setAttribute("transform",`translate(${px.toFixed(1)} ${py.toFixed(1)}) rotate(${tilt*180/Math.PI})`);
   }
+  // 연결선은 #cvb .beam에서 숨기므로 매 프레임 좌표를 갱신하지 않는다.
   L.nodes.forEach(n=>{
     const scale=n.kind==="planet"?.92*(n.displayScale||1):1;
     L.els.node[n.id].setAttribute("transform",`translate(${n.x} ${n.y}) scale(${scale})`);
-    const surface=L.els.spin?.[n.id];
-    if(surface){const phase=(n.clk||0)*.13+(n.orbitIndex||0);surface.setAttribute("transform",`rotate(-18) scale(${Math.cos(phase).toFixed(3)} 1)`)}
-    const b=L.els.beam[n.id];
-    if(!b)return;
-    const dx=n.x-O.x,dy=n.y-O.y,d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d;
-    b.setAttribute("x1",(O.x+ux*sr).toFixed(1));
-    b.setAttribute("y1",(O.y+uy*sr).toFixed(1));
-    b.setAttribute("x2",(n.x-ux*14).toFixed(1));b.setAttribute("y2",(n.y-uy*14).toFixed(1));
   });
   if(L.els.bodies){
     const sorted=L.nodes.slice().sort((a,b)=>(a.depth||0)-(b.depth||0));
     const order=sorted.map(n=>n.id).join("|");
     if(order!==L.els.depthOrder){sorted.forEach(n=>L.els.bodies.appendChild(L.els.node[n.id]));L.els.depthOrder=order}
   }
+  canvasLabels();
+}
+/* 라벨은 장면을 만들 때 한 번 짓고 기존 공전 루프에서 크기만 보정한다. */
+function canvasLabels(){
+  const L=CANV;if(!L?.els?.labels)return;
+  const hovered=L.by[L.hover],orbitKey=hovered?canvasOrbitKey(hovered):null,target=L.drag?.target?.key;
+  const state=String(orbitKey)+"/"+String(target);
+  if(L.els.hoverOrbit!==state){
+    for(const [key,path] of Object.entries(L.els.ring)){
+      const shared=!!L.els.ringShared?.[key];
+      path.setAttribute("class","orbit"+(shared?" shared":"")+(key===orbitKey?" hovered":"")+(key===target?" orbit-target":""));
+      path.setAttribute("opacity",L.nodes.length>40&&!shared&&key!==orbitKey&&key!==target?".25":"1");
+    }
+    L.els.hoverOrbit=state;
+  }
+  for(const n of L.nodes){
+    const label=L.els.labels[n.id],show=n.kind==="sun"||isSelId(n.id)||L.hover===n.id;
+    if(!label)continue;
+    label.style.display=show?"":"none";if(!show)continue;
+    const scale=Math.max(.03,L.vt.k*(n.kind==="planet"?.92*(n.displayScale||1):1));
+    label.setAttribute("font-size",String(12/scale));label.setAttribute("stroke-width",String(4/scale));
+    label.setAttribute("y",String(n.r+10+18/scale));
+  }
+  L.els.orb.setAttribute("opacity",CANVQ.trim()&&!L.relatedID?".3":"1");
 }
 function canvasFit(animate=false){
   const L=CANV,board=document.getElementById("cvb");
@@ -4388,12 +5668,21 @@ function canvasFit(animate=false){
   if(!L||!L.els||!board)return;
   const r=board.getBoundingClientRect(),B=canvasBox(),pad=46;
   if(!(r.width>0&&r.height>0))return;
+  if(animate)L.viewport=null;
   if(L.follow&&L.by[L.follow.id]){
-    L.follow=Object.assign({},L.follow,{w:r.width,h:r.height});
+    if(L.viewport)L.viewport={w:r.width,h:r.height};
     const scale=L.follow.id===L.focusID?canvasScopeScale(L,L.follow.id,r.width,r.height):(L.follow.scale||L.vt.k);
-    if(L.glide){L.glide.w=r.width;L.glide.h=r.height;L.glide.targetScale=scale;return;}
-    L.vt=glideTarget(L.by[L.follow.id],r.width,r.height,scale);
+    const changed=L.follow.w!==r.width||L.follow.h!==r.height||L.follow.scale!==scale;
+    if(!changed)return;
+    L.follow=Object.assign({},L.follow,{w:r.width,h:r.height,scale});
+    /* 크기 변화는 현재 프레임에서 다시 출발한다. 진행률이 큰 이동의 목표만 바꾸면 다음 프레임이 뛴다. */
+    if(!cvReduced()&&!document.hidden){canvasGlideTo(L.follow.id,scale);return}
+    L.glide=null;L.vt=glideTarget(L.by[L.follow.id],r.width,r.height,scale);
     canvasApplyVT();return;
+  }
+  if(L.viewport&&!L.glide){
+    L.vt.x+=(r.width-L.viewport.w)/2;L.vt.y+=(r.height-L.viewport.h)/2;
+    L.viewport={w:r.width,h:r.height};canvasApplyVT();return;
   }
   const k=Math.max(.03,Math.min((r.width-pad*2)/B.w,(r.height-pad*2)/B.h,1.6));
   const to={k,x:r.width/2-(B.x+B.w/2)*k,y:r.height/2-(B.y+B.h/2)*k};
@@ -4406,6 +5695,100 @@ function canvasFit(animate=false){
 }
 /* SVG 알맹이를 **한 번 짓고**, 그 뒤로는 속성만 바꾼다 — 그래야 CSS 전환이 산다
    (매번 다시 지으면 전환이 매번 처음부터 시작해 아무것도 안 움직인 것처럼 보인다). */
+// 표면은 종류마다 네 가지를 공유한다. 문서 수가 늘어도 캐시는 최대 32장이고,
+// 픽셀 한 칸을 DOM으로 만들지 않는다. 생성은 장면을 세우거나 스타일을 바꿀 때만 한다.
+const UNIVERSE_SPRITES=new Map();
+function universeStyleName(value){return value==="depth"||value==="pixel"?value:"current"}
+function universeSprite(style,skin,seed=""){
+  style=universeStyleName(style);if(style==="current")return null;
+  skin=["stellar","planet","moon","galaxy"].includes(skin)?skin:"planet";
+  let hash=2166136261;for(const c of String(seed))hash=Math.imul(hash^c.codePointAt(0),16777619);
+  const variant=(hash>>>0)%4,key=style+":"+skin+":"+variant;
+  if(UNIVERSE_SPRITES.has(key))return UNIVERSE_SPRITES.get(key);
+  let uri=null;
+  try{
+    const size=style==="depth"?96:skin==="planet"?17:skin==="moon"?15:19;
+    const canvas=document.createElement("canvas");canvas.width=size;canvas.height=size;
+    const ctx=canvas.getContext("2d");
+    if(ctx){
+      const pixels=ctx.createImageData(size,size),data=pixels.data,radius=size/2-.5;
+      const palette={
+        stellar:[[52,23,22],[214,135,67],[255,242,194]],
+        planet:[[11,23,41],[83,138,183],[217,240,255]],
+        moon:[[21,29,44],[128,147,171],[236,242,249]],
+        galaxy:[[28,45,69],[164,189,220],[255,255,255]]
+      }[skin];
+      const mix=(a,b,t)=>a+(b-a)*t;
+      for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+        const nx=(x+.5-size/2)/radius,ny=(y+.5-size/2)/radius,d=Math.hypot(nx,ny);
+        const alpha=style==="pixel"?(d<=1?1:0):Math.max(0,Math.min(1,(1-d)*radius+.5));
+        if(!alpha)continue;
+        const z=Math.sqrt(Math.max(0,1-nx*nx-ny*ny));
+        const light=Math.max(0,-nx*.48-ny*.58+z*.65);
+        const band=Math.sin(ny*17+Math.sin(nx*3+variant)*.65+variant);
+        const grain=Math.sin((x+variant*11)*1.73+y*2.31)*Math.sin(y*.81-x*.93);
+        const texture=(skin==="planet"?band*.045:grain*.025);
+        let level=Math.max(0,Math.min(1,.07+Math.pow(light,.88)*.86+texture));
+        if(style==="pixel")level=Math.round(level*5)/5;
+        const low=level<.55?palette[0]:palette[1],high=level<.55?palette[1]:palette[2];
+        const t=level<.55?level/.55:(level-.55)/.45;
+        const rim=style==="depth"?Math.pow(1-z,4)*Math.max(0,-nx-ny*.6)*.2:0;
+        const spec=style==="depth"?Math.pow(light,22)*.16:0;
+        const offset=(y*size+x)*4;
+        for(let c=0;c<3;c++)data[offset+c]=Math.round(mix(mix(low[c],high[c],t),palette[2][c],Math.min(.4,rim+spec)));
+        data[offset+3]=Math.round(alpha*255);
+      }
+      ctx.putImageData(pixels,0,0);
+      const encoded=canvas.toDataURL("image/png");if(encoded.startsWith("data:image/png"))uri=encoded;
+    }
+  }catch(e){}
+  // Canvas를 쓸 수 없으면 기존 원형 표면을 유지하며 같은 실패를 문서마다 반복하지 않는다.
+  UNIVERSE_SPRITES.set(key,uri);return uri;
+}
+function canvasStellarBody(group,r,skin,seed,el){
+  let corona=group.querySelector(".corona");
+  if(!corona){corona=el("circle",{class:"corona",r:r*2.2,fill:`url(#${skin}-corona)`,"pointer-events":"none"});group.appendChild(corona)}
+  const uri=universeSprite(WSTYLE.universeStyle,skin,seed);
+  const surface=uri?el("image",{class:"surface",x:-r,y:-r,width:r*2,height:r*2,href:uri,"pointer-events":"none","aria-hidden":"true"})
+    :el("circle",{class:"surface",r,fill:`url(#${skin}-core)`,"pointer-events":"none"});
+  const old=group.querySelector(".surface");if(old)group.replaceChild(surface,old);else group.appendChild(surface);
+  return surface;
+}
+function canvasPaintSky(points,el,style){
+  points.innerHTML="";
+  let noise=7319;
+  const rnd=()=>{noise=(noise*16807)%2147483647;return (noise-1)/2147483646};
+  for(let j=0;j<340;j++){
+    const x=rnd()*1200,y=rnd()*800,r=.25+Math.pow(rnd(),5)*.85,a=.15+rnd()*.45;
+    if(style==="pixel"){
+      const size=r>.8?2:1;
+      points.appendChild(el("rect",{x:Math.round(x),y:Math.round(y),width:size,height:size,opacity:a}));
+    }else{
+      points.appendChild(el("circle",{cx:x,cy:y,r:r,opacity:a}));
+      if(r>.8)points.appendChild(el("circle",{cx:x,cy:y,r:r*5,opacity:.35,class:"glow"}));
+    }
+  }
+}
+// 스타일은 저장소·검색·카메라 상태를 바꾸지 않는다. 현재 SVG의 표면만 교체한다.
+function applyUniverseStyle(){
+  const style=universeStyleName(WSTYLE.universeStyle),wrap=document.getElementById("cvwrap"),select=document.getElementById("setuniverse");
+  if(wrap)wrap.dataset.universeStyle=style;if(select)select.value=style;
+  const board=document.getElementById("cvb"),L=CANV;
+  if(!board?.namespaceURI||!L?.els||board.dataset.universeStyle===style)return;
+  board.dataset.universeStyle=style;
+  const el=(tag,attrs={})=>{const e=document.createElementNS(board.namespaceURI,tag);for(const key in attrs)e.setAttribute(key,attrs[key]);return e};
+  if(L.els.skyPoints)canvasPaintSky(L.els.skyPoints,el,style);
+  if(L.els.orb)canvasStellarBody(L.els.orb,34,"galaxy","galaxy",el);
+  for(const n of L.nodes){
+    if(!["sun","planet","moon"].includes(n.kind))continue;
+    const group=L.els.node[n.id];if(group)canvasStellarBody(group,n.r,n.kind==="sun"?"stellar":n.kind,n.id,el);
+  }
+  if(L.drag?.preview)for(const n of L.drag.preview.nodes){
+    const group=L.drag.preview.elements[n.id];
+    if(group)canvasStellarBody(group,n.r,n.kind==="planet"?"planet":n.kind==="center"?"galaxy":"stellar",n.id,el);
+  }
+  if(L.drag?.ghost&&L.drag.node){const n=L.drag.node;canvasStellarBody(L.drag.ghost,n.r,n.kind==="sun"?"stellar":n.kind,n.id,el)}
+}
 function canvasMount(){
   const L=canvasUniverse(),board=document.getElementById("cvb");
   const previousVT=L.els||L.restoreVT?Object.assign({},L.vt):null;
@@ -4417,6 +5800,7 @@ function canvasMount(){
      낱말표(`JS_NET`)와 겹친다 — 그 지뢰를 안 심는다. */
   const NS=board.namespaceURI;
   const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in (a||{}))e.setAttribute(k,a[k]);return e};
+  board.dataset.universeStyle=universeStyleName(WSTYLE.universeStyle);
   /* 다시 지으면 leave 이벤트가 안 온다 — 호버 슬로우가 붙지 않게 여기서 푼다(matt Spec 리뷰 #75 C2) */
   if(CANV){CANV.hover=null}canvasTipOff();
   board.innerHTML="";
@@ -4432,44 +5816,42 @@ function canvasMount(){
   };
   gradient("stellar-corona",[["0%","#fff8ee",.9],["16%","#ffd3a3",.6],["42%","#ffb979",.18],["100%","#ffb979",0]]);
   gradient("stellar-core",[["0%","#fffdf8",1],["55%","#ffe4c4",1],["100%","#eaa36a",1]]);
-  gradient("planet-surface",[["0%","#f4faff",1],["38%","#c5e0ff",1],["72%","#82a9d0",1],["100%","#36516d",1]],{cx:"28%",cy:"24%",r:"78%"});
-  gradient("moon-surface",[["0%","#ffffff",1],["35%","#e5e9ee",1],["80%","#9ca8b9",1],["100%","#566171",1]],{cx:"28%",cy:"22%",r:"82%"});
-  gradient("galaxy-glow",[["0%","#f8f4e9",.9],["10%","#d8e2f1",.45],["35%","#8ba4c7",.12],["100%","#759ac9",0]]);
+  gradient("planet-corona",[["0%","#f4faff",.9],["16%","#c5e0ff",.6],["42%","#a9d4ff",.18],["100%","#a9d4ff",0]]);
+  gradient("planet-core",[["0%","#f4faff",1],["55%","#c5e0ff",1],["100%","#82a9d0",1]]);
+  gradient("moon-corona",[["0%","#ffffff",.9],["16%","#e5e9ee",.6],["42%","#9ca8b9",.18],["100%","#9ca8b9",0]]);
+  gradient("moon-core",[["0%","#ffffff",1],["55%","#e5e9ee",1],["100%","#9ca8b9",1]]);
+  gradient("galaxy-corona",[["0%","#ffffff",.9],["16%","#f4f7ff",.6],["42%","#e2e8f2",.18],["100%","#e2e8f2",0]]);
+  gradient("galaxy-core",[["0%","#ffffff",1],["55%","#f4f7ff",1],["100%","#d8e0ec",1]]);
+  const orbitDepth=el("linearGradient",{id:"universe-depth-orbit",x1:".1",y1:"0",x2:".75",y2:"1"});
+  [["0%",.045],["45%",.12],["76%",.35],["100%",.13]].forEach(([offset,opacity])=>orbitDepth.appendChild(el("stop",{offset,"stop-color":"#b6d5f7","stop-opacity":opacity})));
+  defs.appendChild(orbitDepth);
   sky.appendChild(defs);
-  let noise=7319;
-  const rnd=()=>{noise=(noise*16807)%2147483647;return (noise-1)/2147483646};
-  for(let j=0;j<340;j++){
-    const x=rnd()*1200,y=rnd()*800,r=.25+Math.pow(rnd(),5)*.85,a=.15+rnd()*.45;
-    sky.appendChild(el("circle",{cx:x,cy:y,r:r,opacity:a}));
-    if(r>.8)sky.appendChild(el("circle",{cx:x,cy:y,r:r*5,opacity:.35,class:"glow"}));
-  }
+  const skyPoints=el("g",{class:"ambient-points"});canvasPaintSky(skyPoints,el,WSTYLE.universeStyle);sky.appendChild(skyPoints);
   board.appendChild(sky);
   const root=el("g"),gr=el("g"),gb=el("g"),gw=el("g"),gn=el("g");
   board.appendChild(root);root.appendChild(gr);root.appendChild(gb);root.appendChild(gw);root.appendChild(gn);
   const ripple=el("circle",{class:"ripple",r:"0",opacity:"0",fill:"none",
     stroke:"var(--t2)","stroke-width":"1.6"});
-  /* ★ 태양 = 커맨드 센터 (#70 확정 ④) — **언제나 있고, 누르는 것이 질문의 문**이다.
-     ⚠ 신호등 색을 안 쓴다: 준비도가 아니라 「내가 던지는 자리」다.
-     제공받은 컬러 마크를 중앙에 그대로 배치한다. */
+  /* 2026-09-11 사용자 정정: 갤럭시는 흰 항성 표면으로 표현한다. 질문은 상단 입력에서 한다. */
   const orb=el("g",{id:"orbg","pointer-events":"none","aria-hidden":"true"});
-  /* 갤럭시 루트의 중앙 자리표시 별무리를 제공받은 마크로 교체한다. */
   orb.style.display=WORKSPACE_SCOPE?"none":"";
-  orb.appendChild(el("image",{x:"-108",y:"-108",width:"216",height:"216",
-    href:BRAND_MARK_DATA_URI,"preserveAspectRatio":"xMidYMid meet","pointer-events":"none"}));
+  canvasStellarBody(orb,34,"galaxy","galaxy",el);
   gw.appendChild(ripple);gw.appendChild(orb);
-  L.els={root:root,orb:orb,ripple:ripple,bodies:gn,sky:sky,node:{},beam:{},ring:{},ringAt:{},ringTilt:{},tring:{},spin:{}};
+  L.els={root:root,orb:orb,ripple:ripple,bodies:gn,sky:sky,skyPoints:skyPoints,node:{},labels:{},beam:{},ring:{},ringAt:{},ringTilt:{},ringShared:{},tring:{}};
+  const names=workspaceDisplayNames();
   /* 궤도 고리 — **아주 옅은 원 하나**. 자리가 구조에서 나온다는 것을 이 선이 말한다
      (design.md §1: *"폴더 = 중심체, 그 안의 것은 그것을 돈다"*). 뜻을 안 든다 — 색이 없다. */
   const rings={};
   L.nodes.forEach(n=>{
     if(n.fixed||!n.ring)return;
-    const key=(n.parent||"__galaxy")+"@"+Math.round(n.ring);
+    const key=canvasOrbitKey(n);
     if(rings[key])return;
     /* ⚠ 원점에 짓고 **`transform` 으로 민다** — 중심체가 공전하면 고리도 따라가야 하고(#75),
        프레임마다 미는 속성을 하나로 모으면 그 자리가 `canvasPlace` 한 곳이 된다. */
     rings[key]=el("path",{class:"orbit",d:workspaceOrbitPath(n),fill:"none"});
     L.els.ringAt[key]=n.parent||null;
     L.els.ringTilt[key]=!!n.perspectiveBase;
+    L.els.ringShared[key]=!!n.sharedOrbit;
     gr.appendChild(rings[key]);
   });
   L.els.ring=rings;
@@ -4486,21 +5868,21 @@ function canvasMount(){
     const tr=el("circle",{class:"ring",r:String(n.r+5)});
     g.appendChild(tr);L.els.tring[n.id]=tr;   /* 상위 3 테 — 켜져 있는 동안 돈다 (#75 3) */
     if(n.kind==="sun"){
-      g.appendChild(el("circle",{class:"corona",r:String(n.r*2.2),fill:"url(#stellar-corona)","pointer-events":"none"}));
-      g.appendChild(el("circle",{class:"surface",r:String(n.r),fill:"url(#stellar-core)","pointer-events":"none"}));
+      canvasStellarBody(g,n.r,"stellar",n.id,el);
     }else if(n.kind==="planet"||n.kind==="moon"){
-      g.appendChild(el("circle",{class:"surface",r:String(n.r),fill:`url(#${n.kind==="moon"?"moon":"planet"}-surface)`,"pointer-events":"none"}));
-      const spin=el("g",{"pointer-events":"none",opacity:".3"});
-      spin.appendChild(el("ellipse",{rx:String(n.r*.53),ry:String(n.r*.87),fill:"none",stroke:"#f3f9ff","stroke-width":"1.3"}));
-      spin.appendChild(el("ellipse",{rx:String(n.r*.23),ry:String(n.r*.87),fill:"none",stroke:"#729dc3","stroke-width":"1"}));
-      g.appendChild(spin);L.els.spin[n.id]=spin;
+      canvasStellarBody(g,n.r,n.kind,n.id,el);
     }
     g.appendChild(el("circle",{class:"d",r:String(n.r),fill:"var(--t3)"}));
     g.appendChild(el("circle",{class:"shine",r:String(n.r*.13),cx:"0",cy:"0"}));
+    const label=el("text",{class:"node-label","text-anchor":"middle","aria-hidden":"true"});
+    const name=(n.kind==="planet"?(names[n.path]||n.name):n.name||"").normalize("NFC");
+    label.textContent=name.length>22?name.slice(0,21)+"…":name;
+    g.appendChild(label);L.els.labels[n.id]=label;
     g.dataset.f=n.id;g.dataset.kind=n.kind;
     g.setAttribute("role","button");g.setAttribute("tabindex","0");
     g.setAttribute("aria-label",n.name||(DOC.fragments.find(p=>p.id===n.id)||{}).title||"문서");
     g.onclick=ev=>{if(ev.detail===0){if(n.kind==="sun")canvasScopeSun(n.id);else canvasNavigateFile(n.id)}};
+    g.oncontextmenu=ev=>{ev.preventDefault();ev.stopPropagation();vaultFileMenu({id:n.id,path:n.path,folder:n.kind==="sun"},{x:ev.clientX,y:ev.clientY,trigger:g})};
     g.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){
       ev.preventDefault();if(n.kind==="sun"||n.kind==="center")canvasScopeSun(n.id);
       else if(ev.key==="Enter")workspaceOpen(n.id);else canvasSelect(n.id);
@@ -4517,9 +5899,9 @@ function canvasMount(){
   L.nodes.forEach(n=>L.els.node[n.id].setAttribute("class",canvasNodeClass(n.id)));
   return L;
 }
-/* 천체의 이름표 대신 탐색기의 실제 경로를 일시 강조한다. */
-function canvasTip(n){canvasHoverFile(n)}
-function canvasTipOff(){canvasHoverFile(null)}
+/* 호버는 천체 이름·현재 궤도·탐색기의 실제 경로를 함께 가리킨다. */
+function canvasTip(n){canvasHoverFile(n);canvasLabels()}
+function canvasTipOff(){canvasHoverFile(null);canvasLabels()}
 /* Hover is transient: never select, expand, scroll, or rebuild the tree. */
 function canvasHoverFile(n){
   const box=document.getElementById("leftlist");if(!box)return;
@@ -4606,6 +5988,21 @@ function canvasStop(){
   const L=CANV;if(!L||!L.anim||!L.anim.raf)return;
   cancelAnimationFrame(L.anim.raf);L.anim.raf=0;
 }
+function workspaceAdvanceOrbits(nodes,dt,hoverSun,drag,activation,t){
+  if(drag?.held)return;
+  const groups=new Map();
+  for(const n of nodes){
+    if(n.fixed||drag?.node===n)continue;
+    const key=n.motionKey||"node:"+n.id;
+    if(!groups.has(key))groups.set(key,[]);groups.get(key).push(n);
+  }
+  for(const members of groups.values()){
+    const first=members[0];
+    const age=activation?.sun===first.sun?t-activation.t0:null;
+    const clk=first.clk+dt*orbitFactor(!!hoverSun&&first.sun===hoverSun,age);
+    for(const n of members){n.clk=clk;n.ang=orbitAngle(n.base+n.phase,n.clk,n.period||ORBIT_PERIOD[n.kind]||ORBIT_PERIOD.planet)}
+  }
+}
 function canvasTick(t){
   const L=CANV;
   if(!L||!L.anim)return;
@@ -4614,20 +6011,13 @@ function canvasTick(t){
   /* ⚠ `dt` 를 50ms 로 막는다 — 탭이 뒤에 있다 돌아오면 한 프레임에 몇 분이 흘러 별이 순간이동한다 */
   const dt=Math.max(0,Math.min(.05,(t-L.anim.last)/1000));
   L.anim.last=t;
-  L.viewClock=(L.viewClock||0)+dt;L.viewRoll=Math.sin(L.viewClock*.15)*.25;
+  if(!L.drag?.held){L.viewClock=(L.viewClock||0)+dt;L.viewRoll=Math.sin(L.viewClock*.15)*.25}
   if(L.els.sky)L.els.sky.setAttribute("x",(Math.sin(L.viewClock*.09)*8).toFixed(2));
   const hv=L.hover?(L.by[L.hover]||{}).sun:null;
-  L.nodes.forEach(n=>{
-    if(n.fixed)return;
-    /* 잡고 있는 별은 손이 각도를 든다 — 시계도 안 흐른다(놓은 자리에서 이어 돈다) */
-    if(L.drag&&L.drag.node===n)return;
-    const travel=L.travelUntil>t&&n.sun===L.travelSystem?1+35*Math.pow((L.travelUntil-t)/2600,2):1;
-    n.clk+=dt*travel*orbitFactor(travel===1&&!!hv&&n.sun===hv,n.boost?t-n.boost:null);
-    n.ang=orbitAngle(n.base+n.phase,n.clk,n.period||ORBIT_PERIOD[n.kind]||ORBIT_PERIOD.planet);
-  });
+  workspaceAdvanceOrbits(L.nodes,dt,hv,L.drag,L.activation,t);
   canvasReflow();canvasPlace();
   canvasWaveStep(t);
-  canvasGlideStep(t);canvasFollowStep();
+  canvasGlideStep(t);canvasFollowStep(dt);
   canvasSpinRings(t);
   L.anim.raf=requestAnimationFrame(canvasTick);
 }
@@ -4649,6 +6039,7 @@ function canvasGlideTo(id,targetScale){
   if(!L||!b||!board||!L.els)return;
   const r=board.getBoundingClientRect();
   if(!(r.width>0&&r.height>0))return;
+  /* 이동 뒤에도 선택한 몸을 부드럽게 따라간다. 수동 팬·줌은 기존대로 추적을 해제한다. */
   L.follow={id:id,w:r.width,h:r.height,scale:targetScale||L.vt.k};
   if(cvReduced()||document.hidden){
     L.glide=null;
@@ -4656,41 +6047,33 @@ function canvasGlideTo(id,targetScale){
     L.vt.k=to.k;L.vt.x=to.x;L.vt.y=to.y;canvasApplyVT();return;
   }
   /* 판 크기는 **여기서 한 번** 잰다 — 매 프레임 `getBoundingClientRect` 는 방금 쓴 속성 뒤라
-     강제 레이아웃이다(matt Standards 리뷰 #75). 글라이드 400ms 안에 창이 바뀌는 일은 무시한다. */
+     강제 레이아웃이다(matt Standards 리뷰 #75). 창 크기가 바뀌면 canvasFit이 목표 크기만 갱신한다. */
   L.glide={from:{k:L.vt.k,x:L.vt.x,y:L.vt.y},id:id,targetScale:targetScale||L.vt.k,t0:performance.now(),w:r.width,h:r.height};
   canvasWake();
 }
-/* ⚠ 목표를 **매 프레임 다시 낸다** — 몸이 도는 중이라 400ms 전의 자리로 가면 끝났을 때
+/* ⚠ 목표를 **매 프레임 다시 낸다** — 몸이 도는 중이라 출발 시점의 자리로 가면 끝났을 때
    그 별은 이미 딴 데 있다. 끝 프레임에서 목표와 정확히 같아진다(`glideVT` 의 그 단언). */
 function canvasGlideStep(t){
   const L=CANV,g=L&&L.glide;if(!g)return;
   const b=L.by[g.id];
   if(!g.to&&(!b||!(g.w>0&&g.h>0))){L.glide=null;return}
-  const u=Math.min(1,(t-g.t0)/(g.duration||(L.travelUntil>t?1100:GLIDE_MS)));
+  const u=Math.min(1,(t-g.t0)/(g.duration||GLIDE_MS));
   const vt=glideVT(g.from,g.to||glideTarget(b,g.w,g.h,g.targetScale),u);
   L.vt.k=vt.k;L.vt.x=vt.x;L.vt.y=vt.y;canvasApplyVT();
   if(u>=1)L.glide=null;
 }
-/* 확대 중심은 공전 중에도 화면 중앙을 유지한다. 수동 팬·줌은 추적을 푼다. */
-function canvasFollowStep(){
-  const L=CANV,f=L&&L.follow;if(!f||L.glide||L.drag)return;
+function canvasFollowStep(dt){
+  const L=CANV,f=L?.follow;if(!f||L.glide||L.drag||cvReduced()||document.hidden)return;
   const b=L.by[f.id];if(!b){L.follow=null;return}
-  const vt=glideTarget(b,f.w,f.h,L.vt.k);
-  L.vt.x=vt.x;L.vt.y=vt.y;canvasApplyVT();
+  L.vt=followVT(L.vt,glideTarget(b,f.w,f.h,L.vt.k),dt);canvasApplyVT();
 }
-/* ★ 켜진 몸은 잠깐 빨라진다 (#75 3) — **반응이 색으로만 오면 「살아 있다」가 안 읽힌다.** */
-function canvasBoost(ids){
-  const L=CANV;if(!L)return;
+function canvasActivateSystem(id){
+  const L=CANV,b=L?.by[id];if(!b||cvReduced()||document.hidden)return;
   const t=performance.now();
-  (ids||[]).forEach(id=>{const n=L.by[id];if(n)n.boost=t});
+  /* 연속 선택은 진행 중인 곡선을 갑자기 1배로 자르지 않는다. */
+  if(!L.activation||L.activation.sun!==b.sun||t-L.activation.t0>=ORBIT_ACTIVATION_MS)L.activation={sun:b.sun,t0:t};
   canvasWake();
 }
-/* 그 몸이 속한 **계 전체.** 이웃이 전부 빨강이라 켜지는 것이 없어도 계는 반응한다 (#75 5) */
-function canvasBoostSystem(id){
-  const L=CANV,b=L&&L.by[id];if(!b)return;
-  canvasBoost(L.nodes.filter(n=>n.sun===b.sun||n.id===id).map(n=>n.id));
-}
-
 /* ── 불 끄기 · 불 켜기 ──────────────────────────────────────────────────── */
 function canvasLightsOff(){
   const L=CANV;if(!L)return;
@@ -4701,7 +6084,7 @@ function canvasLightsOff(){
   L.nodes.forEach(n=>{
     const g=L.els.node[n.id],d=g.querySelector(".d");
     g.setAttribute("class",canvasNodeClass(n.id));
-    d.setAttribute("fill",isSelId(n.id)?"var(--t1)":"var(--t3)");d.setAttribute("opacity","1");
+    d.setAttribute("fill",isSelId(n.id)?"var(--t1)":"var(--t3)");canvasBodyOpacity(g,d,"1");
     const b=L.els.beam[n.id];if(b)b.setAttribute("opacity","0");
   });
   L.els.orb.classList.remove("asking");   /* 불이 꺼지면 「묻는 중」 표정도 내린다 (목업 lightsOff) */
@@ -4743,7 +6126,7 @@ function canvasPaint(q,qv,how,opt){
     d.setAttribute("fill",it.lit
       ?(it.c==="g"?"var(--acc)":it.c==="a"?"var(--warn)":"var(--risk)")
       :(isSelId(it.id)?"var(--t1)":"var(--t3)"));
-    d.setAttribute("opacity",litOpacity(it.lit,t,it.id));
+    canvasBodyOpacity(g,d,litOpacity(it.lit,t,it.id));
     const st=beamStyle(it.c,it.s,green,amber),b=L.els.beam[it.id];
     if(!b)return;
     b.setAttribute("stroke",st.s);b.setAttribute("stroke-width",String(st.w));
@@ -4754,7 +6137,8 @@ function canvasPaint(q,qv,how,opt){
     const g=L.els.node[n.id],d=g.querySelector(".d"),su=sunBy[n.id];
     g.setAttribute("class",canvasNodeClass(n.id));
     d.setAttribute("fill",su?(su.c==="g"?"var(--acc)":su.c==="a"?"var(--warn)":"var(--risk)"):"var(--t3)");
-    d.setAttribute("opacity",su?"1":".45");
+    const t=su&&green>amber?(su.s-amber)/(green-amber):0;
+    canvasBodyOpacity(g,d,L.focusID===n.id?"1":litOpacity(!!su&&su.c!=="r",t,n.id));
   });
   canvasPlace();
   if(wave){
@@ -4762,14 +6146,12 @@ function canvasPaint(q,qv,how,opt){
     stars.forEach(n=>{
       const g=L.els.node[n.id],d=g.querySelector(".d");
       g.setAttribute("class","cvn k"+n.kind+(isSelId(n.id)?" sel":""));
-      d.setAttribute("fill",isSelId(n.id)?"var(--t1)":"var(--t3)");d.setAttribute("opacity","1");
+      d.setAttribute("fill",isSelId(n.id)?"var(--t1)":"var(--t3)");canvasBodyOpacity(g,d,"1");
       const b=L.els.beam[n.id];if(b)b.setAttribute("opacity","0");
     });
     paintSuns();
     canvasWave(plan);
   }else{paintSuns();plan.forEach(p=>p.apply())}
-  /* ★ 켜진 몸은 잠깐 빨라진다 (#75 3) — 파동이 켠 그 몸들이다 */
-  if(P.items.some(it=>it.lit))canvasBoost(L.nodes.map(n=>n.id));
   canvasRankBox(q,P,res,how,green,amber,sunId);
   /* ★ **왼쪽 트리의 점도 같이 켠다** (#74 C2, `실측 2026-09-02` 실화면). 쉴 때 점이 없고
      검색 중에만 붙는데, 그 점을 짓는 것은 `paintHomeList` 라 여기서 안 부르면 지도만 켜지고
@@ -4780,29 +6162,54 @@ function canvasPaint(q,qv,how,opt){
 /* 순위 상자 — 라이브 카드와 **같은 셋**, 같은 규율. 원값(0.884 류)은 QA 게이트 뒤다 (#61 E) */
 function canvasRankBox(q,P,res,how,green,amber,sunId){
   const box=document.getElementById("cvrank");if(!box)return;
-  const node=CANV&&CANV.focusID&&CANV.by[CANV.focusID];
-  const scope=node?(CANV.focusPath||node.name||node.path):"저장소 전체";
-  const head=`<h4>추천 미리보기 <span class="preview-scope">${esc(scope)}</span></h4><div class="cq">${esc(q)}</div>`;
+  const scope=sunId?`${sunId} · 하위 포함`:"저장소 전체";
+  let rows=[];
+  const head=`<h4 class="result-heading">질문 결과 <small>${esc(scope)}</small></h4>${SESSION_REVIEW_OPEN?"":`<div class="cq">${esc(q)}</div>`}`;
   if(how!=="뜻"){
     box.innerHTML=head+`<div class="cvnone">검색 준비 중</div>`;
   }else{
-    const rows=res.filter(x=>!CANV?.focusPath||(PATHS[x.p.id]||"").startsWith(CANV.focusPath+"/")).slice(0,CV_TOP);
-    box.innerHTML=head+(rows.length?canvasResultRows(rows,true):`<div class="cvnone">문서 없음</div>`);
-    bindCanvasResults(box,rows);
+    rows=res.filter(x=>!CANV?.focusPath||(PATHS[x.p.id]||"").startsWith(CANV.focusPath+"/")).slice(0,CV_TOP);
+    const measured=rows.some(x=>x.c!=="n"&&Number.isFinite(x.s));
+    box.innerHTML=head+(!rows.length?`<div class="cvnone">문서 없음</div>`:!measured?`<div class="cvnone">이 범위의 문서는 검색 준비 중입니다.</div>`
+      :P.empty?`<p class="result-low">직접 관련된 자료를 찾지 못했어요.</p><details><summary>관련도가 낮은 결과 보기</summary>${canvasResultRows(rows,true)}</details>`
+      :canvasResultRows(rows,true));
   }
+  bindCanvasResults(box,rows);
   box.classList.add("show");
+}
+function displayExcerpt(source){
+  // Use the editor's Markdown parser so code examples and parentheses in paths
+  // stay intact. Only visible excerpts change; stored text and ranking do not.
+  let text=String(source||"").replace(/<!--[\s\S]*?-->/g,"");
+  for(const link of ClonieMarkdownEditor.links(text).reverse()){
+    text=text.slice(0,link.from)+link.label+text.slice(link.to);
+  }
+  return text.trim();
 }
 function canvasResultRows(rows,preview,related){
   return rows.map((x,i)=>{
-    const excerpt=((x.passage&&x.passage.sourceText)||x.p.body||"").trim();
-    const measured=x.c!=="n"&&Number.isFinite(x.s);
-    const score=preview&&measured?`<span class="s" title="검색 기준 대비 관련도. 100%가 초록 기준이며 정답 확률이 아닙니다.">${readyPct(x.s,related?SIM_G_DIRECT:1)}%</span>`:"";
-    return `<button class="cvrow${i===0?" lead":""}${preview?" preview-row":""}" data-result="${i}"><span class="dot ${x.c==="n"?"hmn":x.c}"></span><span class="preview-copy"><span class="t">${esc(x.p.title)}</span><span class="preview-path">${esc(PATHS[x.p.id]||"")}</span>${preview?`<span class="preview-excerpt">${esc(excerpt)}</span>`:""}</span>${score}</button>`;
+    // Markdown comments carry import provenance, not text for the result preview.
+    // Clean only the display excerpt; source documents and search passages stay intact.
+    const excerpt=displayExcerpt((x.passage&&x.passage.sourceText)||x.p.body||"");
+    return `<div class="result-row"><button class="cvrow${i===0?" lead":""}${preview?" preview-row":""}" data-result="${i}"><span class="dot ${x.c==="n"?"hmn":x.c}"></span><span class="preview-copy"><span class="t">${esc(x.p.title)}</span><span class="preview-path">${esc(PATHS[x.p.id]||"")}</span>${preview?`<span class="preview-excerpt">${esc(excerpt)}</span>`:""}</span></button><button class="gbtn result-document-open" data-result-open="${i}" aria-label="${esc(x.p.title)} 문서 열기">문서 열기</button></div>`;
   }).join("");
 }
 
 function bindCanvasResults(box,rows){
-  box.querySelectorAll("[data-result]").forEach(el=>el.onclick=()=>openWorkspaceDocument(rows[+el.dataset.result].p.id));
+  box.querySelectorAll("[data-result-open]").forEach(el=>{
+    if(el.dataset.resultOpen===undefined)return;
+    el.onclick=()=>{const id=rows[+el.dataset.resultOpen]?.p.id;if(workspaceFile(id))workspaceOpen(id)};
+  });
+  box.querySelectorAll("[data-result]").forEach(el=>el.onclick=ev=>{
+    const id=rows[+el.dataset.result]?.p.id;if(!workspaceFile(id))return;
+    if(ev?.detail>0){
+      const at=ev.timeStamp||performance.now(),previous=box.resultPointerNavigation;
+      // 첫 클릭으로 목록이 바뀌어도 더블클릭의 두 번째 입력이 새 이웃을 고르지 않게 한다.
+      if(previous&&at-previous.at<350&&Math.hypot(ev.clientX-previous.x,ev.clientY-previous.y)<5)return;
+      box.resultPointerNavigation={at,x:ev.clientX,y:ev.clientY};
+    }
+    if(canvasNavigateFile(id))CANV?.els?.node[id]?.focus?.({preventScroll:true});
+  });
 }
 
 /* ══ 별에서 나가는 파동 (목업 `pickFragment`·`planNeighbors`·`refreshBeams` 이식) ═══════════
@@ -4849,12 +6256,16 @@ function canvasPaintFrom(id,opt){
   const P=canvasNeighborPlan(id);if(!P)return null;
   L.last=P;L.src=id;
   canvasWaveCancel();
+  L.nodes.filter(n=>n.kind==="sun").forEach(n=>{
+    const g=L.els.node[n.id];g.setAttribute("class",canvasNodeClass(n.id));
+    canvasBodyOpacity(g,g.querySelector(".d"),"1");
+  });
   const wave=!!(opt&&opt.wave)&&!cvReduced();
   const plan=P.items.map(it=>({dist:it.dist,apply:()=>{
     const g=L.els.node[it.id],d=g.querySelector(".d");
     g.setAttribute("class",canvasNodeClass(it.id));
     d.setAttribute("fill",it.lit?(it.c==="g"?"var(--acc)":it.c==="a"?"var(--warn)":it.c==="r"?"var(--risk)":"var(--t2)"):"var(--t3)");
-    d.setAttribute("opacity",litOpacity(it.lit,it.s||0,it.id));
+    canvasBodyOpacity(g,d,litOpacity(it.lit,it.s||0,it.id));
     const b=L.els.beam[it.id];
     if(!b)return;
     if(!it.lit){b.setAttribute("opacity","0");return}
@@ -4865,19 +6276,16 @@ function canvasPaintFrom(id,opt){
   /* 근원이 된 별 — 흰빛으로 서고(#70 확정 ③), 제 빔은 안 쏜다 */
   const sg=L.els.node[id],sd=sg.querySelector(".d");
   sg.setAttribute("class",canvasNodeClass(id));
-  sd.setAttribute("fill","var(--t1)");sd.setAttribute("opacity","1");
+  sd.setAttribute("fill","var(--t1)");canvasBodyOpacity(sg,sd,"1");
   const sb=L.els.beam[id];if(sb)sb.setAttribute("opacity","0");
   if(wave){
     P.items.forEach(it=>{
       const g=L.els.node[it.id],d=g.querySelector(".d");
-      g.setAttribute("class","cvn k"+it.kind);d.setAttribute("fill","var(--t3)");d.setAttribute("opacity","1");
+      g.setAttribute("class","cvn k"+it.kind);d.setAttribute("fill","var(--t3)");canvasBodyOpacity(g,d,"1");
       const b=L.els.beam[it.id];if(b)b.setAttribute("opacity","0");
     });
     canvasWave(plan);
   }else plan.forEach(p=>p.apply());
-  /* ★ **그 계가 반응한다** (#75 3·5) — 이웃이 전부 빨강이라 켜지는 것이 없어도 여기는 돈다.
-     그러면 「눌렀는데 아무 일도 없다」가 아니라 「이 계엔 이어진 것이 없다」로 읽힌다. */
-  canvasBoostSystem(id);
   canvasNeighborBox(DOC.fragments.find(x=>x.id===id),P);
   paintHomeList();   /* 이웃 불도 왼쪽 트리에 같이 붙는다 (#74 C2) */
   return P;
@@ -4885,10 +6293,17 @@ function canvasPaintFrom(id,opt){
 /* 순위 상자 — 질문 때와 같은 상자, 다른 머리. 수는 이어진 정도(100 = 같은 뜻), 색은 그 이어짐의 등급 */
 function canvasNeighborBox(p,P){
   const box=document.getElementById("cvrank");if(!box||!p)return;
-  const rows=P.nb.slice(0,CV_TOP);
-  box.innerHTML=`<div class="cq">${esc(p.title)} <span class="preview-scope">전체 저장소</span></div>`
-    +(rows.length?canvasResultRows(rows,true,true):`<div class="cvnone">관련 문서 없음</div>`);
+  if(!box.relatedPages||box.relatedPages.vault!==SYS.vault)box.relatedPages={vault:SYS.vault,limits:new Map()};
+  const pages=box.relatedPages.limits,limit=pages.get(p.id)||CV_TOP,rows=P.nb.slice(0,limit);
+  box.innerHTML=`<h4 class="result-heading">관련 자료 <small>저장소 전체에서</small></h4><div class="result-basis">기준 문서 · ${esc(p.title)}</div><button id="relatedbasis" class="result-open">기준 문서 열기</button>`
+    +(rows.length?canvasResultRows(rows,true,true):`<div class="cvnone">현재 기준으로 관련 자료를 찾지 못했어요.</div>`)
+    +(rows.length<P.nb.length?`<button id="relatedmore" class="result-more">더 보기</button>`:"");
   bindCanvasResults(box,rows);
+  const basis=document.getElementById("relatedbasis");if(basis)basis.onclick=()=>openWorkspaceDocument(p.id);
+  const more=document.getElementById("relatedmore");if(more)more.onclick=()=>{
+    pages.set(p.id,limit+CV_TOP);canvasNeighborBox(p,P);
+    box.querySelector?.(`[data-result="${rows.length}"]`)?.focus?.({preventScroll:true});
+  };
   box.classList.add("show");
 }
 
@@ -4930,10 +6345,13 @@ function canvasSelect(id,opt){
   const file=workspaceFile(id);if(!file)return;
   const i=DOC.fragments.findIndex(p=>p.id===id);
   canvasRemember();
-  const parent=file.path.split("/").slice(0,-1).join("/");
-  if(parent!==WORKSPACE_SCOPE)workspaceEnterFolder(parent);
+  const parent=file.path.split("/").slice(0,-1).join("/"),sameScope=parent===WORKSPACE_SCOPE;
+  if(!sameScope)workspaceEnterFolder(parent);
   const L=canvasUniverse();
-  const keepCamera=!!(opt&&opt.preserveCamera),savedVT=keepCamera?Object.assign({},L.vt):null;
+  const keepCamera=sameScope||!!(opt&&opt.preserveCamera),savedVT=keepCamera?Object.assign({},L.vt):null;
+  /* 같은 장면의 선택은 현재 팬·줌을 유지한다. 관련 패널의 크기 변화도 전체 맞춤으로 바꾸지 않는다. */
+  const viewport=keepCamera?document.getElementById("cvb")?.getBoundingClientRect():null;
+  L.viewport=viewport?.width>0&&viewport?.height>0?{w:viewport.width,h:viewport.height}:null;
   sel=i<0?null:i;WORKSPACE_SELECTED_ID=id;revealWorkspaceFile(id);
   /* 문서는 전체 관련 탐색의 기준이다. 이전 질문은 뒤로 돌아갈 맥락으로 보존한다. */
   L.relatedID=id;L.follow=null;L.glide=null;
@@ -4941,6 +6359,7 @@ function canvasSelect(id,opt){
   canvasAskClose();
   if(savedVT){L.vt=savedVT;canvasApplyVT()}else canvasFit();
   if(i<0)canvasPaintEntry(id);else canvasPaintFrom(id,{wave:true});
+  canvasActivateSystem(id);
   paintCanvasNavigation();
   canvasPaintPanel();
   /* 왼쪽 목록의 `.sel` 도 같이 옮긴다 — 안 옮기면 **한 화면이 두 조각을 가리킨다** */
@@ -4953,16 +6372,14 @@ function canvasNavigateFile(id){
   if(!leaveEditorAllowed(()=>canvasNavigateFile(id)))return false;
   if(stackView==="settings"){stackView="edit";stackRender()}
   const currentID=workspaceSelectedID();
-  const tracking=CANV&&(CANV.glide&&CANV.glide.id===id||CANV.follow&&CANV.follow.id===id);
+  const tracking=CANV&&CANV.glide&&CANV.glide.id===id;
   if(currentID===id&&tracking){paneApply("r",0);return true}
   /* 파일 행은 `canvasSelect` 의 전체 맞춤에서 시작하지 않는다 — 진행 중인 카메라를 이어야 한다. */
   const before=CANV,stableScale=before&&(before.glide&&before.glide.targetScale||before.follow&&before.follow.scale);
-  const targetScale=stableScale||Math.min(1.55,Math.max(.75,(before&&before.vt?before.vt.k:1)*1.55));
+  const targetScale=stableScale||(before&&before.vt?before.vt.k:1);
   canvasSelect(id,{preserveCamera:true});
   paneApply("r",0);
   const L=CANV,n=L&&L.by[id];if(!n)return false;
-  L.travelUntil=performance.now()+2600;L.travelSystem=n.sun;
-  canvasBoostSystem(id);
   canvasGlideTo(id,targetScale);
   canvasWake();return true;
 }
@@ -4991,12 +6408,13 @@ function workspaceEnterFolder(path){
 }
 function canvasScopeFolder(path){
   if(!leaveEditorAllowed(()=>canvasScopeFolder(path)))return;
+  if(stackView!=="edit"){stackView="edit";stackRender()}
   if(path&&!VAULT_FOLDERS.includes(path)&&!vaultRows(canvasUniverse().tree,{}).some(r=>r.folder&&r.path===path))return;
   const changed=path!==WORKSPACE_SCOPE;
   canvasRemember();canvasAskClose();paneApply("r",0);
   const L=workspaceEnterFolder(path);L.relatedID=null;L.follow=null;L.glide=null;sel=null;WORKSPACE_SELECTED_ID=null;
   LZIP=treeReveal(LZIP,path);canvasLightsOff();
-  if(path){canvasBoostSystem(L.focusID);const board=document.getElementById("cvb"),r=board?.getBoundingClientRect();if(r?.width)canvasGlideTo(L.focusID,canvasScopeScale(L,L.focusID,r.width,r.height))}else canvasFit(true);
+  if(path){const board=document.getElementById("cvb"),r=board?.getBoundingClientRect();if(r?.width)canvasGlideTo(L.focusID,canvasScopeScale(L,L.focusID,r.width,r.height))}else canvasFit(true);
   if(changed&&!cvReduced()&&!document.hidden)L.els?.root?.animate?.([{opacity:.4},{opacity:1}],{duration:180,easing:"ease-out"});
   paintHomeList();paintCanvasNavigation();treeScrollSel('.hmit.fold.scoped');
 }
@@ -5020,7 +6438,8 @@ function canvasContext(){
   return {id:L.focusID||null,path:L.focusPath||null,scoped:L.scoped||null,follow:L.follow||null,
     vt:Object.assign({},L.vt),relatedID:L.relatedID||null,query:CANVQ,queryVector:CQV,
     selectedID:workspaceSelectedID(),
-    find:LFIND,zip:Object.assign({},LZIP),scroll:list?list.scrollTop||0:0,pane:PANE.r};
+    find:LFIND,zip:Object.assign({},LZIP),scroll:list?list.scrollTop||0:0,pane:PANE.r,
+    documentReturn:PANE.r>0?DOCUMENT_RETURN:null};
 }
 function canvasRemember(){
   const L=CANV;if(!L)return;
@@ -5042,10 +6461,16 @@ function canvasRestore(frame){
   const query=document.getElementById("cvq");if(query)query.value=CANVQ;
   const fixed=document.getElementById("workspacequery");if(fixed)fixed.value=L.relatedID?"":CANVQ;
   canvasPaintPanel();paneApply("r",sel===null?0:frame.pane||0);
+  DOCUMENT_RETURN=PANE.r>0?frame.documentReturn||null:null;
   canvasApplyVT();canvasRelight();paintHomeList();paintCanvasNavigation();
   const list=document.getElementById("leftlist");if(list&&frame.scroll!==undefined)list.scrollTop=frame.scroll;
 }
 function canvasGoBack(){
+  if(SESSION_REVIEW_OPEN){closeSessionRecordDetails();return}
+  // Linked documents are individual visits. Close returns to the original result,
+  // while Back first retraces documents opened from that result.
+  if(PANE.r>0&&DOCUMENT_RETURN&&!(CANV?.navStack?.at(-1)?.pane>0))return closeWorkspaceDocument({restoreSearch:true});
+  if(stackView!=="edit"){if(!leaveEditorAllowed(canvasGoBack))return;stackView="edit";stackRender()}
   const L=CANV;if(!L||!leaveEditorAllowed(canvasGoBack)||!L.navStack?.length)return;
   (L.forwardStack||(L.forwardStack=[])).push(canvasContext());
   canvasRestore(L.navStack.pop());
@@ -5056,19 +6481,30 @@ function canvasGoForward(){
   canvasRestore(L.forwardStack.pop());
 }
 function canvasGoUp(){if(WORKSPACE_SCOPE)canvasScopeFolder(WORKSPACE_SCOPE.split("/").slice(0,-1).join("/"))}
+function workspaceQueryContextActive(){return !!CANVQ.trim()&&!CANV?.relatedID}
+function paintWorkspaceQueryContext(){
+  const cols=document.getElementById("cols");if(cols)cols.classList.toggle("query-context",workspaceQueryContextActive());
+  const results=document.getElementById("cvrank");if(results){const occupied=PANE.r>0||SESSION_REVIEW_OPEN;results.hidden=occupied;results.inert=occupied;results.setAttribute("aria-hidden",String(occupied))}
+}
 function paintCanvasNavigation(){
+  paintWorkspaceQueryContext();
   const el=document.getElementById("cvnav"),L=CANV;if(!el||!L)return;
-  const node=L.focusID&&L.by[L.focusID];
-  const source=L.relatedID&&DOC.fragments.find(p=>p.id===L.relatedID);
-  const location=source?`${L.focusPath||"전체 저장소"} · ${source.title} 관련 자료`:(L.focusPath||node?.name||"전체 저장소");
-  el.innerHTML=`<button id="cvhome" aria-label="전체 저장소" title="전체 저장소">◎</button>`
-    +`<button id="cvup" aria-label="상위 폴더" title="상위 폴더" ${L.focusPath?"":"disabled"}>↑</button>`
-    +`<span title="${esc(location)}">${esc(location)}</span>`;
+  const drag=L.drag?.held?L.drag:null,viewPath=drag?.preview?.path??WORKSPACE_SCOPE;
+  const parts=viewPath.split("/").filter(Boolean);
+  const showHome=parts.length||L.relatedID||PANE.r>0;
+  el.innerHTML=(drag?.preview?`<span class="move-browse-label">이동할 위치</span>`:"")+`<nav id="workspace-crumbs" class="workspace-crumbs" aria-label="${drag?.preview?"이동할 위치":"현재 위치"}">${showHome?`<button id="cvhome" aria-label="전체 저장소" title="전체 저장소" ${parts.length?"":'aria-current="location"'}>전체 저장소</button>`:""}`
+    +parts.map((part,i)=>`<b class="crumb-separator" aria-hidden="true">›</b><button data-cvfolder="${esc(parts.slice(0,i+1).join("/"))}" title="${esc(parts.slice(0,i+1).join("/"))}" ${i===parts.length-1?'aria-current="location"':""}>${esc(part)}</button>`).join("")+`</nav>`;
   const home=document.getElementById("cvhome");if(home)home.onclick=canvasGoHome;
-  const up=document.getElementById("cvup");if(up)up.onclick=canvasGoUp;
-  const ask=document.getElementById("cvask");if(ask)ask.onclick=canvasAskToggle;
+  const crumbs=document.getElementById("workspace-crumbs");if(crumbs)crumbs.scrollLeft=crumbs.scrollWidth;
+  el.querySelectorAll("[data-cvfolder]").forEach(button=>button.onclick=()=>canvasScopeFolder(button.dataset.cvfolder));
+  const joy=document.getElementById("cvjoy");if(joy)joy.onclick=canvasStarShower;
   const query=document.getElementById("workspacequery");
-  if(query){query.placeholder=L.scoped?`${L.focusPath||node?.name||"현재 폴더"} 안에서 질문`:"전체 저장소에 질문";}
+  if(query)query.placeholder=WORKSPACE_SCOPE?`${WORKSPACE_SCOPE} 안에서 질문`:"전체 저장소에 질문";
+  const scope=document.getElementById("workspace-scope");if(scope){scope.textContent=WORKSPACE_SCOPE?"하위 폴더 포함":"";scope.hidden=!WORKSPACE_SCOPE}
+  const empty=document.getElementById("workspace-empty");
+  if(empty)empty.hidden=VAULT_CONNECTED?(!!drag||!L.nodes||L.nodes.some(n=>n.path!==WORKSPACE_SCOPE)):false;
+  const create=document.getElementById("emptycreate");if(create)create.onclick=()=>vaultNewDocument(WORKSPACE_SCOPE);
+  paintExplorerTools();canvasLabels();
 }
 
 /* 지도의 오른쪽 판을 **제자리에서** 갈아끼운다. ⚠ 짓기와 손잡이 걸기가 **언제나 한 쌍**이라
@@ -5076,7 +6512,7 @@ function paintCanvasNavigation(){
 function canvasPaintPanel(){
   const box=document.getElementById("right");if(!box)return;
   const cur=sel!==null?DOC.fragments[sel]:null;
-  box.innerHTML=editPanel(cur);
+  releaseMarkdownEditors();box.innerHTML=editPanel(cur);
   bindEditPanel(cur,saveChips(cur,null));
 }
 /* ★ 자유 질문 한 번. **여기가 이 화면의 동사 하나**다.
@@ -5088,16 +6524,18 @@ function canvasPaintPanel(){
      표준오류에 적고 돌아온다) 이 화면은 「재는 중」에 머문다. 라이브 검색이 `QVEC` 를 영영
      못 받는 것과 같은 자리이고, 그때 지도가 틀린 순위를 내는 것보다 낫다. */
 function canvasAsk(q,opt){
+  if(!VAULT_CONNECTED)return;
   if(CANV&&(CANVQ!==(q||"")||CANV.relatedID))canvasRemember();
   if(CANV)CANV.relatedID=null;
   CANVQ=q||"";
+  paintWorkspaceQueryContext();
   const tag=document.getElementById("cvhow");
   /* 칸을 비운 것도 「그 질문을 떠난 것」이다 — 기다리던 기록을 같이 걷는다(`goMode` 와 같은 사정). */
   if(!CANVQ.trim()){CQV=null;askLogPending=null;if(tag){tag.className="cvhow";tag.textContent=""}canvasRelightSel();return}
   /* 벡터와 **그 벡터가 나온 글자**를 같이 든다 — `onQueryVector`·`gradePractice` 와 같은 규율.
      한 발 늦게 도착한 벡터로는 절대 안 매긴다. */
   const dv=DRAFT.canvas;
-  CQV=(dv&&dv.t===CANVQ)?{q:CANVQ,v:dv.v}:null;
+  CQV=(dv&&dv.t===CANVQ)?{q:CANVQ,v:dv.v}:CQV?.q===CANVQ?CQV:null;
   const how=scorer(CANVQ,CQV,VEC);
   if(how!=="뜻"&&VEC&&bridged()){
     post("embedDraft",{slot:"canvas",kind:"query",text:CANVQ});
@@ -5152,9 +6590,12 @@ function canvasRefresh(){
      **가운데 태양**이 든다 (#70 확정 ④).
    ⚠ 「화면 맞춤」 버튼도 걷었다 — 접기/펴기마다 `canvasFit` 이 저절로 돈다(`bindResizer`). */
 function canvasPane(){
-  return `<div id="cvwrap"${cvReduced()?' class="rm"':""}>
-      <div id="cvstage"><svg id="cvb"></svg></div><div id="cvnav"></div>
-      <div class="workspacequery"><input id="workspacequery" aria-label="자료에 질문" placeholder="전체 저장소에 질문" value="${esc(CANV?.relatedID?"":CANVQ)}"><button id="workspaceask">검색</button></div>
+  const empty=VAULT_CONNECTED
+    ?`<div id="workspace-empty" class="workspace-empty" hidden>아직 문서가 없는 폴더입니다<button id="emptycreate">첫 문서 만들기</button></div>`
+    :`<div id="workspace-empty" class="workspace-empty">연결된 폴더가 없습니다</div>`;
+  return `<div id="cvwrap" data-universe-style="${universeStyleName(WSTYLE.universeStyle)}"${cvReduced()?' class="rm"':""}>
+      <div id="cvstage"><svg id="cvb"></svg>${empty}<div id="orbit-drop-note" role="status" aria-live="polite" hidden></div></div>
+      <div class="workspacequery"><span id="workspace-scope" class="workspace-scope"></span><input id="workspacequery" aria-label="자료에 질문" placeholder="전체 저장소에 질문" value="${esc(CANV?.relatedID?"":CANVQ)}"><button id="workspaceask">검색</button></div>
       <span class="cvhow" id="cvhow"></span>
 
       <div class="cvrank" id="cvrank"></div>
@@ -5173,7 +6614,7 @@ function canvasBindPane(){
   canvasBindAsk();
   const fixed=document.getElementById("workspacequery"),submit=document.getElementById("workspaceask");
   const ask=()=>{const value=fixed.value;const run=()=>{paneApply("r",0);canvasAsk(value,{wave:true,log:true});paintCanvasNavigation()};if(!leaveEditorAllowed(run))return;run()};
-  if(fixed)fixed.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();ask()}};
+  if(fixed)fixed.onkeydown=ev=>{if(ev.key==="Enter"&&!ev.isComposing&&ev.keyCode!==229){ev.preventDefault();ask()}};
   if(submit)submit.onclick=ask;
   if(typeof ResizeObserver!=="undefined"){
     if(CANVAS_RESIZE)CANVAS_RESIZE.disconnect();
@@ -5186,9 +6627,9 @@ function canvasBindPane(){
   onresize=()=>{if(mode==="stack"&&stackView==="edit"){canvasFit();canvasWake()}};
   /* ★ 창이 숨으면 루프도 잔다 (#75 1). ⚠ **대입이다** — 여러 번 렌더해도 손잡이가 하나다.
      ⚠ 깨우는 자리를 여기 하나로 두고, 자는 판정은 프레임 안에서 매번 다시 한다. */
-  try{document.onvisibilitychange=canvasWake}catch(e){}
+  try{document.onvisibilitychange=canvasVisibilityChanged;canvasVisibilityChanged()}catch(e){}
   /* reduced-motion 을 **끄는** 쪽도 듣는다 — 안 들으면 켰다 끈 사람의 우주가 다음 클릭까지 굳는다(matt Spec 리뷰 #75 C3) */
-  try{const mq=matchMedia("(prefers-reduced-motion: reduce)");if(mq&&!mq.__cv){mq.__cv=1;mq.addEventListener("change",canvasWake)}}catch(e){}
+  try{if(!CANVAS_MOTION_QUERY){CANVAS_MOTION_QUERY=matchMedia("(prefers-reduced-motion: reduce)");CANVAS_MOTION_QUERY.addEventListener("change",canvasMotionChanged)}}catch(e){}
   /* 들고 있던 질문이 있으면 **조용히** 다시 칠한다 — 저장·선택 뒤에 지도가 꺼져 보이면
      「검색이 사라졌다」로 읽힌다. 파동은 안 퍼뜨린다(같은 결과다). */
   canvasRelight();
@@ -5253,6 +6694,7 @@ function canvasAskClose(){
   if(orb)orb.classList.remove("asking");
 }
 function canvasAskToggle(){
+  if(!VAULT_CONNECTED)return;
   const fixed=document.getElementById("workspacequery");
   if(fixed&&fixed.parentNode){fixed.focus();return}
 
@@ -5285,11 +6727,139 @@ function canvasBindAsk(){
      `canvasMount` 만 다시 부르고 그때 `CANV` 는 **새 객체**가 된다 — 손잡이가 옛 것을 붙들고
      있으면 끌기·줌이 **조용히 죽는다**(옛 배치의 수를 고치는데 화면은 새 배치를 그린다).
      그래서 매 이벤트에 전역을 다시 읽는다. */
+function canvasOrbitKey(n){return n.orbitKey||(n.parent||"__galaxy")+"@"+Math.round(n.ring)}
+function workspaceOrbitDrop(nodes,source,x,y,scale){
+  const available=nodes.filter(n=>n.kind==="planet"&&n.id!==source.id&&canvasOrbitKey(n)!==canvasOrbitKey(source));
+  const body=available.map(n=>({node:n,distance:Math.hypot(x-n.x,y-n.y)*scale})).filter(p=>p.distance<=18).sort((a,b)=>a.distance-b.distance)[0];
+  if(body)return {path:body.node.path,key:canvasOrbitKey(body.node)};
+  const seen=new Set(),targets=[];
+  for(const n of available){
+    const key=canvasOrbitKey(n);if(seen.has(key))continue;seen.add(key);
+    const angle=workspaceOrbitAngle(n,x-n.cx,y-n.cy),p=workspaceOrbitPoint(n,angle);
+    const distance=Math.hypot(x-n.cx-p.x,y-n.cy-p.y)*scale;
+    if(distance<=12)targets.push({path:n.path,key,distance});
+  }
+  return targets.sort((a,b)=>a.distance-b.distance)[0]||null;
+}
+function workspaceMoveTarget(row,folder){
+  if(!row?.path||typeof folder!=="string")return null;
+  const parent=row.path.split("/").slice(0,-1).join("/");
+  if(row.folder&&(folder===row.path||folder.startsWith(row.path+"/")))return {folder,blocked:"자기 폴더 안으로 옮길 수 없어요."};
+  if(folder===parent)return {folder,blocked:"이미 이 폴더에 있어요."};
+  return {type:"move",folder,path:[folder,row.path.split("/").pop()].filter(Boolean).join("/")};
+}
+function workspaceCanvasEntry(node){
+  if(!node?.path)return null;
+  if(node.kind==="sun")return {path:node.path,folder:true,id:node.id};
+  if(node.kind!=="planet")return null;
+  const file=workspaceFile(node.id);
+  return file&&file.p.entry?.manageable!==false?{path:file.path,folder:false,id:node.id}:null;
+}
+function workspaceMoveStar(nodes,source,x,y,scale){
+  return nodes.filter(n=>n.kind==="sun"||n.kind==="center").map(n=>({node:n,distance:Math.hypot(x-n.x,y-n.y)*scale}))
+    .filter(p=>p.distance<=Math.max(24,p.node.r*scale+10)).sort((a,b)=>a.distance-b.distance)[0]?.node||null;
+}
+/* 드래그 목적지만 임시로 그린다. 실제 CANV·질문 범위·방문 이력은 원래 장면을 유지한다. */
+function canvasPreviewMoveFolder(L,path){
+  const d=L?.drag,board=document.getElementById("cvb");if(CANV!==L||!d?.held||!board?.namespaceURI)return;
+  if(d.row.folder&&(path===d.row.path||path.startsWith(d.row.path+"/")))return;
+  clearTimeout(d.browseTimer);d.preview?.root.remove();d.preview=null;
+  L.els.root.style.visibility="";
+  if(path!==WORKSPACE_SCOPE){
+    const scene=workspaceScene(L.tree,path,ORBIT_GROUPS);if(!scene)return;
+    const rect=board.getBoundingClientRect(),extent=Math.max(180,...scene.bodies.map(n=>n.ring*(n.perspectiveBase?1.7:1)+n.r+36));
+    const k=Math.max(.03,Math.min(1.25,(rect.width-70)/(extent*2),(rect.height-70)/(extent*2)));
+    const vt={k,x:rect.width/2-scene.center.x*k,y:rect.height/2-scene.center.y*k};
+    const el=(tag,attrs={})=>{const e=document.createElementNS(board.namespaceURI,tag);for(const key in attrs)e.setAttribute(key,attrs[key]);return e};
+    const root=el("g",{class:"move-preview",transform:`translate(${vt.x} ${vt.y}) scale(${vt.k})`,"aria-hidden":"true"});
+    const nodes=scene.bodies.slice();if(!path)nodes.unshift({id:"@workspace-root",path:"",name:"전체 저장소",kind:"center",r:34,x:scene.center.x,y:scene.center.y});
+    const elements={};
+    for(const n of nodes){
+      if(n.kind==="planet"&&n.ring){const ring=el("path",{class:"orbit",d:workspaceOrbitPath(n),fill:"none",transform:`translate(${n.cx} ${n.cy})`});root.appendChild(ring)}
+      const g=el("g",{class:`cvn k${n.kind}`,transform:`translate(${n.x} ${n.y})`,opacity:n.kind==="planet"?".28":"1"});
+      const skin=n.kind==="planet"?"planet":n.kind==="center"?"galaxy":"stellar";
+      g.appendChild(el("circle",{class:"selhalo",r:n.r+10}));
+      canvasStellarBody(g,n.r,skin,n.id,el);
+      if(n.kind!=="planet"){
+        const label=el("text",{class:"node-label","text-anchor":"middle","font-size":12/k,"stroke-width":4/k,y:n.r+10+18/k});
+        label.textContent=n.name;g.appendChild(label);
+      }
+      elements[n.id]=g;root.appendChild(g);
+    }
+    L.els.root.style.visibility="hidden";board.appendChild(root);
+    d.preview={path,root,nodes,elements,vt};
+  }
+  if(d.ghost)board.appendChild(d.ghost);
+  paintCanvasNavigation();canvasMoveOrbit(L,d.lastX,d.lastY);
+}
+function canvasQueueMoveFolder(L,path){
+  const d=L.drag;if(!d)return;
+  if(path===d.hoverPath)return;
+  clearTimeout(d.browseTimer);d.hoverPath=path;
+  if(path===null||path===(d.preview?.path??WORKSPACE_SCOPE)||d.row.folder&&(path===d.row.path||path.startsWith(d.row.path+"/")))return;
+  d.browseTimer=setTimeout(()=>{if(CANV===L&&L.drag===d&&d.held&&d.hoverPath===path)canvasPreviewMoveFolder(L,path)},550);
+}
+function canvasHoldOrbit(L){
+  const d=L?.drag;if(CANV!==L||!d?.row||d.held||d.blocked)return;
+  if(vaultHasDraft()){d.blocked=true;onIndexNotice("편집 중인 내용을 저장한 뒤 파일을 정리해 주세요.");return}
+  d.returnView={vt:{...L.vt},follow:L.follow,glide:L.glide};
+  d.held=true;L.follow=null;L.glide=null;L.lastClick=null;
+  const source=L.els?.node[d.node.id];if(!source)return;
+  d.ghost=source.cloneNode(true);d.ghost.removeAttribute("tabindex");d.ghost.removeAttribute("role");
+  d.ghost.removeAttribute("data-f");d.ghost.setAttribute("aria-hidden","true");d.ghost.setAttribute("class",`cvn k${d.node.kind} orbit-carry`);
+  d.ghostScale=L.vt.k*(d.node.kind==="planet"?.92*(d.node.displayScale||1):1);
+  d.ghost.style.pointerEvents="none";source.style.opacity=".25";document.getElementById("cvb").appendChild(d.ghost);
+  app.classList.add("canvas-carrying");
+  document.getElementById("cvb")?.classList.add("grabbing");
+  paintCanvasNavigation();
+  canvasMoveOrbit(L,d.lastX,d.lastY);
+}
+function canvasMoveOrbit(L,clientX,clientY){
+  const d=L.drag,board=document.getElementById("cvb");if(!d?.held||!board)return;
+  const box=board.getBoundingClientRect(),vt=d.preview?.vt||L.vt,x=(clientX-box.left-vt.x)/vt.k,y=(clientY-box.top-vt.y)/vt.k;
+  d.ghost?.setAttribute("transform",`translate(${clientX-box.left} ${clientY-box.top}) scale(${d.ghostScale})`);
+  d.targetElement?.classList.remove("canvas-move-target","move-target");d.targetElement=null;
+  const inside=clientX>=box.left&&clientX<=box.right&&clientY>=box.top&&clientY<=box.bottom;
+  const at=document.elementFromPoint?.(clientX,clientY),entry=at?.closest?.("#leftlist .hmit.fold,#workspace-crumbs [data-cvfolder],#cvhome,#vaultheading");
+  let folder=null;
+  if(entry){folder=entry.dataset.fold??entry.dataset.cvfolder??"";d.targetElement=entry}
+  else if(inside){
+    const star=workspaceMoveStar(d.preview?.nodes||L.nodes,d.node,x,y,vt.k);
+    if(star){folder=star.path;d.targetElement=d.preview?.elements[star.id]||L.els.node[star.id]}
+    else if(d.preview)folder=d.preview.path;
+  }
+  d.target=folder!==null?workspaceMoveTarget(d.row,folder):null;
+  if(!d.target&&inside&&!d.preview&&d.groupable){
+    const nodes=L.nodes.filter(n=>workspaceFile(n.id)?.p.entry?.manageable!==false);
+    const orbit=workspaceOrbitDrop(nodes,d.node,x,y,vt.k);if(orbit)d.target={type:"orbit",...orbit};
+  }
+  if(d.target?.type==="move")d.targetElement?.classList.add("canvas-move-target","move-target");
+  canvasQueueMoveFolder(L,folder);
+  const note=document.getElementById("orbit-drop-note");
+  if(note){note.hidden=false;note.textContent=d.target?.blocked||
+    (d.target?.type==="move"?`${d.target.path} · 이 위치로 이동`:d.target?.type==="orbit"?`${workspaceDisplayNames()[d.target.path]||d.target.path.split("/").pop()} · 같은 궤도로 묶기`:
+      d.groupable?"항성·폴더로 이동 · 행성·궤도로 묶기":"항성이나 폴더에 놓아 이동")}
+  canvasLabels();
+}
+function canvasCancelOrbitDrag(L){
+  const d=L?.drag;if(!d)return;
+  clearTimeout(d.timer);clearTimeout(d.browseTimer);d.ghost?.remove();d.preview?.root.remove();
+  d.targetElement?.classList.remove("canvas-move-target","move-target");
+  const source=L.els?.node[d.node?.id];if(source?.style)source.style.opacity="";
+  if(L.els?.root)L.els.root.style.visibility="";
+  if(d.returnView){L.vt=d.returnView.vt;L.follow=d.returnView.follow;L.glide=d.returnView.glide;canvasApplyVT()}
+  L.drag=null;
+  app.classList.remove("canvas-carrying");
+  const note=document.getElementById("orbit-drop-note");if(note)note.hidden=true;
+  document.getElementById("cvb")?.classList.remove("grabbing");
+  paintCanvasNavigation();canvasLabels();canvasWake();
+}
 function canvasBindBoard(){
   const board=document.getElementById("cvb");
   if(!board)return;
   board.addEventListener("wheel",ev=>{
     const L=CANV;if(!L)return;
+    if(L.drag?.held){ev.preventDefault();return}
     ev.preventDefault();canvasTipOff();L.follow=null;L.glide=null;
     const r=board.getBoundingClientRect(),mx=ev.clientX-r.left,my=ev.clientY-r.top;
     const f=Math.exp(-ev.deltaY*.0016),nk=Math.max(.03,Math.min(3.2,L.vt.k*f)),s=nk/L.vt.k;
@@ -5297,6 +6867,7 @@ function canvasBindBoard(){
   },{passive:false});
   board.onpointerdown=ev=>{
     const L=CANV;if(!L)return;
+    if(ev.button!==0||VAULT_ACTION)return;
     /* ★ **태양은 여기서 손을 뗀다** (`실측 2026-09-02` 실앱). 판이 모든 pointerdown 에
        `setPointerCapture` 를 걸면 pointerup 의 과녁이 판이 되고, `click` 은 내림·올림의
        공통 조상(= 판)으로 가서 **`orb.onclick` 이 영영 안 불린다.** JS 의 `orb.click()` 은
@@ -5304,8 +6875,11 @@ function canvasBindBoard(){
     if(ev.target.closest&&ev.target.closest("#orbg"))return;
     const g=ev.target.closest?ev.target.closest(".cvn"):null;
     const n=g?L.by[g.dataset.f]:null;
-    L.drag={sx:ev.clientX,sy:ev.clientY,moved:0,node:n,
+    L.drag={sx:ev.clientX,sy:ev.clientY,lastX:ev.clientX,lastY:ev.clientY,moved:0,node:n,
+            row:workspaceCanvasEntry(n),
+            groupable:n?.kind==="planet"&&workspaceFile(n.id)?.p.entry?.manageable!==false,held:false,
             oa:n?n.ang:0,ox:L.vt.x,oy:L.vt.y};
+    if(L.drag.row){L.drag.timer=setTimeout(()=>canvasHoldOrbit(L),300);g?.focus?.({preventScroll:true})}
     try{board.setPointerCapture(ev.pointerId)}catch(e){}
     if(!n)board.classList.add("grabbing");
   };
@@ -5313,7 +6887,13 @@ function canvasBindBoard(){
     const L=CANV,d=L&&L.drag;if(!d)return;
     const dx=ev.clientX-d.sx,dy=ev.clientY-d.sy;
     d.moved=Math.max(d.moved,Math.hypot(dx,dy));
+    d.lastX=ev.clientX;d.lastY=ev.clientY;
     if(d.moved>3)canvasTipOff();
+    if(d.row){
+      if(d.moved>7)canvasHoldOrbit(L);
+      if(d.held)canvasMoveOrbit(L,ev.clientX,ev.clientY);
+      return;
+    }
     if(d.node){
       if(d.node.fixed)return;
       /* ★ **위상만 바뀐다** (design.md §3: *"궤도 위 위상만 바뀐다 · 반지름·궤도 안 바뀜"*).
@@ -5329,9 +6909,21 @@ function canvasBindBoard(){
     }
     else{if(d.moved>3){L.follow=null;L.glide=null}L.vt.x=d.ox+dx;L.vt.y=d.oy+dy;canvasApplyVT()}
   };
-  board.onpointerup=()=>{
+  board.onpointerup=ev=>{
     board.classList.remove("grabbing");
-    const L=CANV,d=L&&L.drag;if(L)L.drag=null;
+    const L=CANV,d=L&&L.drag;
+    if(d?.held&&d.row){
+      ev.preventDefault();ev.stopPropagation();
+      canvasMoveOrbit(L,ev.clientX,ev.clientY);
+      const row=d.row,target=d.target,moved=d.moved;
+      canvasCancelOrbitDrag(L);
+      if(target&&moved>7){
+        if(target.type==="move")explorerMove(row,target.folder);
+        else if(target.type==="orbit")orbitRequest(row.path,target.path);
+      }
+      canvasWake();return;
+    }
+    if(d)clearTimeout(d.timer);if(L)L.drag=null;
     canvasWake();   /* 잡고 있는 동안 시계가 멈춘 몸이 있다 — 놓으면 그 자리에서 다시 돈다 */
     /* 끌었으면 고르기가 아니다 — 4px 이 그 갈림이다 */
     if(d&&d.node&&d.moved<4){
@@ -5350,10 +6942,10 @@ function canvasBindBoard(){
     }
     /* 빈 곳을 누르면 질문을 놓는다(목업 `svg click → closeAsk+lightsOff`). 고른 별이 있으면 그리로 돌아간다 */
     else if(d&&!d.node&&d.moved<4){canvasAskClose();if(CANVQ.trim()){canvasDropQuestion();canvasRelightSel()}}
-    /* ★ **끈 자리를 안 남긴다** (#74). 배치 사이드카가 걷혔다 — 별의 자리는 이제 볼트
-       폴더(궤도)가 정하고, 끌기는 **이 세션의 위상**일 뿐이다. */
   };
-  board.onpointercancel=()=>{if(CANV)CANV.drag=null;board.classList.remove("grabbing")};
+  board.onpointercancel=()=>canvasCancelOrbitDrag(CANV);
+  board.onlostpointercapture=()=>canvasCancelOrbitDrag(CANV);
+  board.onkeydown=ev=>{if(ev.key==="Escape"&&CANV?.drag){ev.preventDefault();ev.stopPropagation();canvasCancelOrbitDrag(CANV)}};
   /* 몸이 포인터 밑에서 돌아 나가면 그 몸의 leave 가 안 온다 — 판을 나갈 때 슬로우를 푼다 */
   board.onpointerleave=()=>{const C=CANV;if(C)C.hover=null;canvasTipOff()};
 }
@@ -5378,6 +6970,7 @@ function appendIngestText(ta,add){
 }
 const DROP_TEXT=/\.(txt|md|markdown|text|csv|json)$/i;
 function ingestFromDrop(dt){
+  if(bridged()&&dt?.files?.length){openDocumentImport();post("importDocuments",{action:"drop",destination:WORKSPACE_SCOPE||""});return}
   if(stackView!=="ingest"&&!leaveEditorAllowed())return;
   /* ★ **이미 받기 화면이면 다시 안 그린다** (#66-9). `ingestRender` 는 화면을 통째로 지어서
      붙여넣기 칸의 글자와 `INTAKE` 를 같이 날린다 — 받기 화면에서 떨어뜨린 사람은
@@ -5411,9 +7004,8 @@ function ingestFromDrop(dt){
 
 /* ★ 받기 화면 (#14 → #40) — **쌓기 모드 안**이다. 모드가 아니라 쌓기의 한 화면이라
    면접 모드와 무관하고, 판정선 검사는 `stackRender` 를 경계로 삼으므로 이 아래를 안 센다.
-   #40 이 더한 것 둘: **파일로 받는 길**(`pickIngestFiles`)과 **덩이마다 초안**(`draftFragment`).
-   ⚠ 붙여넣기 칸은 그대로다 — 파일도 결국 **이 칸으로 들어온다**(`onIngestFiles`). 받는 길이
-     둘이어도 자르기·초안은 한 곳이어야 두 길이 안 갈린다.
+   파일·붙여넣기·갈라보기는 이 화면에서 로컬로 처리하고, 카드에서 확인한 원문을 직접 저장한다.
+   ⚠ 붙여넣기 칸은 그대로다 — 파일도 결국 **이 칸으로 들어온다**(`onIngestFiles`).
    ★ #46 이 모양만 고쳤다 — **큰 안내 한 문장 + 카드 하나**(목업 ①). 「파일 고르기」가 위 막대에서
      카드 안으로 내려왔다: 넣는 일 셋(파일·붙여넣기·갈라보기)이 한 흐름이라 한 상자에 산다.
      손잡이 이름(`pick`·`split`·`doc`·`ifiles`)은 **하나도 안 바뀌었다.** */
@@ -5421,13 +7013,13 @@ function ingestRender(){
   /* 화면을 새로 지으면 덩이 카드도 사라진다 — 들고 있던 진행은 **가리킬 카드가 없어** 낡았다
      (`receiveDocument` 가 `DRAFT` 를 비우는 것과 같은 이유). */
   INTAKE=null;
-  app.innerHTML=`<div id="top" class="drag"><span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span>
+  releaseMarkdownEditors();app.innerHTML=`<div id="top" class="drag"><span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span>
       <span id="stat">시작하기</span><span style="flex:1"></span>
       <button class="ibtn ico nodrag" id="back" title="저장소로" aria-label="저장소로">${ICO.back}</button>
       <button class="ibtn nodrag" id="x">✕</button></div>
     <div id="ingest">
-      <div><div class="ihx">파일이나 자소서를 던져 넣으면, 답변으로 잘라 드려요</div>
-        <div class="ihs">기계가 하는 건 자르기와 제안까지예요 — 저장하기 전에는 아무것도 저장소에 안 앉아요</div></div>
+      <div><div class="ihx">파일이나 자소서를 던져 넣으면, 문항과 문단으로 갈라봐요</div>
+        <div class="ihs">갈라본 원문을 확인해요 — 저장하기 전에는 아무것도 저장소에 안 앉아요</div></div>
       <div class="icard">
         <div><span class="fl">붙여넣기 · 문항 번호가 있으면 문항에서, 없으면 빈 줄에서 갈라요</span>
           <textarea id="doc" spellcheck="false" placeholder="1. 지원동기를 서술해 주십시오&#10;저는 …&#10;&#10;2. 협업 과정에서 갈등을 해결한 경험을 서술해 주십시오&#10;팀 프로젝트에서 …"></textarea></div>
@@ -5435,9 +7027,8 @@ function ingestRender(){
         <div class="row"><button class="gbtn p" id="split">갈라보기</button>
           <button class="gbtn" id="pick">파일 고르기</button>
           <span style="flex:1"></span><span class="foot" id="iprv">이 맥 밖으로 나가지 않아요</span></div>
-        <div id="cloud"></div>
       </div>
-      <div id="ierr"></div><div id="ibar"></div><div id="cands"></div><div id="isum"></div>
+      <div id="ierr"></div><div id="ingesttrouble" class="wb" role="status" hidden></div><div id="ibar"></div><div id="cands"></div><div id="isum"></div>
     </div>`;
   /* ★ **설정에 잠깐 다녀온 사람의 글을 되돌린다** (#65 P3-4). 위에서 화면을 새로 지었으니
      붙여넣던 글은 방금 사라졌다 — 자리표를 든 사람에게만 그것을 도로 앉힌다.
@@ -5449,22 +7040,21 @@ function ingestRender(){
   }
   /* 나가는 문. ⚠ **표식(`ingestOptOut`)을 안 세운다** — 첫 실행이 사람을 이리 끌고 오던
      줄이 걷혔다(승격 라운드 #61 A). 이제 이 화면은 사람이 눌러야만 열린다. */
-  document.getElementById("back").onclick=()=>{stackView="edit";stackRender()};
+  const leave=()=>{stackView="edit";stackRender()};
+  document.getElementById("back").onclick=()=>{if(leaveEditorAllowed(leave))leave()};
   document.getElementById("x").onclick=()=>post("closeWindow");
   document.getElementById("split").onclick=splitDoc;
   /* ⚠ 브라우저 단독(`cue.html`)엔 이 통로가 없다 — **말없이 아무 일도 안 일어나면 안 된다.**
      `bridged()` 로 갈라 그 자리에서 이유를 세운다(`load`/`save` 가 갈리는 것과 같은 규율). */
   document.getElementById("pick").onclick=()=>{
     if(!bridged()){paintFileRows([],[{name:"파일 고르기",why:"이 창에는 파일 통로가 없어요 — 붙여넣기로 넣어 주세요"}]);return}
-    if(!pickTake(PICKING,"ingest"))return;   /* 연타는 시트를 큐에 쌓는다 (#80 1) */
-    paintPicking("pick","ingest");
-    post("pickIngestFiles")};
+    SETBACK={view:"ingest",doc:document.getElementById("doc")?.value||""};openDocumentImport()};
   paintPicking("pick","ingest");   /* 고르는 중에 화면을 다시 지어도 잠금이 보인다 */
   /* ★ **받기 화면에도 과녁을 둔다** (#66-9, `실측 2026-09-01`). 파일 통로가 있는 유일한
      화면인데 여기 떨어뜨리면 `document.ondrop preventDefault`(`render` 머리글)가 삼켜서
      **무반응·무안내**였다 — 왼쪽 칸에서만 되는 동작이라는 것을 알 길이 없다. */
   bindDropTarget("ingest");
-  paintCloudRow();
+  paintIngestTrouble();
 }
 /* ★ 「이 화면이 공통 지능을 걸어도 되나」 — **순수 함수라 `node --test` 가 잠근다**
    (2026-09-02, 리뷰 발견 ①).
@@ -5624,15 +7214,9 @@ function splitDoc(){
   box.innerHTML="";sum.innerHTML="";bar.className="";bar.innerHTML="";INTAKE=null;
   if(r.error){err.style.display="block";err.textContent=r.error;return}
   err.style.display="none";
-  /* `qi`·`cur`·`tries` 는 초안 큐의 것이다 (`makeFragments` 머리글) — 여기선 빈 채로 선다.
-     `empty` 는 **모델이 「이야기 없다」고 판정한 덩이의 수**다 (2판) — 실패(`fail`)와 다른 수다.
-     `dup` 은 **앞 덩이와 겹쳐 걸러낸 장수**, `dupOf` 는 덩이마다 그 수다 (`dropDupes`). */
   /* `fresh` = **방금 이 화면에서 저장소에 앉은 조각들** (#49 H3). 연습을 열 때 「방금 만든 것이
      걸릴 만한 질문」을 앞으로 당기는 데만 쓴다(`freshQids`) — 세션에만 산다. */
-  /* `cloud` = **이번 뽑기가 사용자 백엔드로 가나** (#51). 사람이 켠 것을 `makeFragments` 가
-     여기 굳힌다 — 도중에 토글을 만져도 한 판이 반씩 갈리지 않게. */
-  INTAKE={items:r.items,ks:[],draft:{},n:0,got:0,fail:0,empty:0,banner:null,done:false,saved:0,
-          qi:0,cur:null,tries:{},dup:0,dupOf:{},fresh:[],cloud:false};
+  INTAKE={items:r.items,fresh:[]};
   box.innerHTML=r.items.map((it,k)=>{
     /* ★ **칩 목록이 걷혔다** (#53 경계표 ②). 여기 있던 것: 기존 질문 전부를 칩으로 늘어놓고
        `chipFor` 가 고른 하나를 켜 둔 뒤 사람이 눌러 바꾸던 칸. 지금은 문항이 있으면
@@ -5643,7 +7227,7 @@ function splitDoc(){
         it.q?esc(it.q):it.h?esc(it.h)+" · "+it.body.length+"자"
                       :(k+1)+"번째 · "+it.body.length+"자"}</div></div>
       <div class="irow"><span class="ilbl">제목</span><input class="cti" value="${esc(machineDraft(it.body).title)}"></div>
-      ${it.q?`<div class="irow"><span class="ilbl">질문</span><div class="cqn">「이대로 저장」으로 넣으면 이 문항이 예상 질문 목록에 얹혀요 — 이미 같은 물음이 있으면 그것에 붙여요. 「답변 뽑기」로 넣은 답변에는 안 얹어요</div></div>`:""}
+      ${it.q?`<div class="irow"><span class="ilbl">질문</span><div class="cqn">「이대로 저장」으로 넣으면 이 문항이 예상 질문 목록에 얹혀요 — 이미 같은 물음이 있으면 그것에 붙여요</div></div>`:""}
       <div class="cbody">${esc(it.body)}<span class="orig">원문</span></div>
       <div class="cacts"><button class="gbtn p ok">이대로 저장</button>
         <button class="gbtn drop">버리기</button></div></div>`}).join("");
@@ -5654,37 +7238,13 @@ function splitDoc(){
   });
   /* ⚠ **문항 벡터를 안 조른다** (#53). 예전엔 덩이마다 `embedDraft` 를 날려 칩을 뜻 자로
      갈아끼웠는데(`paintCandChip`), 갈아끼울 칩이 없어졌다. 왕복도 같이 사라진다. */
-  /* ⚠ **개수를 「답변 N개」로 약속하지 않는다** (2판). 덩이 하나에서 이야기가 둘 나올 수도,
-     하나도 안 나올 수도 있다 — 무엇이 한 이야기인가는 모델이 판정한다. */
-  sum.innerHTML=`<div class="row"><button class="gbtn p" id="mk">답변 뽑기</button>
-    <span class="foot">덩이 ${r.items.length} — 덩이마다 재사용할 이야기를 뽑아 바로 저장해요. 이야기가 없는 덩이는 버려요. 하나씩 고르려면 카드의 「이대로 저장」</span></div>`;
-  document.getElementById("mk").onclick=makeFragments;
+  /* 자동 초안 요청은 하지 않는다. 카드에서 원문과 제목을 확인한 뒤 「이대로 저장」으로
+     직접 Markdown 조각을 만든다. */
+  sum.innerHTML=`<div class="row"><span class="foot">덩이 ${r.items.length} — 원문을 확인한 뒤 카드의 「이대로 저장」으로 하나씩 저장해요</span></div>`;
 }
-/* ★ [답변 만들기] (#40) — 남아 있는 덩이마다 Swift 에 초안을 조른다.
-   ⚠ **한 번에 하나만 날린다.** 전에는 `ks.forEach(post)` 로 전부 동시에 발사했는데,
-     FoundationModels 는 동시 요청을 `concurrentRequests` 로 **거절할 수 있다** — 그러면
-     그 덩이가 조용히 기계 자르기로 강등되고, 사용자는 왜 어떤 것만 초안이 없는지 모른다.
-     그래서 큐다: `pumpIntake` 가 하나 보내고, 답(`onFragmentDraft`)이 다음 하나를 부른다.
-   ⚠ **브리지가 없으면 기다리지 않는다.** 브라우저 단독엔 답이 영영 안 오므로 그 자리에서
-     기계 자르기로 간다 — 붙여넣기만으로 화면이 사는 길(`cue.html`)이 이 한 줄에 걸려 있다. */
-function makeFragments(){
-  if(!INTAKE||INTAKE.done)return;
-  const ks=[...document.querySelectorAll("#cands .cand")]
-    .filter(el=>!el.classList.contains("done")).map(el=>+el.dataset.k)
-    .filter(k=>!isNaN(k)&&INTAKE.items[k]);
-  if(!ks.length)return;
-  INTAKE.ks=ks;INTAKE.n=ks.length;INTAKE.got=0;INTAKE.fail=0;INTAKE.draft={};INTAKE.banner=null;
-  INTAKE.qi=0;INTAKE.cur=null;INTAKE.tries={};INTAKE.dup=0;INTAKE.dupOf={};INTAKE.fresh=[];
-  /* 켠 것을 **여기서 굳힌다** (#51) — 이 판이 끝날 때까지 안 바뀐다.
-     ⚠ **막는 자가 `cloudArmed` 로 바뀌었다** (2026-09-02, 리뷰 발견 ①). `CLOUD.ready` 로
-       한 번 더 걸면 토글을 살려 둔 것이 여기서 도로 죽어 **켜 놓고 눌렀는데 아무 데도 안 나가는**
-       모양이 된다 — 게이트가 둘이면 반드시 한쪽만 고쳐진다. */
-  INTAKE.cloud=!!(cloudArmed(CLOUD.ready,CHOICE)&&CLOUD.on);
-  const mk=document.getElementById("mk");if(mk)mk.disabled=true;
-  paintIntake();
-  if(!bridged()){fallbackIntake("이 창에는 초안 통로가 없어요 — 기계 자르기로 넣어요");return}
-  pumpIntake();
-}
+/* 앱 안에서 초안을 자동 생성하는 진입점은 첫 E2E 범위에서 제외한다.
+   로컬 갈라보기와 카드의 직접 저장은 `splitDoc`·`approve`가 담당한다. */
+function makeFragments(){return}
 /* 큐 한 칸을 민다 — **줄 서 있는 다음 덩이 하나**를 보낸다. 큐가 비면 아무것도 안 한다
    (끝맺음은 `onFragmentDraft` 가 `got>=n` 으로 판정한다 — 세는 자리가 둘이면 갈린다).
    ⚠ **꾸러미를 객체로 보낸다** (`embedDraft` 와 같은 모양). `JSON.stringify` 로 보내면
@@ -5708,17 +7268,10 @@ function draftPacket(id,it,cloud){
   if(cloud)p.cloud=true;
   return p;
 }
-function pumpIntake(){
-  if(!INTAKE||INTAKE.done)return;
-  const k=INTAKE.ks[INTAKE.qi];
-  if(k===undefined){INTAKE.cur=null;return}
-  INTAKE.qi++;INTAKE.cur=k;INTAKE.tries[k]=1;
-  post("draftFragment",draftPacket("i"+k,INTAKE.items[k],INTAKE.cloud));
-}
+function pumpIntake(){return}
 /* 그 덩이를 **한 번 더** 보낸다 — 큐는 안 민다(같은 자리에서 다시 기다린다) */
 function retryIntake(k){
-  INTAKE.tries[k]=(INTAKE.tries[k]||1)+1;
-  post("draftFragment",draftPacket("i"+k,INTAKE.items[k],INTAKE.cloud));
+  return;
 }
 /* ★ 답 하나를 무엇으로 볼 것인가 — **순수 함수라 `node --test` 가 잠근다.**
    `tried` = 이 덩이를 지금까지 보낸 횟수(방금 온 답까지 포함).
@@ -5801,7 +7354,7 @@ function noStories(draft,ks){
    여기가 **큐의 심장**이다 — 한 덩이가 끝나야 다음 덩이가 나간다. */
 function onFragmentDraft(json){
   let d;try{d=typeof json==="string"?JSON.parse(json):json}catch(e){return}
-  if(!d||!INTAKE||INTAKE.done)return;
+  if(!d||!INTAKE||!INTAKE.draft||INTAKE.done)return;
   const k=parseInt(String(d.id||"").slice(1),10);
   if(isNaN(k)||!INTAKE.items[k]||INTAKE.draft[k])return;
   /* ⚠ **지금 날아가 있는 그 덩이의 답만 받는다.** 늦게 온 옛 답을 그대로 세면 큐가 두 칸
@@ -5920,21 +7473,8 @@ function paintIntake(){
           INTAKE.fail?` · 그중 ${INTAKE.fail}장은 기계 자르기예요`:""}${
           INTAKE.empty?` · 덩이 ${INTAKE.empty}개는 이야기가 없어 버렸어요`:""}${
           INTAKE.dup?` · ${INTAKE.dup}장은 앞과 겹쳐 걸렀어요`:""}</div>`)
-    +`<div class="row">${none?`<button class="gbtn p" id="mcut">그래도 기계 자르기로 넣기</button>`
-        :`<button class="gbtn p" id="topr">바로 모의 질문 하나 받아보기</button>`}`
+    +`<div class="row">${none?`<button class="gbtn p" id="mcut">그래도 기계 자르기로 넣기</button>`:""}`
     +`<button class="gbtn" id="tostack">저장소로</button></div>`;
-  /* ★ **time-to-magic** (#49 H3) — 넣자마자 그것이 무엇이 됐는지 한 문항으로 보여준다.
-     ⚠ **흐름을 새로 안 만들었다.** 기존 `startPractice` 그대로고, 늘어난 것은 인자 하나(`first`)다 —
-       방금 앉은 조각들이 걸릴 만한 질문을 앞으로 당긴다(`freshQids`). 셀 것이 없으면 빈 배열이라
-       **예전 순서 그대로** 돈다(구멍부터). 「실패 시 기존 순서 그대로」가 그 뜻이다.
-     ⚠ 여는 데 실패하면 모드를 안 바꾼다 — 질문이 0개면 빈 화면 대신 쌓기의 띠 한 줄이 말한다
-       (`stackRender` 의 「연습」 버튼과 **같은 모양**이다). */
-  const pr=document.getElementById("topr");
-  if(pr)pr.onclick=()=>{
-    if(!canGoMode("practice"))return;   /* 부작용 앞에 게이트 — `stackRender` 의 「연습」과 같다 (#66 리뷰 발견 ③) */
-    const first=freshQids((INTAKE&&INTAKE.fresh)||[],DOC.questions);
-    stackView="edit";
-    if(startPractice(undefined,first))goMode("practice");else stackRender()};
   const mc=document.getElementById("mcut");
   if(mc)mc.onclick=machineIntake;
   document.getElementById("tostack").onclick=()=>{stackView="edit";stackRender()};
@@ -5944,19 +7484,73 @@ function paintIntake(){
      그 id 하나를 든다 — 「기존 질문 중 어느 것에 붙일까」를 고르던 칸이 걷혔다.
      문항이 없는 덩이(문단·구획)는 `questionIds` 가 **빈 배열**이다. 예전과 같고,
      그래도 면접 중 순위는 산다(`escore` 가 내용만 보므로). */
+function paintIngestTrouble(){
+  const el=document.getElementById("ingesttrouble");if(!el)return;
+  el.textContent=vaultTrouble||"";el.hidden=!vaultTrouble;
+}
+function paintIngestSave(record){
+  const el=record.element,actions=el.querySelector(".cacts"),title=el.querySelector(".cti");
+  if(title){title.readOnly=record.state!=="failed";if(title.readOnly)title.value=record.fragment.title}
+  el.classList.toggle("done",record.state==="saved");
+  if(!actions)return;
+  actions.innerHTML=`<span class="docsavestate" data-state="${record.state}" role="status" aria-live="polite">${esc(editorSaveStateText(record.state))}</span>`
+    +(record.state==="failed"?'<button class="gbtn" data-ingest-retry>다시 저장</button>':"");
+  const retry=actions.querySelector("[data-ingest-retry]");
+  if(retry)retry.onclick=()=>approve(el,record.item);
+}
+function captureIngestSaveDrafts(){
+  /* 다른 카드의 저장도 같은 큐로 합쳐지므로 실패 뒤 고친 제목을 먼저 저장 짐에 반영한다. */
+  for(const record of INGEST_SAVES.values())if(record.state==="failed"&&record.element.isConnected!==false){
+    const field=record.element.querySelector(".cti");if(!field)continue;
+    const title=field.value.trim()||candTitle(record.item.body);
+    if(title===record.fragment.title)continue;
+    record.fragment={...record.fragment,title,updatedAt:now()};
+    const index=DOC.fragments.findIndex(p=>p.id===record.fragment.id);
+    if(index>=0)DOC.fragments[index]=record.fragment;
+  }
+}
+function ingestSaveStarted(snapshot){
+  const ids=new Set((snapshot.fragments||[]).map(p=>p.id));
+  for(const record of INGEST_SAVES.values()){
+    if(record.state!=="saved"&&ids.has(record.fragment.id)){
+      record.state="saving";paintIngestSave(record);
+    }
+  }
+}
+function ingestSaveSucceeded(snapshot){
+  const saved=new Map((snapshot.fragments||[]).map(p=>[p.id,p]));
+  for(const record of INGEST_SAVES.values()){
+    if(record.state!=="saved"&&sameDocValue(saved.get(record.fragment.id),record.fragment)){
+      record.state="saved";paintIngestSave(record);
+    }
+  }
+}
+function ingestSaveFailed(){
+  /* 실패하면 SAVE_PENDING도 취소되므로 뒤에서 기다리던 카드도 재시도할 수 있게 한다. */
+  for(const record of INGEST_SAVES.values())if(record.state==="saving"){
+    record.state="failed";paintIngestSave(record);
+  }
+}
 function approve(el,it){
   if(!it||el.classList.contains("done"))return;
-  const title=el.querySelector(".cti").value.trim()||candTitle(it.body);
-  /* 문항 = 그 답이 답하는 물음이다 **(#13 사용자 이야기 4)** — 목록에 얹고 그 하나를 든다 */
-  const qid=it.q?questionForItem(it.q):null,ids=qid?[qid]:[];
-  const t=now();
-  const p={id:uid("f"),title:title,body:it.body,questionIds:ids,createdAt:t,updatedAt:t};
-  DOC.fragments.push(p);
-  /* 한 장씩 승인한 것도 「방금 만든 것」이다 (#49 H3) — 연습 첫 문항이 그것을 물게 */
-  if(INTAKE)(INTAKE.fresh=INTAKE.fresh||[]).push(p);
+  let record=INGEST_SAVES.get(el.dataset.ingestID);
+  if(record&&record.state!=="failed")return;
+  const title=el.querySelector(".cti").value.trim()||candTitle(it.body),t=now();
+  if(!record){
+    const qid=it.q?questionForItem(it.q):null,ids=qid?[qid]:[];
+    const fragment={id:uid("f"),title,body:it.body,questionIds:ids,createdAt:t,updatedAt:t};
+    record={element:el,item:it,fragment,state:"saving"};
+    el.dataset.ingestID=fragment.id;INGEST_SAVES.set(fragment.id,record);
+    DOC.fragments.push(fragment);
+    if(INTAKE)(INTAKE.fresh=INTAKE.fresh||[]).push(fragment);
+  }else{
+    record.fragment={...record.fragment,title,updatedAt:t};
+    const index=DOC.fragments.findIndex(p=>p.id===record.fragment.id);
+    if(index<0)DOC.fragments.push(record.fragment);else DOC.fragments[index]=record.fragment;
+    record.state="saving";
+  }
+  paintIngestSave(record);
   save();
-  el.classList.add("done");
-  el.querySelector(".cacts").innerHTML=`<span class="okmsg">저장됨 — 내 답변 ${DOC.fragments.length}</span>`;
 }
 
 /* ══ 프론트 설정 화면 (#61 C, 그릴 Q2) ═════════════════════════════════════════
@@ -6226,7 +7820,7 @@ function onNativeCopyText(ok,vid){
    ⚠ 브라우저 단독에서는 답이 안 온다. 그때 보이는 것은 **앱의 기본값**이고, 아래 한 줄이
      「여기서는 안 걸린다」를 말한다 — 조용히 진짜인 척하지 않는다(`bridged()` 규율). */
 let SYS={keys:{toggle:{k:{cmd:true,opt:true,ctrl:false,shift:false,key:"m"},on:false}},
-         mic:"ask",screen:"off",vault:"",failed:null};
+         mic:"ask",screen:"off",vault:"",failed:null,ready:false,shortcutAvailability:"available"};
 /* 창 단축키 녹화 상태와 미리보기 */
 let RECSLOT=null,RECMOD=null;
 /* ★ 방금 **이미 쓰이는 조합**을 눌렀다고 말해야 하는 자리 (#65 ⑧). `SYS.failed`(Swift 가 못
@@ -6252,13 +7846,15 @@ function setSystemState(json){
   let d;try{d=typeof json==="string"?JSON.parse(json):json}catch(e){return}
   if(!d)return;
   if(d.keys)SYS.keys=d.keys;
+  SYS.ready=true;SYS.shortcutAvailability=d.shortcutAvailability||"available";
   SYS.mic=d.mic||"off";SYS.screen=d.screen||"off";
   SYS.vault=d.vault||"";SYS.failed=d.failed||null;
   /* ★ 볼트 고르기의 **답이 이 길로 온다** (#80 1 — `openSystem what=vault` 의 완료 핸들러가
      `sendSystemState()` 를 부른다). 그래서 여기가 그 줄을 푸는 자리다. */
   pickFree(PICKING,"vault");
-  paintPicking("connectvault","vault");
+  paintPicking("vaultmenu","vault");
   paintSys();
+  if(mode==="stack"&&stackView==="prepare")paintPreparationPermissions();
 }
 /* 단축키 두 줄 + 권한 두 줄 + 볼트 한 줄. **제자리에서만 고쳐 쓴다** — 화면을 새로 지으면
    같은 카드 안에서 사람이 치고 있던 키 칸(지능 묶음)이 날아간다(`paintCliCards` 규율). */
@@ -6275,19 +7871,20 @@ function paintSys(){
     btn.className="gbtn setkey"+(rec?" rec":"");
     btn.textContent=rec?(keyLabel(RECMOD)==="—"?"누르세요…":keyLabel(RECMOD)+"…"):slotLabel(SYS.keys[slot]);
     if(!msg)continue;
-    if(rec)msg.textContent="Esc 로 취소";
-    /* 우리가 **방금 안 사실**이 Swift 의 옛 실패보다 먼저다 — 같은 조합이 옆 자리에 있다 (#65 ⑧) */
-    else if(RECCLASH===slot)msg.textContent="같은 조합이 다른 자리에 있어요 — 다른 조합을 눌러 주세요";
-    else if(SYS.failed===slot)msg.textContent="그 조합은 못 걸어요 — 다른 앱이 쓰고 있을 수 있어요";
-    else if((SYS.keys[slot]||{}).on)msg.textContent="걸렸어요";
-    else if(!bridged())msg.textContent="이 창에서는 안 걸려요";
-    /* ★ **왜 안 걸렸는지를 갈라 말한다** (#65 ⑤). 전 판은 글자 키가 **이미 있는** 조합에도
-       「글자 키 하나가 필요해요」라고 했다 — 사람이 고칠 수 없는 것을 고치라고 시키는 자리다. */
+    btn.disabled=SYS.shortcutAvailability==="qaDisabled"||!bridged();
+    btn.setAttribute?.("aria-label","창 보이기·숨기기 단축키 변경, "+slotLabel(SYS.keys[slot]));
+    if(SYS.shortcutAvailability==="qaDisabled")msg.textContent="QA 앱에서는 전역 단축키를 사용하지 않습니다.";
+    else if(rec)msg.textContent="⌘, ⌥ 또는 ⌃와 영문·숫자 키를 함께 누르세요. Esc로 취소합니다.";
+    else if(RECCLASH===slot)msg.textContent="이미 사용 중인 조합입니다. 다른 단축키를 지정하세요.";
+    else if(SYS.failed===slot)msg.textContent="단축키를 등록하지 못했습니다. 다른 조합을 지정하세요.";
+    else if((SYS.keys[slot]||{}).on)msg.textContent="";
+    else if(!bridged())msg.textContent="단축키는 Clonie 앱에서 설정할 수 있습니다.";
+    else if(!SYS.ready)msg.textContent="단축키 확인 중…";
     else msg.textContent=((SYS.keys[slot]||{}).k||{}).key
-      ?"안 걸렸어요 — 다른 앱이 쓰고 있을 수 있어요"
-      :"안 걸렸어요 — 글자 키 하나가 필요해요";
+      ?"단축키가 비활성 상태입니다. 버튼을 눌러 다시 지정하세요."
+      :"버튼을 눌러 단축키를 지정하세요.";
   }
-  const P={on:["on","켜짐"],ask:["mid","아직 안 물었어요"],off:["","꺼짐"]};
+  const P={on:["on","허용됨"],ask:["mid","요청 전"],unconfirmed:["mid","시작할 때 확인"],off:["","권한 없음"]};
   for(const [id,val] of [["mic",SYS.mic],["screen",SYS.screen]]){
     const dot=document.getElementById("pdot-"+id),txt=document.getElementById("ptxt-"+id);
     const p=P[val]||P.off;
@@ -6309,6 +7906,7 @@ function paintSys(){
      녹화 칸 밑에 그 목록을 적어 둔다. */
 function recKey(e){
   if(!RECSLOT)return;
+  if(e.key==="Tab"){RECSLOT=null;RECMOD=null;RECCLASH=null;paintSys();return}
   e.preventDefault();e.stopPropagation();
   if(e.key==="Escape"){RECSLOT=null;RECMOD=null;RECCLASH=null;paintSys();return}
   const m={cmd:!!e.metaKey,opt:!!e.altKey,ctrl:!!e.ctrlKey,shift:!!e.shiftKey,key:""};
@@ -6349,21 +7947,12 @@ function openSettingsScreen(){
      회색이라 설정 화면에서도 눌리는데, 다시 지으면 사람이 치고 있던 주소·키·모델 칸이
      통째로 날아간다 — 「보던 것을 뺏는 것」이 기능 하나보다 비싸다. */
   if(stackView==="settings")return;
-  /* ★ **받기 화면에서 부르면 치던 글을 들고 간다** (#65 P3-4). 받기도 쌓기 모드라 위 가드를
-     그냥 지나가는데, `ingestRender` 는 머리에서 화면을 새로 지어 **붙여넣던 자소서 전문이
-     통째로 날아갔다.** 나가는 문은 언제나 홈이라 돌아갈 길도 없었다.
-     ⚠ **조용한 `return` 으로 안 막는다** — 위 머리글의 #61 리뷰 발견 ⑧ 이 거절한 길이다
-       (「눌리는데 아무 일도 안 나는 칸」). 막는 대신 자리표를 들고 간다.
-     ⚠ 이 레포는 같은 사고를 이미 세 번 막았다(#65 ⑨ · #66-9 · `drop.test.mjs`) —
-       **이 문만 안 막혀 있었다.** */
-  SETBACK=null;
-  if(stackView==="ingest"){const d=document.getElementById("doc");
-    SETBACK={view:"ingest",doc:d?d.value:""}}
+  // 설정의 돌아가기는 진입 화면을 보존한다. 가져오기/수집 상태는 각 화면의 기존 상태를 사용한다.
+
   /* ⚠ **창 크기를 안 건드린다** (#67 재편). 전엔 뜻 지도가 자기 창 크기를 가져서 나올 때
      되돌려야 했는데, 지도가 홈의 한 칸이 되면서 그 크기가 하나로 합쳐졌다 — 같은 값을
      다시 보내면 사람이 손으로 키워 둔 창이 원래 크기로 되돌아간다. */
-  stackView="settings";
-  stackRender();
+  enterFlow("settings");
 }
 /* ★ 「지금 주소가 표의 어느 줄인가」 — **순수 함수라 `node --test` 가 잠근다** (#65 P3-3).
    돌려주는 것은 줄 번호, 못 가르면 **-1(모르겠다)** 이다. 부르는 쪽이 그때 「직접 입력」을 세운다.
@@ -6386,260 +7975,116 @@ function presetPick(list,url,type){
 }
 /* 주소의 **자리**만 — 뒷길(`/v1`)이 있고 없고는 같은 서버다. 못 읽는 글자는 빈 자리다. */
 function urlOrigin(u){try{return new URL(u).origin}catch(e){return ""}}
+let MCP_COPY_KIND="setup",MCP_CLIENT="";
+function onMCPAction(ok){const e=document.getElementById("mcpstatus");if(e)e.textContent=ok?(MCP_COPY_KIND==="record"?"기록 요청을 복사했습니다. 연결한 AI 대화에 붙여넣으세요.":(MCP_CLIENT==="codex"||MCP_CLIENT==="claude"?"연결 명령을 복사했습니다. 터미널에서 실행한 뒤 AI 대화에서 자료를 찾아보세요.":"설정을 복사했습니다. 사용할 AI 앱에 추가하세요.")):"복사하지 못했습니다. 저장소 연결을 확인하고 다시 시도해 주세요."}
+function openAIConnectionScreen(){
+  if(mode!=="stack"||!leaveEditorAllowed(openAIConnectionScreen))return;
+  enterFlow("connection");post("probeSystem");
+}
+function aiConnectionRender(){
+  releaseMarkdownEditors();app.innerHTML=`${flowHeader("외부 AI에서 사용")}<main id="flowbody" class="flowbody"><section class="flowsection">
+    <h2>쓰던 AI와 내 저장소 연결하기</h2>
+    <p class="flowhint">Codex·Claude Code와 쓰던 IDE의 AI가 내 Markdown 자료를 참고하고, 요청에 따라 문서를 추가하거나 고치도록 연결합니다.</p>
+    <div class="flowrow"><span>연결할 저장소</span><span id="setvault">${esc(SYS.vault||"현재 저장소")}</span></div>
+    <label for="mcpclient">사용할 도구</label><select id="mcpclient"><option value="">선택하세요</option><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="json">다른 IDE·CLI (JSON 설정)</option></select>
+    <p id="mcp-instructions" class="flowhint"></p><div class="flowactions"><button class="gbtn p" id="mcpsetup" disabled>연결 설정 복사</button></div><p id="mcpstatus" class="flowhint" role="status"></p>
+    <section class="connectionrecord"><h3>AI로 저장소 가꾸기</h3><p class="flowhint">연결한 AI 대화에 붙여넣어 필요한 내용을 문서로 남깁니다.</p><button class="gbtn" id="mcprecord">기록 요청 복사</button></section>
+  </section></main>`;
+  bindFlowHeader();
+  document.getElementById("mcpsetup").onclick=()=>{if(!MCP_CLIENT)return;MCP_COPY_KIND="setup";post("openSystem",{what:"mcpSetup",client:MCP_CLIENT})};
+  const client=document.getElementById("mcpclient");client.value=MCP_CLIENT;client.onchange=()=>{MCP_CLIENT=client.value;document.getElementById("mcpstatus").textContent="";paintMCPInstructions()};paintMCPInstructions();
+  document.getElementById("mcprecord").onclick=()=>{MCP_COPY_KIND="record";post("openSystem",{what:"mcpRecord"})};
+}
+function paintMCPInstructions(){
+  const info=document.getElementById("mcp-instructions"),button=document.getElementById("mcpsetup");
+  if(!info||!button)return;
+  button.disabled=!MCP_CLIENT;
+  button.textContent=MCP_CLIENT==="json"?"연결 설정 복사":MCP_CLIENT?"연결 명령 복사":"연결 설정 복사";
+  info.textContent=MCP_CLIENT==="codex"?"Codex CLI가 설치된 터미널에서 복사한 명령을 실행하세요.":MCP_CLIENT==="claude"?"Claude Code가 설치된 터미널에서 실행하세요. 이 사용자 계정의 모든 프로젝트에 연결합니다.":MCP_CLIENT==="json"?"로컬 MCP 서버를 지원하는 도구의 연결 설정에 추가하세요.":"사용할 IDE·CLI를 선택하면 연결 방법을 안내합니다.";
+}
+
 function settingsRender(){
-  /* ★ **지난 방문의 한 줄을 안 들고 들어온다** (#65 ⑦). `setMsg` 는 세션에 사는데 화면을
-     열 때 안 비워서, 어제 저장하고 닫은 사람이 오늘 열자마자 「저장했어요」를 봤다 —
-     방금 아무것도 안 했는데 뭔가 한 것처럼 읽힌다.
-     ⚠ **`setPend` 도 같이 비운다** (#66 리뷰 발견 ④). 그건 「방금 무엇을 시켰나」인데,
-       회신이 오기 전에 나갔다 들어오면 **옛 뜻이 그대로 남아** 다음 회신을 잘못 번역한다 —
-       키를 지우다 나갔다 들어와 저장하면 「키를 지웠어요」가 뜬다. 짝은 언제나 같이 비운다. */
-  setMsg="";setPend=null;
-  /* ⚠ **프리셋 표가 이 함수 안에 산다.** 최상위에 두면 그 안의 주소 리터럴이
-     `tests/check_interview_offline.py` 의 「최상위 코드」 검사에 걸린다 — 이 화면은
-     판정선 경계(`stackRender`) 아래라 안 세어지는데, 최상위는 언제나 세어진다.
-     ★ **이 여덟이 프리셋의 정본이다** (#61 D 이후). 네이티브 패널이 들고 있던 짝은
-       **죽었다** — 백엔드 칸이 통째로 걷히면서 그 표도 같이 지워졌고(`showShortcutPanel` 머리글의
-       「무엇이 나갔나」), 이제 같은 표를 드는 곳이 여기 하나뿐이다. */
-  const PRESETS=[
-    {label:"Ollama",     type:"ollama",     url:"http://localhost:11434"},
-    {label:"OpenAI",     type:"openai",     url:"https://api.openai.com/v1"},
-    {label:"Anthropic",  type:"anthropic",  url:"https://api.anthropic.com/v1"},
-    {label:"OpenRouter", type:"openrouter", url:"https://openrouter.ai/api/v1"},
-    {label:"NVIDIA NIM", type:"openai",     url:"https://integrate.api.nvidia.com/v1"},
-    {label:"llama.cpp",  type:"openai",     url:"http://localhost:8080/v1"},
-    {label:"LM Studio",  type:"openai",     url:"http://localhost:1234/v1"},
-    {label:"vLLM",       type:"openai",     url:"http://localhost:8000/v1"}];
-  /* 지금 고른 것 — 판정은 `presetPick` 이 든다(위 머리글). 못 가르면 **「직접 입력」 한 줄**을
-     표 끝에 세우고 그것을 고른다. ⚠ 그 줄은 **표에 없는 주소일 때만** 선다 — 늘 붙어 있으면
-     고를 수 있는 줄이 되고, 그러면 「무엇을 고른 건지」가 다시 흐려진다. */
-  const pk=presetPick(PRESETS,CLOUD.url,CLOUD.type);
-  const OPTS=pk>=0?PRESETS:PRESETS.concat([{label:"직접 입력",type:CLOUD.type,url:CLOUD.url}]);
-  const pi=pk>=0?pk:OPTS.length-1;
-  app.innerHTML=`<div id="top" class="drag">${explorerToggleButton()}<span id="brand"><img class="brand-mark" src="${BRAND_MARK_DATA_URI}" alt="Clonie"></span><span style="flex:1"></span>
-      <button class="ibtn nodrag" id="x" aria-label="앱 닫기">✕</button></div>
-    <div id="cols" class="settings-open">${explorerPane()}<div id="settingspane">
-    <div class="settingsbar"><span>설정</span><button class="ibtn" id="setback" title="설정 닫기" aria-label="설정 닫기">×</button></div>
-    <div id="setbody"><nav id="setnav" aria-label="설정 항목"><button class="gbtn" data-page="1">음성·권한</button><button class="gbtn" data-page="2">화면·조작</button><button class="gbtn" data-page="3">외부 AI</button></nav>
-<section class="setpage" data-page="1">        <div class="mkcard">
-          <div class="mkrow"><span class="setlbl">마이크</span>
-            <span class="mkstat"><span class="mkdot" id="pdot-mic"></span><span id="ptxt-mic"></span></span>
-            <span class="mkfine">내 목소리</span><span style="flex:1"></span>
-            <button class="gbtn setperm" data-what="mic">시스템 설정 열기</button></div>
-          <div class="mkrow"><span class="setlbl">화면 기록</span>
-            <span class="mkstat"><span class="mkdot" id="pdot-screen"></span><span id="ptxt-screen"></span></span>
-            <span class="mkfine">상대 목소리</span><span style="flex:1"></span>
-            <button class="gbtn setperm" data-what="screen">시스템 설정 열기</button></div>
-        </div>
-        <div class="mkcard">
-          <div class="mkrow"><span class="setlbl">한국어 받아쓰기</span><span class="mkfine" id="speechstate"></span><span style="flex:1"></span><button class="gbtn" id="speechprepare">모델 준비</button></div>
-          <div class="mkfine">처음에는 모델 다운로드가 필요할 수 있어요. 음성은 이 Mac에서 처리해요.</div>
-        </div>
-        <p class="mkfine">외부 자료나 AI 사용이 금지된 시험·평가에서는 사용하지 마세요.</p>
-</section>
-<section class="setpage" data-page="2" hidden>        <div class="mkcard">
-          <div class="mkrow"><span class="setlbl">블러</span>
-            <input type="range" id="setblur" min="0" max="1" step="0.05" value="${WSTYLE.blur}"></div>
-          <div class="mkrow"><span class="setlbl">불투명</span>
-            <input type="range" id="setopa" min="0.35" max="1" step="0.05" value="${WSTYLE.opacity}"></div>
-        </div>
-        <div class="mkcard">
-          <div class="mkrow"><span class="setlbl">창 토글</span>
-            <button class="gbtn setkey" id="key-toggle">—</button>
-            <span class="mkfine" id="keymsg-toggle"></span></div>
-        </div>
-</section>
-<section class="setpage" data-page="3" hidden>
-        <div class="mkcard"><div class="setlbl">Clonie 안에서 자료 정리</div>
-          <div class="mkfine">API와 CLI로 가져온 자료의 초안을 만들어요.</div></div>
-        <div id="setbrain"></div>
-        <div id="setcli"></div>
-        <div class="mkcard">
-          <div class="mkrow"><span class="setlbl">제공자</span>
-            <span class="setsel"><select class="setfld" id="setpreset">${OPTS.map((p,i)=>
-              `<option value="${i}"${i===pi?" selected":""}>${esc(p.label)}</option>`).join("")}</select></span></div>
-          <div class="mkrow"><span class="setlbl">주소</span>
-            <input class="setfld" id="seturl" spellcheck="false" value="${esc(CLOUD.url||OPTS[pi].url)}"></div>
-          <div class="mkrow"><span class="setlbl">API 키</span>
-            <input class="setfld" id="setkey" type="password" spellcheck="false" placeholder="">
-            <button class="mklink" id="setclr">키 지우기</button></div>
-          <div class="mkrow"><span class="setlbl">모델</span>
-            <input class="setfld" id="setmodel" spellcheck="false" list="setmodels"
-              value="${esc(CLOUD.model)}"><datalist id="setmodels"></datalist></div>
-          <div class="mkfine" id="setmodelstatus"></div>
-          <div class="mkrow" id="setprovideraction" style="display:none">
-            <span class="setlbl">제공자 변경</span><span class="mkfine">키를 바꾸기 전에 저장을 눌러 주세요.</span>
-            <span style="flex:1"></span><button class="gbtn p" id="setprovidersave">변경 저장</button></div>
-          <div class="mkfine" id="setmsg">${esc(setMsg)}</div>
-        </div>
-        <div class="mkcard"><div class="mkrow"><span class="setlbl">외부 앱에서 저장소 사용</span>
-          <span class="mkfine">MCP</span></div>
-          <div class="mkfine">Claude 같은 외부 앱이 같은 저장소를 읽고 쓸 때 사용하는 별도 경로예요.</div></div>
-<button class="gbtn" id="organizefiles">자료 정리</button></section>
-    </div>
-    </div></div>
-    ${confirmBox("저장된 키를 지울까","지운다","둔다")}`;
-  bindExplorerPane();
-  app.querySelectorAll("#setnav button").forEach(button=>{
-    button.classList.toggle("active",button.dataset.page==="1");
-    button.onclick=()=>{
-      app.querySelectorAll(".setpage").forEach(page=>{page.hidden=page.dataset.page!==button.dataset.page});
-      app.querySelectorAll("#setnav button").forEach(b=>b.classList.toggle("active",b===button));
-    };
-  });
-  document.getElementById("organizefiles").onclick=()=>{stackView="ingest";stackRender()};
-  /* ★ **들어온 자리로 돌아간다** (#65 P3-4). 전엔 언제나 홈이라, 받기 화면에서
-     메뉴바 「Settings…」로 들어온 사람은 치던 글도 잃고 돌아갈 길도 없었다.
-     자리표를 비우는 자는 `ingestRender` 하나다(그 머리글) — 여기서 비우면 글이 안 돌아온다. */
-  document.getElementById("setback").onclick=()=>{
-    stackView=(SETBACK&&SETBACK.view)||"edit";stackRender()};
-  document.getElementById("x").onclick=()=>post("closeWindow");
-  /* ★ **열 때마다 다시 잰다.** 사람이 터미널에서 로그인하고 돌아오는 것이 이 화면의 동선이다.
-     ⚠ 두뇌 선택도 **같은 답**으로 온다 — 통로를 안 늘렸다(`detectCli` 의 회신 칸이 늘었다). */
-  paintBrain();
-  paintCliCards();
-  post("detectCli");
-  /* ★ 모델 목록도 열 때마다 다시 묻는다 (#61 리뷰 발견 ②) — **이미 있는 통로**다.
-     ⚠ **판정선 밖이다.** `loadModels` 는 네트워크에 닿고(`fetchModels`), 그래서 이 자리는
-       `stackRender` 아래(= 검사가 안 세는 경계 밖)여야 한다. 면접 화면에서는 안 열린다.
-     ⚠ 답이 안 와도 화면은 그대로다 — 자유 입력 칸이고 목록은 거들 뿐이다(`MODELS` 머리글). */
-  requestModelList();
-  const pre=document.getElementById("setpreset"),url=document.getElementById("seturl"),
-        key=document.getElementById("setkey"),mdl=document.getElementById("setmodel"),
-        providerAction=document.getElementById("setprovideraction"),providerSave=document.getElementById("setprovidersave");
-  let providerPending=false;
-  let providerBefore={value:pre.value,url:url.value,model:mdl.value};
-  const setProviderPending=v=>{
-    providerPending=!!v;
-    key.disabled=providerPending;
-    document.getElementById("setclr").disabled=providerPending;
-    if(providerAction)providerAction.style.display=providerPending?"":"none";
-    if(providerSave)providerSave.style.display=providerPending?"":"none";
-  };
-  const askConfirm=(q,yes,no,onYes,onNo)=>{
-    const cf=document.getElementById("confirm"),y=document.getElementById("cyes"),n=document.getElementById("cno");
-    setConfirmCopy(q,yes,no);
-    if(n)n.onclick=()=>{if(cf)cf.classList.remove("on");if(onNo)onNo()};
-    if(y)y.onclick=()=>{if(cf)cf.classList.remove("on");onYes()};
-    openConfirm();
-  };
-  /* 키 칸이 비면 안 싣는다. 제공자·서버 변경은 확인을 거친 뒤 이 함수로 온다. */
-  const push=extra=>{
-    const b={type:OPTS[+pre.value].type,url:url.value.trim(),model:mdl.value.trim()};
-    if(key.value)b.key=key.value;
-    for(const k in (extra||{}))b[k]=extra[k];
-    setPend=(extra&&extra.clearKey)?"clear":"save";
-    post("saveBackend",b);
-    providerBefore={value:pre.value,url:b.url,model:b.model};
-    /* ⚠ 지우기와 저장이 **같은 통로**라 말도 여기서 갈린다 — 「저장했어요」 하나로 두면
-       키를 지운 사람이 「방금 뭘 저장한 거지」를 묻는다 (#65 ②). 글자는 `pendMsg` 한 집이다. */
-    setMsg=pendMsg();paintSetMsg();
-  };
-  /* ★ **제공자 선택은 저장이 아니다** (#65 ③). 앞 제공자의 키를 화면에서 몰래 지우거나
-     새 주소로 보내지 않도록, 선택은 보류하고 사람이 「변경 저장」을 눌렀을 때만 확정한다.
-     키 칸의 미저장 입력도 확인 전에는 그대로 둔다. */
-  pre.onchange=()=>{
-    url.value=OPTS[+pre.value].url;
-    mdl.value="";MODEL_REQUEST++;MODELS=[];MODEL_STATUS="idle";MODEL_MESSAGE="";paintModelList();setProviderPending(true);
-  };
-  url.onchange=()=>{
-    if(urlOrigin(url.value.trim())!==urlOrigin(providerBefore.url)){
-      MODEL_REQUEST++;MODELS=[];MODEL_STATUS="idle";MODEL_MESSAGE="";paintModelList();setProviderPending(true);
-    }
-    if(providerPending){setMsg="제공자 변경을 저장해 주세요";paintSetMsg()}else push();
-  };
-  mdl.onchange=()=>{if(providerPending){setMsg="제공자 변경을 저장해 주세요";paintSetMsg()}else push()};
-  key.onchange=()=>{
-    if(providerPending||!key.value)return;
-    push();key.value="";
-  };
-  /* ★ **되돌릴 수 없는 것 앞에 한 번 더 묻는다** (#65 ②). 화면은 저장된 키를 되읽지 못하므로
-     (`saveBackend` 머리글) 잘못 지운 키의 복구는 「사람이 어디선가 다시 찾아와 친다」뿐이다 —
-     그 값이 확인 한 번보다 비싸다. 상자는 면접 「끝내기」와 **같은 한 벌**이다(`confirmBox`). */
-  const clr=document.getElementById("setclr");
-  clr.onclick=()=>askConfirm("저장된 키를 지울까","지운다","둔다",()=>{key.value="";push({clearKey:true})});
-  providerSave.onclick=()=>{
-    if(!providerPending)return;
-    const needsConfirm=!!CLOUD.hasKey||!!key.value;
-    const finish=()=>{
-      if(needsConfirm)key.value="";
-      setProviderPending(false);push(needsConfirm?{clearKey:true}:{});requestModelList();
-    };
-    if(needsConfirm){
-      askConfirm("이전 제공자의 저장된 키를 지울까","변경 저장","돌아가기",finish,()=>{
-        pre.value=providerBefore.value;url.value=providerBefore.url;mdl.value=providerBefore.model;
-        MODELS=[];setProviderPending(false);requestModelList();
-      });
-    }else finish();
-  };
-  /* 키 줄의 지금 모습 — placeholder 와 「키 지우기」가 `CLOUD.hasKey` 를 따른다 (#65 ①②) */
-  paintBackendKey();
-  /* ★ 창 손잡이 — **불투명도는 이 자리에서 즉시 CSS 로**, 블러는 Swift 가 창 뒤에 건다.
-     ⚠ 둘 다 `oninput` 이다: 슬라이더를 놓을 때만 반영하면 「얼마나 흐린가」를 눈으로 못 고른다. */
-  const blur=document.getElementById("setblur"),opa=document.getElementById("setopa");
-  const style=()=>{WSTYLE.blur=+blur.value;WSTYLE.opacity=+opa.value;
-    applyPanelOpacity();post("setWindowStyle",{blur:WSTYLE.blur,opacity:WSTYLE.opacity})};
-  blur.oninput=style;opa.oninput=style;
-  /* ★ 단축키 · 권한 · 볼트 (2026-08-31 설정 통합) — **여기가 그 셋의 마지막 집이다.**
-     네이티브 미니 패널로 보내던 한 줄(`openSettings`)은 죽었다.
-     ⚠ **열 때마다 다시 잰다** — 사람이 시스템 설정에서 권한을 켜고 돌아오는 것이 동선이다
-       (연결 카드가 `detectCli` 를 다시 부르는 것과 같은 규율). */
+  releaseMarkdownEditors();app.innerHTML=`${flowHeader("설정").replace('id="flowback"','id="setback"')}<main id="settingspane" aria-label="설정"><div id="setbody" class="preferences">
+    <section class="preferencegroup" aria-labelledby="appearance-title"><h2 id="appearance-title">화면</h2>
+      <div class="preferencerow"><label for="setuniverse">우주 표현</label><select id="setuniverse"><option value="current">기본</option><option value="depth">부드러운 입체</option><option value="pixel">픽셀</option></select></div>
+      <div class="preferencerow"><label for="settextscale">글자 크기</label><select id="settextscale"><option value="1">기본</option><option value="1.15">크게</option><option value="1.3">더 크게</option><option value="1.5">가장 크게</option></select></div>
+    </section>
+    <section class="preferencegroup" aria-labelledby="shortcut-title"><h2 id="shortcut-title">단축키</h2>
+      <div class="preferencerow"><label id="key-label" for="key-toggle">창 보이기·숨기기</label><button class="gbtn setkey" id="key-toggle" aria-describedby="keymsg-toggle">—</button></div>
+      <p class="preferencehint" id="keymsg-toggle" role="status"></p>
+    </section>
+  </div></main>`;
+  const back=document.getElementById("setback");
+  back.onclick=returnFromFlow;
+  document.getElementById("flowhide").onclick=()=>post("closeWindow");
+  const universe=document.getElementById("setuniverse"),scale=document.getElementById("settextscale");
+  universe.value=WSTYLE.universeStyle;universe.onchange=()=>setUniverseStyle(universe.value);
+  scale.value=String(WSTYLE.textScale||1);scale.onchange=()=>{WSTYLE.textScale=clampTextScale(scale.value);applyTextScale();post("setWindowStyle",{...WSTYLE})};
   RECSLOT=null;RECMOD=null;RECCLASH=null;SYS.failed=null;
   document.onkeydown=recKey;
-  for(const slot of KEYSLOTS){
-    const b=document.getElementById("key-"+slot);
-    b.onclick=()=>{RECSLOT=RECSLOT===slot?null:slot;RECMOD=null;RECCLASH=null;SYS.failed=null;paintSys()};
-  }
-  /* ★ **다른 칸에 손이 가면 녹화가 풀린다** (#65 ④). 녹화 중 `document.onkeydown` 은 키를
-     전부 `preventDefault` 로 삼킨다 — 그 상태로 주소·모델 칸을 누르면 **글자가 한 자도 안
-     들어가고**, 사람은 칸이 죽은 줄 안다. 전엔 나가는 문이 Esc 와 그 버튼 재클릭 둘뿐이었다.
-     ⚠ 자리는 **칸 쪽**이다. 문서에 한 벌 걸면 녹화 버튼 자신의 포커스까지 같이 먹는다.
-     ⚠ **사유 한 줄도 같이 걷는다** (#66 리뷰 발견 ⑤). 겹침 거절(`RECCLASH`)은 녹화를 **접으면서**
-       세우는 값이라 `RECSLOT` 이 이미 null 이다 — 「녹화 중일 때만」으로 걸러 두면 이 줄이
-       영영 안 걷혀 다른 칸으로 옮겨가도 「같은 조합이 다른 자리에 있어요」가 붙어 있었다. */
-  const dropRec=()=>{if(!RECSLOT&&!RECCLASH)return;RECSLOT=null;RECMOD=null;RECCLASH=null;paintSys()};
-  [pre,url,key,mdl,blur,opa].forEach(el=>{if(el)el.onfocus=dropRec});
-  app.querySelectorAll(".setperm").forEach(el=>
-    el.onclick=()=>post("openSystem",{what:el.dataset.what}));
-  /* ★ 볼트 줄도 같은 잠금이다 (#80 1). ⚠ **취소가 안 오는 줄**이라 스스로 푸는 시계를
-     같이 건다 — 위 `PICKING` 머리글의 그 갈림이다. 답(`setSystemState`)이 먼저 오면 그쪽이 푼다. */
-
-  paintSpeechModel();
-  document.getElementById("speechprepare").onclick=()=>{
-    if(["unknown","loading","ready","unsupported"].includes(SPEECH_STATE))return;
-    onSpeechModelState("loading","");post("prepareSpeechModel");
-  };
-  paintSys();
-  post("probeSystem");
+  const key=document.getElementById("key-toggle");
+  key.onclick=()=>{if(SYS.shortcutAvailability==="qaDisabled")return;RECSLOT=RECSLOT?null:"toggle";RECMOD=null;RECCLASH=null;SYS.failed=null;paintSys()};
+  key.onblur=()=>{RECSLOT=null;RECMOD=null;RECCLASH=null;paintSys()};
+  for(const e of [universe,scale])e.onfocus=()=>{RECSLOT=null;RECMOD=null;RECCLASH=null;paintSys()};
+  paintSys();paintAppearanceSettings();post("probeSystem");
 }
 
 /* ★ 창 손잡이 둘이 되돌아온다 (#61 B). Swift 가 창이 뜰 때 한 번, 그리고 설정에서 바뀔 때마다.
    ⚠ **블러는 여기서 안 만진다** — 그건 창 뒤의 AppKit 층이고 Swift 가 이미 걸었다.
      화면이 드는 것은 판의 불투명도 하나(`--opa`)다(`WindowStyle` 머리글의 갈림).
    ⚠ 값이 없거나 이상하면 **1**(지금까지의 그 화면)로 물러선다. */
-let WSTYLE={blur:0,opacity:1};
+const UNIVERSE_STYLE_KEY="clonie.universe-style.v1";
+function readUniverseStyle(){
+  if(!bridged()){try{return universeStyleName(localStorage.getItem(UNIVERSE_STYLE_KEY))}catch(e){}}
+  return "current";
+}
+let WSTYLE={blur:0,opacity:1,textScale:1,universeStyle:readUniverseStyle()};
+let ACCESSIBILITY={reduceTransparency:false,increaseContrast:false,reduceMotion:false};
+function setUniverseStyle(value){
+  WSTYLE.universeStyle=universeStyleName(value);
+  if(!bridged()){try{localStorage.setItem(UNIVERSE_STYLE_KEY,WSTYLE.universeStyle)}catch(e){}}
+  applyUniverseStyle();
+  post("setWindowStyle",{...WSTYLE});
+}
 function setWindowStyleValues(json){
   let d;try{d=typeof json==="string"?JSON.parse(json):json}catch(e){return}
   if(!d)return;
   WSTYLE.blur=clamp01(d.blur,0);
   WSTYLE.opacity=clamp01(d.opacity,1);
+  WSTYLE.textScale=clampTextScale(d.textScale);
+  applyTextScale();
+  WSTYLE.universeStyle=universeStyleName(d.universeStyle);
   applyPanelOpacity();
+  applyUniverseStyle();
 }
 const clamp01=(v,dflt)=>{const n=Number(v);return (isFinite(n)&&n>=0&&n<=1)?n:dflt};
 function applyPanelOpacity(){
-  try{document.documentElement.style.setProperty("--opa",String(WSTYLE.opacity))}catch(e){}
+  try{document.documentElement.style.setProperty("--opa",String(ACCESSIBILITY.reduceTransparency||!(mode==="live"||mode==="practice")?1:WSTYLE.opacity))}catch(e){}
 }
 
-/* ★ QA 노출 게이트가 켜졌나 (#24 C 층 → #61 E). Swift 가 창이 뜰 때 한 번 알려 준다.
-   ⚠ **통로를 안 늘렸다** — Swift→JS 다(`setCloudDrafter` 와 같은 길).
-   ⚠ **이 값으로 은신을 정하지 않는다.** 창이 잡히나 마나는 `WindowPrivacy` 하나가 정하고
-     (`tests/check_qa_visible_gate.py` 가 그것을 잰다), 여기 값은 **화면이 검증용 숫자를
-     보여도 되나**의 판정일 뿐이다. 안 오면 `false` — 기본이 「안 보인다」다. */
-let QAVIS=false;
-function setQAVisible(on){QAVIS=!!on}
+const clampTextScale=value=>{const n=Number(value);return Number.isFinite(n)?Math.min(1.5,Math.max(1,n)):1};
+function applyTextScale(){
+  try{document.documentElement.style.setProperty("--text-scale",String(WSTYLE.textScale||1));document.documentElement.classList.toggle("large-text",(WSTYLE.textScale||1)>1)}catch(e){}
+}
+function paintAppearanceSettings(){
+  const reduce=ACCESSIBILITY.reduceTransparency;
+  const control=document.getElementById("overlay-opacity");if(control){control.disabled=reduce;control.value=String(reduce?1:WSTYLE.opacity)}
+  const note=document.getElementById("overlay-appearance-note");if(note)note.hidden=!reduce;
+  const output=document.getElementById("overlay-opacity-value");if(output)output.textContent=Math.round((reduce?1:WSTYLE.opacity)*100)+"%";
+}
+
+function setAccessibilityPreferences(json){
+  let value;try{value=typeof json==="string"?JSON.parse(json):json}catch(e){return}
+  if(!value)return;
+  ACCESSIBILITY={reduceTransparency:!!value.reduceTransparency,increaseContrast:!!value.increaseContrast,reduceMotion:!!value.reduceMotion};
+  try{for(const key of ["reduceTransparency","increaseContrast","reduceMotion"])document.documentElement.classList.toggle(key,ACCESSIBILITY[key])}catch(e){}
+  applyPanelOpacity();paintAppearanceSettings();
+  if(typeof CANV!=="undefined"&&CANV)canvasMotionChanged();
+}
 
 /* ★ **재조준할 값이 있는 질문인가.** `실측 2026-08-30`(E2E 실기 블로커): 면접관의 추임새
    ("네", "음", "아 알겠습니다")도 `them` 발화라 `onEar` 가 그때마다 검색어를 갈아끼웠고,
-   **답변을 읽는 중에 카드가 사라졌다**(`opened`·`manual` 이 같이 초기화된다).
+   **답변을 읽는 중에 카드가 사라졌다**(`openedID`·`manual` 이 같이 초기화된다).
    그래서 재조준을 이 자 뒤로 보냈다 — 맞장구를 걷어낸 뒤 남는 글자로 잰다.
 
    ⚠ 들어오는 것은 이미 부호가 걷힌 글자(`TranscriptText.forSearch`)다. 여기서 부호를 다시 안 판다.
@@ -6666,30 +8111,26 @@ function onEar(json){
      ⚠ 연습에서는 `them` 관이 아예 안 열린다(`render` 가 마이크만 연다). 그래도 여기서
        한 번 더 거른다 — 관이 살아 있는 채로 모드가 바뀌는 찰나가 있다. */
   if(mode==="practice"){
-    if(!prac||prac.done||e.who!=="me")return;
-    prac.cur=e.confirmed||"";prac.vol=e.volatile||"";prac.curq=e.query||"";
-    if(e.ended){
-      /* ⚠ **한 답이 여러 발화로 갈린다.** 귀는 4초 침묵을 발화 끝으로 보는데(`InterviewEars`
-         의 `silenceGap`), 면접 답변은 그보다 긴 뜸을 문다. 그래서 끝난 발화를 **쌓아**
-         하나의 답으로 본다 — 면접 모드가 발화마다 검색어를 갈아끼우는 것과 **반대**다.
-         저기선 발화 하나가 질문 하나지만, 여기선 질문이 앱에서 오고 답이 길다. */
-      prac.head=(prac.head+" "+prac.cur).trim();
-      prac.headq=(prac.headq+" "+prac.curq).trim();
-      prac.cur="";prac.vol="";prac.curq="";
-      gradePractice();                 /* 말이 멎으면 자동 채점. 다음으로 넘기는 것은 사람이 한다 */
-    }
-    paintPractice();
-    return;
+    if(!PREVIEW_MIC||e.who!=="me")return;
+    if(!SESSION_PREVIEW_CONTEXT?.query){e.who="them";mineV=e.query||"";}
   }
-  if(mode!=="live")return;
+  if(mode!=="live"&&mode!=="practice")return;
   const lane=CUR[e.who];if(!lane)return;
   lane.c=e.confirmed||"";lane.v=e.volatile||"";
   curWho=e.who;                      /* 큰 줄에는 **마지막으로 말한 쪽**이 뜬다 */
-  if(e.who==="them"){
+  const queryInput=(e.who==="them"&&(mode==="practice"||SESSION_SYSTEM))||(e.who==="me"&&mode==="live"&&!SESSION_SYSTEM);
+  if(queryInput){
     /* ⚠ 맞장구면 **검색어를 그대로 둔다** — 보던 카드가 접히지 않게(`askable` 주석).
        전사 표시(`paintCur`)는 그대로다: 들리는 것은 계속 보여야 한다. */
     if(askable(e.query)){
-      if(e.query!==heardV){heardV=e.query;opened=null;manual=false}   /* 새 질문 = 자동 펼침 초기화 */
+      if(e.query!==heardV||(e.questionID&&e.questionID!==SESSION_QUERY?.questionID)){
+        /* 새 질문에는 이전 답변을 자동 펼침의 근거로 다시 쓰지 않는다. */
+        mineV="";
+        heardV=e.query;QUERY_FAILURE=null;QUERY_VECTOR_WAITING=null;paintLiveQueryNotice();
+        SESSION_QUERY={id:cryptoID(),query:e.query,questionID:e.questionID||null,requestedAt:Date.now()/1000};
+        /* 수동으로 읽던 자료는 새 질문의 추천 갱신과 독립이다. 자동 상태만 펼침을 초기화한다. */
+        // Preserve the text being read until another confident choice is available.
+      }
       applyRank(!!e.ended);
     }
   }else{
@@ -6697,7 +8138,7 @@ function onEar(json){
   }
   paintCur();
   if(e.ended){
-    if(e.who==="them")harvestQuestion(e.query);   /* 확정된 질문만 본다 (#22) */
+    // Native SessionController retains the utterance; no automatic knowledge write. //   /* 확정된 질문만 본다 (#22) */
     flushCur(e.who);
     /* 저쪽이 아직 말하는 중이면 큰 줄을 그쪽에 넘긴다 — 안 그러면 내가 답하는 중에 줄이 빈다 */
     const other=e.who==="them"?"me":"them";
@@ -6709,17 +8150,37 @@ function onEar(json){
 
    ⚠ **벡터와 그 벡터가 나온 글자를 같이 든다.** `scorer()` 가 지금 들리는 말과 대조해서,
      한 발 늦게 도착한 벡터로는 절대 안 매긴다 — 대조 없이 쓰면 화면이 **조용히 틀린 답**을
-     가리킨다. 늦게 온 벡터는 그냥 앉아 있다가 그 글자가 다시 맞으면 산다.
+     가리킨다. 사용 중 이전 질문의 늦은 성공·실패는 현재 질의 상태를 바꾸지 않는다.
    ⚠ 다시 그리는 것은 `applyRank` 하나다. 여기서 `liveRender()` 를 부르면 안 된다 —
      `paintCur`·`onIndexNotice` 와 같은 이유로 사용자가 보던 것이 갈아끼워진다. */
 function onQueryVector(json){
-  if(!VEC)return;                       /* 문서 벡터가 없으면 질의 벡터만으로는 못 매긴다 */
-  let d;try{d=JSON.parse(json)}catch(e){return}
-  if(!d||typeof d.query!=="string")return;
+  let d;try{d=JSON.parse(json)}catch(e){return {accepted:false,reason:"invalid_payload",matching:false}}
+  if(!d||typeof d.query!=="string")return {accepted:false,reason:"invalid_payload",matching:false};
+  const matching=d.query===heardV;
+  if((mode==="live"||mode==="practice")&&!matching)return {accepted:false,reason:"stale_query",matching:false};
+  if(d.error){
+    QUERY_VECTOR_WAITING=null;QUERY_FAILURE={query:d.query};
+    if(QVEC?.q===d.query)QVEC=null;
+    if(mode==="live"||mode==="practice"){applyRank(true);paintLiveQueryNotice()}
+    return {accepted:false,reason:"query_embedding_failed",matching};
+  }
+  if(!VEC){QUERY_VECTOR_WAITING=d;return {accepted:true,reason:"awaiting_document_vectors",matching}}
   const v=unvec(d.v,VEC.dim);
-  if(!v)return;
+  if(!v){
+    QUERY_VECTOR_WAITING=null;QUERY_FAILURE={query:d.query};
+    if(QVEC?.q===d.query)QVEC=null;
+    if(mode==="live"||mode==="practice"){applyRank(true);paintLiveQueryNotice()}
+    return {accepted:false,reason:"invalid_vector",matching};
+  }
+  QUERY_FAILURE=null;QUERY_VECTOR_WAITING=null;
   QVEC={q:d.query,v:v};
-  if(mode==="live")applyRank(true);
+  if(mode==="live"||mode==="practice"){applyRank(true);paintLiveQueryNotice()}
+  return {accepted:true,reason:"applied",matching};
+}
+function paintLiveQueryNotice(){
+  const el=document.getElementById("livequerynotice");if(!el)return;
+  el.hidden=QUERY_FAILURE?.query!==heardV;
+  el.textContent=el.hidden?"":"의미 검색에 실패해 글자가 겹치는 자료를 표시합니다.";
 }
 /* 사람이 손을 써야 닫히는 것만 온다 (권한·장치). 화면 아래 한 줄. */
 function onEarTrouble(msg){
@@ -6779,4 +8240,4 @@ render();
 </script>
 </body>
 </html>
-"""# }
+"""#.replacingOccurrences(of: "/*CLONIE_MARKDOWN_EDITOR*/", with: markdownEditorJavaScript()) }

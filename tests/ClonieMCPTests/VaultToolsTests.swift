@@ -18,6 +18,31 @@ final class VaultToolsTests: XCTestCase {
         VaultTools(vaultURL: vault, environment: MCPTestSupport.noModelEnvironment)
     }
 
+    func testMCPWritesExposeDurableChangesAndIdenticalUpdateIsNotRecorded() async throws {
+        let t = tools()
+        let store = VaultStore(vaultURL: vault)
+        XCTAssertEqual(try store.documentChanges().count, 0)
+        let created = try await t.write(title: "요청한 메모", body: "첫 본문", force: true, path: "notes/requested.md")
+        XCTAssertTrue(created.written)
+        let creation = try XCTUnwrap(store.documentChanges().first)
+        XCTAssertEqual(creation.operation, .create)
+        XCTAssertEqual(creation.path, "notes/requested.md")
+        let read = try await t.read(id: created.id)
+        let unchanged = try await t.write(title: read.title, body: read.body, id: read.id, revision: read.revision)
+        XCTAssertEqual(unchanged.note, "unchanged")
+        XCTAssertEqual(try store.documentChanges().count, 1)
+        let reread = try await t.read(id: created.id)
+        let updated = try await t.write(title: reread.title, body: "사용자가 요청한 수정", id: reread.id, revision: reread.revision)
+        XCTAssertTrue(updated.written)
+        let change = try XCTUnwrap(store.documentChanges().first)
+        XCTAssertEqual(change.operation, .update)
+        XCTAssertEqual(change.before?.body, "첫 본문")
+        XCTAssertEqual(change.after.body, "사용자가 요청한 수정")
+        _ = try store.restoreDocumentChange(id: change.id)
+        let restored = try await t.read(id: created.id)
+        XCTAssertEqual(restored.body, "첫 본문")
+    }
+
     func testRevisionRejectsExternalOverwriteAndPreservesAttempt() async throws {
         let t = tools()
         let read = try await t.read(id: "f-fail")
@@ -33,6 +58,7 @@ final class VaultToolsTests: XCTestCase {
             XCTAssertNotNil(error.conflicts.first?.attemptedCopyURL)
         }
         XCTAssertEqual(try store.load().document.fragments.first { $0.id == read.id }?.body, "외부에서 확인한 사실")
+        XCTAssertEqual(try store.documentChanges().count, 0)
     }
 
     func testWriteKeepsNewerQuestionsAndAskedAfterAnInterveningRead() async throws {
@@ -199,6 +225,103 @@ final class VaultToolsTests: XCTestCase {
 
     // MARK: - write
 
+    func testSessionNoteUsesExistingTopicFolderAndReadRevisionForUpdates() async throws {
+        let topic = vault.appendingPathComponent("프로젝트/Clonie", isDirectory: true)
+        try FileManager.default.createDirectory(at: topic, withIntermediateDirectories: true)
+        let t = tools()
+        let path = "프로젝트/Clonie/세션에서 확인한 결정.md"
+        let created = try await t.write(title: "세션에서 확인한 결정", body: "확인한 새 사실과 그 근거.", path: path)
+        XCTAssertTrue(created.written)
+        XCTAssertEqual(created.path, path)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: vault.appendingPathComponent(path).path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: vault.appendingPathComponent("wiki").path))
+        do {
+            _ = try await t.write(title: "읽지 않고 수정", body: "옛 내용을 추정한 수정", id: created.id)
+            XCTFail("폴더가 달라졌다고 읽은 버전 확인을 건너뛰었다")
+        } catch let error as VaultToolError { XCTAssertEqual(error, .invalidRevision) }
+        let read = try await t.read(id: created.id)
+        let updated = try await t.write(title: "확인 뒤 제목 수정", body: "명시적으로 요청한 수정.",
+                                        id: read.id, revision: read.revision)
+        XCTAssertEqual(updated.path, path)
+        let back = try VaultStore(vaultURL: vault).load()
+        XCTAssertEqual(back.document.fragments.count, 4)
+        XCTAssertEqual(back.document.fragments.first { $0.id == created.id }?.body, "명시적으로 요청한 수정.")
+    }
+
+    func testSessionNoteCannotReplaceExistingPathOrWriteOriginalAndMetadataFolders() async throws {
+        let topic = vault.appendingPathComponent("프로젝트", isDirectory: true)
+        try FileManager.default.createDirectory(at: topic, withIntermediateDirectories: true)
+        let existing = topic.appendingPathComponent("기존 기록.md")
+        let original = Data("# 기존 기록\n\n사용자가 쓴 원문.\n".utf8)
+        try original.write(to: existing)
+        let t = tools()
+        do {
+            _ = try await t.write(title: "새 세션 기록", body: "덮어쓰면 안 되는 본문", force: true,
+                                  path: "프로젝트/기존 기록.md")
+            XCTFail("경로만 지정한 새 쓰기가 기존 파일을 덮었다")
+        } catch let error as VaultPathError { XCTAssertEqual(error, .occupied("프로젝트/기존 기록.md")) }
+        XCTAssertEqual(try Data(contentsOf: existing), original)
+        for path in ["raw/new.md", "RAW/new.md", ".clonie/new.md", "프로젝트/../new.md"] {
+            do {
+                _ = try await t.write(title: "잘못된 위치", body: "본문", force: true, path: path)
+                XCTFail("보호 대상이나 상위 경로에 썼다: \(path)")
+            } catch let error as VaultToolError { XCTAssertEqual(error, .invalidOutputPath) }
+        }
+        XCTAssertEqual(try Data(contentsOf: existing), original)
+    }
+
+    func testWriteRejectsLegacyAndImportedOriginalMarkdownWithoutChangingBytes() async throws {
+        let originals = [
+            "raw/source.md",
+            "자료/원본/source.md",
+            "자료/원본/보관/source.md",
+        ]
+        var expectedBytes: [String: Data] = [:]
+        for (index, path) in originals.enumerated() {
+            let url = vault.appendingPathComponent(path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+            let bytes = Data("# 원본 \(index)\n\n사용자가 가져온 내용 \(index).\n".utf8)
+            try bytes.write(to: url)
+            expectedBytes[path] = bytes
+        }
+
+        let t = tools()
+        let listed = try await t.list()
+        for path in originals {
+            guard let original = listed.fragments.first(where: { $0.path == path }) else {
+                return XCTFail("원본 Markdown을 목록에서 찾지 못했다: \(path)")
+            }
+            do {
+                _ = try await t.write(title: "원본 수정", body: "바뀌면 안 되는 내용", id: original.id)
+                XCTFail("원본 Markdown을 수정했다: \(path)")
+            } catch let error as VaultToolError {
+                XCTAssertEqual(error, .readOnlySource(path))
+            }
+            XCTAssertEqual(try Data(contentsOf: vault.appendingPathComponent(path)), expectedBytes[path])
+        }
+
+        for path in ["raw/new.md", "자료/원본/new.md", "자료/원본/보관/new.md"] {
+            do {
+                _ = try await t.write(title: "원본 위치의 새 문서", body: "생성되면 안 되는 내용",
+                                      force: true, path: path)
+                XCTFail("원본 경로에 새 Markdown을 만들었다: \(path)")
+            } catch let error as VaultToolError {
+                XCTAssertEqual(error, .invalidOutputPath)
+            }
+            XCTAssertFalse(FileManager.default.fileExists(atPath: vault.appendingPathComponent(path).path))
+        }
+
+        let allowedPath = "자료/지식/새 기록.md"
+        let allowed = try await t.write(title: "새 기록", body: "일반 지식 경로에는 기록할 수 있다.",
+                                        force: true, path: allowedPath)
+        XCTAssertEqual(allowed.path, allowedPath)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: vault.appendingPathComponent(allowedPath).path))
+        for path in originals {
+            XCTAssertEqual(try Data(contentsOf: vault.appendingPathComponent(path)), expectedBytes[path])
+        }
+    }
+
     func testWriteCreatesMarkdownWithMintedIdAndKeepsOthers() async throws {
         let r = try await tools().write(title: "MCP 가 쓴 조각", body: "Claude 가 대화에서 건진 한 문단.")
         XCTAssertTrue(r.written)
@@ -211,7 +334,10 @@ final class VaultToolsTests: XCTestCase {
     }
 
     func testWriteWithExistingIdUpdatesInPlace() async throws {
-        let r = try await tools().write(title: "장애를 놓친 날 (고침)", body: "새 본문", id: "f-fail")
+        let t = tools()
+        let read = try await t.read(id: "f-fail")
+        let r = try await t.write(title: "장애를 놓친 날 (고침)", body: "새 본문", id: read.id,
+                                  revision: read.revision)
         XCTAssertTrue(r.written)
         XCTAssertEqual(r.id, "f-fail")
         XCTAssertEqual(r.note, "updated")
@@ -232,8 +358,10 @@ final class VaultToolsTests: XCTestCase {
     /// 그 통로는 「지우기」가 아니라 「모르는 것은 버린다」다 — 모델이 다 걸러졌다고 기존 칩까지
     /// 비우면 아는 것을 지우는 셈이 된다.
     func testWriteUpdateWithOnlyUnknownQuestionIdsLeavesExistingChipsAlone() async throws {
-        let r = try await tools().write(title: "장애를 놓친 날 (고침)", body: "새 본문",
-                                        questionIds: ["q-없음"], id: "f-fail")
+        let t = tools()
+        let read = try await t.read(id: "f-fail")
+        let r = try await t.write(title: "장애를 놓친 날 (고침)", body: "새 본문",
+                                  questionIds: ["q-없음"], id: read.id, revision: read.revision)
         XCTAssertTrue(r.written)
         let back = try VaultStore(vaultURL: vault).load()
         XCTAssertEqual(back.document.fragments.first { $0.id == "f-fail" }?.questionIds, ["q-2"],

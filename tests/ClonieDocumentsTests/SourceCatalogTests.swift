@@ -9,6 +9,17 @@ final class SourceCatalogTests: XCTestCase {
     }
     override func tearDownWithError() throws { try? FileManager.default.removeItem(at: root) }
 
+    func testExplicitOriginalPathClassificationDoesNotClaimOrdinaryKnowledgeFolders() {
+        for path in ["raw/source.md", "RAW/source.md", "원본/source.md",
+                     "자료/원본/source.md", "자료/원본/보관/source.md", "자료/보관/원본/source.md"] {
+            XCTAssertTrue(SourceCatalog.isOriginalPath(path), path)
+        }
+        for path in ["자료/지식/source.md", "자료/원본.md", "자료/원본자료/source.md",
+                     ".clonie/source.md", "자료/원본/../source.md"] {
+            XCTAssertFalse(SourceCatalog.isOriginalPath(path), path)
+        }
+    }
+
     func testListsOriginalsAndReadsFuturePlansWithSourceHash() throws {
         let source = root.appendingPathComponent("raw/plan.txt")
         try "다음에는 오디오 권한 안내를 개선한다.".write(to: source, atomically: true, encoding: .utf8)

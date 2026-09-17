@@ -1,0 +1,5 @@
+interface:
+  display_name: "Clonie"
+  short_description: "요청한 Clonie 기록을 찾아 읽고 작업에 활용하거나 저장합니다"
+  brand_color: "#4975E9"
+  default_prompt: "$clonie 지난 발표 피드백을 찾아 읽고 다음 발표 수정 체크리스트로 저장해줘. 같은 이름의 문서가 있으면 업데이트해줘."

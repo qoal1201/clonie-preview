@@ -12,7 +12,8 @@ The original license and notice files below are preserved from the exact revisio
 | swift-sdk | 0.12.1 | https://github.com/modelcontextprotocol/swift-sdk/tree/a0ae212ebf6eab5f754c3129608bc5557637e605 |
 | swift-system | 1.8.1 | https://github.com/apple/swift-system/tree/869129b7bf4ecc57b97d0193ad29690ca2134750 |
 
+Markdown editor: codemirror/README.md (pinned CodeMirror 6 bundle and original runtime dependency licenses).
 File icons: material-icon-theme.md (original MIT notice preserved).
 Embedding model: embedding-model/NOTICE.md (Apache-2.0 model card declaration and conversion notice).
 
-Clonie is distributed under the terms in Clonie-LICENSE.txt. This directory contains notices for components included in the current build.
+New Clonie-owned changes are distributed under PolyForm Perimeter 1.0.1 in Clonie-LICENSE.txt. See the accompanying LICENSING.md for the transition boundary. Clonie-legacy-MIT.txt preserves the prior Clonie notice; existing MIT grants and third-party terms remain unchanged. This directory contains notices for components included in the current build.

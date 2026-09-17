@@ -136,22 +136,33 @@ final class ContentGraph {
     /// ⚠ **밀린 것은 버린다.** 말은 계속 자라는데 큐가 밀리면 낡은 질의의 벡터가 줄줄이
     /// 도착한다. 화면도 글자를 대조해 안 쓰지만(`scorer`), 안 만드는 편이 싸다.
     ///
-    /// - Parameter completion: base64 벡터. **주 스레드에서** 불린다. 못 만들면 안 불린다.
-    func embedQuery(_ text: String, completion: @escaping (String) -> Void) {
+    /// - Parameter completion: base64 벡터 또는 모델·추론 실패(nil). **주 스레드에서** 불린다.
+    ///   새 질의나 볼트로 대체된 요청은 성공·실패 모두 전달하지 않는다.
+    func embedQuery(_ text: String, completion: @escaping (String?) -> Void) {
         let generation = currentVaultGeneration()
         pendingLock.lock(); pendingQuery = text; pendingLock.unlock()
         queue.async {
-            self.pendingLock.lock()
-            let newest = self.pendingQuery
-            self.pendingLock.unlock()
-            guard newest == text, self.isCurrentVault(generation) else { return }
-            guard let indexer = self.resolveIndexer(),
-                  self.isCurrentVault(generation),
-                  let v = try? indexer.embedder.embed(query: text),
-                  self.isCurrentVault(generation) else { return }
-            let b64 = ContentIndexStore.encode(vector: v)
-            self.deliverVault(generation, value: b64, callback: completion)
+            guard self.isLatestQuery(text), self.isCurrentVault(generation) else { return }
+            let indexer = self.resolveIndexer()
+            guard self.isLatestQuery(text), self.isCurrentVault(generation) else { return }
+            let b64: String?
+            if let indexer {
+                do { b64 = ContentIndexStore.encode(vector: try indexer.embedder.embed(query: text)) }
+                catch { b64 = nil }
+            } else {
+                b64 = nil
+            }
+            self.deliverVault(generation) { [weak self] in
+                guard let self, self.isLatestQuery(text) else { return }
+                completion(b64)
+            }
         }
+    }
+
+    private func isLatestQuery(_ text: String) -> Bool {
+        pendingLock.lock()
+        defer { pendingLock.unlock() }
+        return pendingQuery == text
     }
 
     /// 아직 저장 안 된 글자 하나를 벡터로 (#33, ADR 0003 §3-②).
