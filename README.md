@@ -8,7 +8,10 @@
 Clonie는 사용자 소유의 Markdown 폴더를 연결해 자료를 찾고, 읽고, 고치는 macOS 앱입니다.
 기록을 쌓는 데서 그치지 않고, 대화와 작업에서 얻은 생각을 다시 보태며 가꾸는 경험을 만들고 있습니다.
 
-[공개 알파 설치](#빠른-설치) · [사용 피드백](https://github.com/qoal1201/clonie-preview/issues)
+**[Mac용 다운로드 · 1.0.5](https://github.com/qoal1201/clonie-preview/releases/download/preview-20260917-clonie1/Clonie-preview-20260917-clonie1-arm64.zip)** · [설치 도움말](INSTALL.md) · [사용 피드백](https://github.com/qoal1201/clonie-preview/issues)
+
+**macOS 26 이상 · Apple Silicon(M 시리즈)** 전용입니다. Intel Mac·Windows는 지원하지 않습니다.
+현재 공개판 1.0.5는 미공증 알파로 첫 실행 시 앱별 승인이 필요합니다. 공증을 제출한 1.0.6은 아직 다운로드 버전이 아닙니다.
 
 ## 이번 공개판 · Clonie 1.0.5
 
@@ -25,41 +28,37 @@ Clonie는 사용자 소유의 Markdown 폴더를 연결해 자료를 찾고, 읽
 
 ## 빠른 설치
 
-지원 환경은 **macOS 26 이상, Apple Silicon Mac**입니다. 설치 뒤 앱이 자동으로 실행되지는 않습니다.
+### 앱을 바로 써보고 싶다면
 
-Homebrew를 사용한다면 다음 명령을 실행합니다.
+1. 위 **Mac용 다운로드**에서 ZIP을 받습니다. GitHub의 `Code → Download ZIP`은 앱이 아니라 소스 코드입니다.
+2. 압축을 풀고 `Clonie.app`을 **응용 프로그램** 폴더로 옮겨 엽니다.
+3. 함께 든 `sample-vault`나 시험용 Markdown 폴더를 연결하고 자료에 질문해 보세요.
 
-```bash
-brew tap qoal1201/clonie-preview https://github.com/qoal1201/clonie-preview
-brew install --cask qoal1201/clonie-preview/clonie
-```
+기본 검색·편집에 Python·Xcode·AI 계정·API 키는 필요하지 않습니다.
+처음에는 중요한 자료의 복사본을 사용하세요. 앱은 연결한 실제 파일을 수정합니다.
 
-Homebrew가 없다면 공개 저장소의 최신 설치 스크립트를 내려받아 실행할 수 있습니다.
+**현재 1.0.5의 첫 실행:** macOS가 Apple의 악성 코드 확인이 불가능하다고 표시하면,
+공식 배포 파일임을 확인한 뒤 **시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기(Open Anyway)**에서
+이 앱만 승인할 수 있습니다. [첫 실행·문제 해결](INSTALL.md#첫-실행)에 자세히 설명합니다.
+음성을 쓸 때 필요한 마이크·시스템 오디오 권한은 이 실행 승인과 별개입니다.
 
-```bash
-curl -fL https://raw.githubusercontent.com/qoal1201/clonie-preview/main/scripts/install.sh -o /tmp/clonie-install.sh
-bash /tmp/clonie-install.sh
-```
+### 다른 설치 방법
 
-이 설치기는 동봉 모델이 포함된 릴리스 앱의 SHA-256을 확인하고, 기본적으로
-`~/Applications/Clonie.app`에 설치합니다. 같은 위치에 기존 `Clonie.app`이 있으면 중단하며, 기존 앱을 덮어쓰거나 종료·삭제하지 않습니다.
-설치가 끝난 뒤 앱을 자동으로 열지 않습니다.
+| 원하는 방식 | 안내 |
+| --- | --- |
+| Homebrew로 관리 | [Homebrew 설치](INSTALL.md#homebrew로-설치) |
+| AI 에이전트에게 설치 맡기기 | 아래 요청문과 [AGENTS.md](AGENTS.md) |
+| 터미널 설치기 사용 | [Homebrew 없이 설치](INSTALL.md#homebrew-없이-설치) |
+| 코드를 수정하거나 직접 빌드 | [소스에서 빌드](#소스에서-빌드) · [기여 안내](CONTRIBUTING.md) |
 
-AI 에이전트에게 설치를 맡기려면 저장소 주소와 함께 다음처럼 요청하면 됩니다.
+에이전트에는 링크와 함께 설치 의도를 알려주세요. Mac의 터미널·파일 접근 도구가 필요합니다.
 
 > https://github.com/qoal1201/clonie-preview 의 README와 AGENTS.md를 읽고,
 > 내 Mac의 지원 여부와 기존 설치를 확인한 뒤 Clonie를 설치하고 실행해 줘.
 > 처음 쓸 수 있도록 폴더 연결까지 안내하고, 내가 직접 승인해야 하는 단계는 알려 줘.
 
-에이전트용 절차는 [AGENTS.md](AGENTS.md), 설치 위치·첫 실행·문제 해결은
-[INSTALL.md](INSTALL.md)에 있습니다.
-
-설치 스크립트나 Homebrew를 쓰지 않으려면 [preview-20260917-clonie1 릴리스](https://github.com/qoal1201/clonie-preview/releases/tag/preview-20260917-clonie1)에서
-Apple Silicon용 ZIP을 내려받아 압축을 풀고 `Clonie.app`을 응용 프로그램 폴더로 옮기면 됩니다.
-
-첫 실행 때 macOS가 앱을 막으면 시스템 설정의 개인정보 보호 및 보안에서 해당 앱을 확인한 뒤
-**확인 없이 열기(Open Anyway)**를 직접 승인해야 합니다. 음성을 처음 사용할 때는 선택한 입력에 필요한
-마이크·시스템 오디오 권한과 Apple 음성 모델을 준비합니다. 이미 허용한 권한은 다시 요구하지 않습니다.
+이미 Clonie를 쓰고 있다면 [업데이트 안내](INSTALL.md#기존-설치-업데이트)를 먼저 확인하세요.
+설치기는 기존 앱을 덮어쓰거나 종료하지 않습니다.
 
 ## 화면과 전체 사용 흐름
 
