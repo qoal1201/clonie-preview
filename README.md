@@ -42,8 +42,7 @@ bash /tmp/clonie-install.sh
 ```
 
 이 설치기는 동봉 모델이 포함된 릴리스 앱의 SHA-256을 확인하고, 기본적으로
-`~/Applications/Clonie.app`에 설치합니다. 같은 위치에 기존 `Clonie.app` 또는
-`Ghostbar.app`이 있으면 중단하며, 기존 앱을 덮어쓰거나 종료·삭제하지 않습니다.
+`~/Applications/Clonie.app`에 설치합니다. 같은 위치에 기존 `Clonie.app`이 있으면 중단하며, 기존 앱을 덮어쓰거나 종료·삭제하지 않습니다.
 설치가 끝난 뒤 앱을 자동으로 열지 않습니다.
 
 기존 Ghostbar에서 넘어올 때는 기존 `Ghostbar.app`을 그대로 보존한 채 Clonie를 별도
