@@ -45,10 +45,6 @@ bash /tmp/clonie-install.sh
 `~/Applications/Clonie.app`에 설치합니다. 같은 위치에 기존 `Clonie.app`이 있으면 중단하며, 기존 앱을 덮어쓰거나 종료·삭제하지 않습니다.
 설치가 끝난 뒤 앱을 자동으로 열지 않습니다.
 
-기존 Ghostbar에서 넘어올 때는 기존 `Ghostbar.app`을 그대로 보존한 채 Clonie를 별도
-위치에 설치해 확인하세요. 기본 위치에 기존 앱이 있으면 `--app-dir`로 다른 폴더를
-지정할 수 있으며, 기존 앱을 정리할지는 확인 후 직접 결정합니다.
-
 AI 에이전트에게 설치를 맡기려면 저장소 주소와 함께 다음처럼 요청하면 됩니다.
 
 > https://github.com/qoal1201/clonie-preview 의 README와 AGENTS.md를 읽고,
