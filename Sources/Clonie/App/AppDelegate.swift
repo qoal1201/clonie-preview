@@ -15,7 +15,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FileHandle.standardError.write(Data("[qa] Explicit CLONIE_QA_SESSION and CLONIE_QA_VAULT are required.\n".utf8))
             exit(2)
         }
-        InstallationIdentity.migrateLegacyPreferences()
         NSApp.setActivationPolicy(.accessory)
         installMenus()
         QASnapshot.installQASnapshotObserver()

@@ -25,7 +25,7 @@ class InstallerTests(unittest.TestCase):
         self.assertIn("never", result.stdout)
 
     def test_existing_apps_are_preserved_before_download(self):
-        for app_name in ("Ghostbar.app", "Clonie.app"):
+        for app_name in ("Clonie.app",):
             with self.subTest(app_name=app_name), tempfile.TemporaryDirectory() as temp:
                 app = Path(temp) / app_name
                 app.mkdir()
@@ -53,6 +53,11 @@ class InstallerTests(unittest.TestCase):
     def test_verified_release_installs_without_launch(self):
         with tempfile.TemporaryDirectory() as temp:
             dest = Path(temp) / "Applications with spaces"
+            dest.mkdir()
+            unrelated = dest / "Unrelated.app"
+            unrelated.mkdir()
+            sentinel = unrelated / "user-file"
+            sentinel.write_text("untouched")
             result = self.run_installer("--app-dir", dest, "--archive",
                                         os.environ["CLONIE_TEST_ARCHIVE"])
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -60,6 +65,7 @@ class InstallerTests(unittest.TestCase):
             self.assertTrue((app / "Contents/MacOS/Clonie").is_file())
             self.assertTrue((app / "Contents/Resources/EmbeddingModel/manifest.json").is_file())
             self.assertEqual(list(dest.glob(".clonie-install.*")), [])
+            self.assertEqual(sentinel.read_text(), "untouched")
 
 
 if __name__ == "__main__":

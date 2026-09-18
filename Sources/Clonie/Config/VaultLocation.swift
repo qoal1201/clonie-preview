@@ -18,7 +18,7 @@ enum VaultLocation {
         return nil
     }
 
-    /// Initial location for the folder picker, also used to find an older default vault.
+    /// Initial location for the folder picker; never automatically connected.
     static var current: URL {
         selected ?? QASession.current?.vaultURL
             ?? URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
@@ -46,40 +46,7 @@ enum VaultLocation {
         return path == base || path.hasPrefix(base + "/")
     }
 
-    /// Legacy JSON stays under Ghostbar so an install rename can still read it.
-    /// QA has its own vault/session and must never cross this production boundary.
-    static var legacyDocument: URL? {
-        guard Bundle.main.bundleIdentifier == InstallationIdentity.productionBundleIdentifier else { return nil }
-        return URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
-            .appendingPathComponent("Library/Application Support/Ghostbar/cue.json")
-    }
-
-    /// Preserve an older implicit default vault, without filesystem work on the UI thread.
-    static func restorePreviousDefault(completion: @escaping () -> Void) {
-        // Legacy discovery belongs only to the installed product. A separately
-        // identified first-use build must not silently attach the user's old vault.
-        guard selected == nil,
-              Bundle.main.bundleIdentifier == InstallationIdentity.productionBundleIdentifier
-        else { completion(); return }
-        let candidate = current, legacy = legacyDocument
-        DispatchQueue.global(qos: .userInitiated).async {
-            let fm = FileManager.default
-            let legacyExists = legacy.map { fm.fileExists(atPath: $0.path) } == true
-            var directory: ObjCBool = false
-            var exists = fm.fileExists(atPath: candidate.path, isDirectory: &directory) && directory.boolValue
-            if !exists && legacyExists && !fm.fileExists(atPath: candidate.path) {
-                do { try fm.createDirectory(at: candidate, withIntermediateDirectories: true); exists = true }
-                catch { FileHandle.standardError.write(Data("[cue] 이전 볼트 복구 실패: \(error)\n".utf8)) }
-            }
-            let restored = exists
-            DispatchQueue.main.async {
-                if restored, selected == nil { try? set(candidate) }
-                completion()
-            }
-        }
-    }
-
     static func makeStore() -> VaultStore? {
-        selected.map { VaultStore(vaultURL: $0, legacyJSONURL: legacyDocument) }
+        selected.map { VaultStore(vaultURL: $0) }
     }
 }

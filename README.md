@@ -7,10 +7,10 @@
 흩어진 생각과 자료를 내 저장소에 쌓고, 필요한 순간 나와 AI가 함께 꺼내 씁니다.
 Clonie는 내 Markdown 폴더를 연결해 자료를 찾고, 읽고, 고치는 macOS 앱입니다.
 
-**[Mac용 다운로드 · 1.0.5](https://github.com/qoal1201/clonie-preview/releases/download/preview-20260917-clonie1/Clonie-preview-20260917-clonie1-arm64.zip)** · [설치 안내](INSTALL.md) · [변경 기록](CHANGELOG.md) · [피드백](https://github.com/qoal1201/clonie-preview/issues/new?template=feedback.yml)
+**[Mac용 다운로드 · 1.0.6](https://github.com/qoal1201/clonie-preview/releases/download/preview-20260919-clonie1/Clonie-1.0.6-arm64-notarized.zip)** · [설치 안내](INSTALL.md) · [변경 기록](CHANGELOG.md) · [피드백](https://github.com/qoal1201/clonie-preview/issues/new?template=feedback.yml)
 
 macOS 26 이상 · Apple Silicon(M 시리즈). 기본 검색·편집에는 AI 계정이나 API 키가 필요하지 않습니다.
-현재는 **미공증 알파**입니다. 첫 실행이 막히면 [‘그래도 열기’ 안내](INSTALL.md#첫-실행)를 따라 주세요.
+Developer ID 서명과 Apple 공증을 적용한 알파입니다. macOS 첫 실행 확인과 폴더·음성 권한은 별도이며, [설치 안내](INSTALL.md#첫-실행)를 따라 주세요.
 
 ![Clonie에서 폴더를 탐색하고 같은 화면에서 Markdown 문서를 읽고 편집하는 모습](assets/screenshots/workspace.png)
 

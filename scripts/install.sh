@@ -2,9 +2,9 @@
 # Install a pinned preview without Homebrew, sudo, or changes to user documents.
 set -euo pipefail
 
-CLONIE_VERSION="20260917-clonie1"
-CLONIE_ARCHIVE_NAME="Clonie-preview-${CLONIE_VERSION}-arm64.zip"
-CLONIE_SHA256="221d12730bd7ae669dfb594cf5e6be1e4ebbf08b197532d4f6ba45d0d9cbac79"
+CLONIE_VERSION="20260919-clonie1"
+CLONIE_ARCHIVE_NAME="Clonie-1.0.6-arm64-notarized.zip"
+CLONIE_SHA256="735bf90ca99fe748f69b35cdeab099bb1873696840bac4713e55fcf1ab0dec14"
 CLONIE_URL="https://github.com/qoal1201/clonie-preview/releases/download/preview-${CLONIE_VERSION}/${CLONIE_ARCHIVE_NAME}"
 CLONIE_APP_DIR="$HOME/Applications"
 CLONIE_ARCHIVE=""
@@ -40,8 +40,7 @@ done
 
 case "$CLONIE_APP_DIR" in /*) ;; *) fail "--app-dir must be an absolute path" ;; esac
 CLONIE_TARGET="${CLONIE_APP_DIR%/}/Clonie.app"
-CLONIE_LEGACY_TARGET="${CLONIE_APP_DIR%/}/Ghostbar.app"
-for CLONIE_EXISTING in "$CLONIE_TARGET" "$CLONIE_LEGACY_TARGET"; do
+for CLONIE_EXISTING in "$CLONIE_TARGET"; do
   if [ -e "$CLONIE_EXISTING" ] || [ -L "$CLONIE_EXISTING" ]; then
     fail "Already exists: $CLONIE_EXISTING. Existing apps are preserved; choose another --app-dir or manage the existing installation first."
   fi
@@ -69,11 +68,12 @@ CLONIE_ACTUAL="$(shasum -a 256 "$CLONIE_ARCHIVE")"
 [ "${CLONIE_ACTUAL%% *}" = "$CLONIE_SHA256" ] || fail "Archive SHA-256 mismatch; nothing was installed."
 
 ditto -x -k "$CLONIE_ARCHIVE" "$CLONIE_WORK/unpacked"
-CLONIE_BUNDLE="$CLONIE_WORK/unpacked/Clonie-preview-${CLONIE_VERSION}-arm64/Clonie.app"
+CLONIE_BUNDLE="$CLONIE_WORK/unpacked/Clonie.app"
 [ -d "$CLONIE_BUNDLE" ] || fail "Expected app is missing from the archive."
 CLONIE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$CLONIE_BUNDLE/Contents/Info.plist")"
 [ "$CLONIE_ID" = com.local.clonie ] || fail "Unexpected app bundle identifier."
 codesign --verify --deep --strict "$CLONIE_BUNDLE"
+spctl --assess --type execute --verbose=4 "$CLONIE_BUNDLE"
 
 mkdir -p "$CLONIE_APP_DIR"
 CLONIE_STAGE="$(mktemp -d "${CLONIE_APP_DIR%/}/.clonie-install.XXXXXX")"
@@ -82,6 +82,5 @@ ditto "$CLONIE_BUNDLE" "$CLONIE_STAGE/Clonie.app"
 mv -n "$CLONIE_STAGE/Clonie.app" "${CLONIE_APP_DIR%/}/"
 [ ! -e "$CLONIE_STAGE/Clonie.app" ] || fail "Destination appeared during installation; existing app preserved."
 printf '\nInstalled: %s\n' "$CLONIE_TARGET"
-printf 'Open this app in Finder. This preview is not notarized by Apple.\n'
-printf 'If macOS blocks it, review its entry in System Settings > Privacy & Security.\n'
+printf 'Open this app in Finder. This release is signed and notarized by Apple.\n'
 printf 'First launch and microphone/screen recording permissions require your approval.\n'

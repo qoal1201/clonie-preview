@@ -5,11 +5,11 @@ Clonie 공개 알파는 **macOS 26 이상, Apple Silicon Mac**에서 실행합�
 
 ## ZIP으로 바로 설치
 
-1. [현재 공개판 1.0.5 다운로드](https://github.com/qoal1201/clonie-preview/releases/download/preview-20260917-clonie1/Clonie-preview-20260917-clonie1-arm64.zip)를 누릅니다.
+1. [현재 공개판 1.0.6 다운로드](https://github.com/qoal1201/clonie-preview/releases/download/preview-20260919-clonie1/Clonie-1.0.6-arm64-notarized.zip)를 누릅니다.
 2. 압축을 풀고 `Clonie.app`을 **응용 프로그램** 폴더로 옮깁니다.
 3. 앱을 열고 아래 첫 실행 안내를 따릅니다. GitHub의 `Code → Download ZIP`은 앱 설치 파일이 아닙니다.
 
-현재 1.0.5는 **개발용 서명·미공증 알파**입니다. 아래 앱별 실행 승인이 필요할 수 있습니다.
+1.0.6은 **Developer ID 서명·Apple 공증을 적용한 알파**입니다. macOS의 첫 실행 확인과 폴더·음성 권한은 별도입니다.
 
 ## Homebrew로 설치
 
@@ -34,17 +34,15 @@ curl --fail --location --proto '=https' --tlsv1.2 \
   -o "$clonie_install_dir/install.sh" && bash "$clonie_install_dir/install.sh"
 ```
 
-스크립트는 `preview-20260917-clonie1`으로 고정된 동봉 모델 앱과 SHA-256을 확인하고 기본 경로
-`~/Applications/Clonie.app`에 설치합니다. 같은 경로에 기존 `Clonie.app` 또는
-`Ghostbar.app`이 있으면 기존 앱을 보존한 채 중단합니다. 이전 앱에서 넘어올 때는
+스크립트는 `preview-20260919-clonie1`으로 고정된 동봉 모델 앱과 SHA-256을 확인하고 기본 경로
+`~/Applications/Clonie.app`에 설치합니다. 같은 경로에 기존 `Clonie.app`이 있으면 기존 앱을 보존한 채 중단합니다. 별도 설치가 필요하면
 `--app-dir`로 별도 폴더를 지정해 두 앱을 비교한 뒤, 기존 앱의 정리는 직접 결정합니다.
 설치 후 자동 실행도 하지 않습니다.
 
 ## 첫 실행
 
 1. `Clonie.app`을 엽니다.
-2. macOS가 출처를 확인할 수 없다고 표시하면 시스템 설정 → 개인정보 보호 및 보안에서 앱을 확인하고
-   **그래도 열기(Open Anyway, 일부 버전은 ‘확인 없이 열기’)**를 직접 승인합니다.
+2. macOS의 첫 실행 확인 창에서는 공식 배포 파일인지 확인합니다. 악성 코드·서명 확인 오류로 차단되면 오류 문구와 앱 버전을 기록하고 피드백을 보내 주세요. 보안 설정을 끄거나 파일 속성을 제거하지 마세요.
 3. 앱에서 Markdown 폴더를 선택합니다. 중요한 자료는 복사본으로 먼저 연결하세요.
 4. 자료에 질문해 문서를 찾고, 열어 조금 수정한 뒤 저장 표시를 확인합니다.
 5. 음성을 쓸 때만 사용 시작에서 범위와 입력을 고릅니다. 처음에는 마이크와 Apple 음성 모델을 준비하며, 상대 음성을 포함할 때만 시스템 오디오 권한도 필요합니다.
@@ -73,8 +71,8 @@ Homebrew 설치를 업데이트하려면 기존 설치를 확인한 뒤 `brew up
 
 - macOS 26 이상인지, Apple Silicon Mac인지 확인합니다.
 - 앱 이름이 `Clonie.app`인지 확인합니다.
-- 현재 미공증 1.0.5라면 시스템 설정 → 개인정보 보호 및 보안에서 **그래도 열기** 항목을 확인합니다. 이 절차는 마이크 권한과 별개이며, 시스템 전체의 Gatekeeper를 끄지 않습니다.
-- 설치 위치에 기존 `Clonie.app` 또는 `Ghostbar.app`이 있으면 설치기는 덮어쓰지 않으므로, 기존 파일을
+- 1.0.6은 공증판입니다. 실행이 차단되면 다운로드한 버전·오류 문구를 확인해 알려 주세요. 전체 디스크 접근을 설치의 필수 조건으로 가정하지 않습니다.
+- 설치 위치에 기존 `Clonie.app`이 있으면 설치기는 덮어쓰지 않으므로, 기존 파일을
   보존한 뒤 `--app-dir`로 원하는 별도 설치 경로를 지정해 다시 시도합니다.
 - 음성 모델 준비가 계속 실패하면 Clonie를 정상 종료한 뒤 다시 열어 상태를 확인합니다. 같은 문제가 계속되면 오류 문구를 알려 주세요.
 - 해결되지 않으면 Mac 모델, macOS 버전, 오류 문구를 [Issues](https://github.com/qoal1201/clonie-preview/issues)에 남겨 주세요.

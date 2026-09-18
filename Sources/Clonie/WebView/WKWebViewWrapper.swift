@@ -1273,12 +1273,8 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     /// ⚠ `init` 에서 부르면 안 된다 — `loadHTMLString` 은 비동기라 그 시점엔 `receiveDocument`
     /// 가 아직 없고, `evaluateJavaScript` 는 **조용히 실패한다.** 그래서 navigation delegate 다.
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        VaultLocation.restorePreviousDefault { [weak self] in
-            guard let self else { return }
-            if self.store == nil, VaultLocation.selected != nil { self.rebindVault() }
-            else { self.sendDocument() }
-            self.sendSystemState()
-        }
+        sendDocument()
+        sendSystemState()
         // 「더 좋은 정리」의 켤 수 있나 (#51). 여기서 미는 이유는 `sendDocument` 와 같다 —
         // `init` 시점엔 `setCloudDrafter` 가 아직 없고 `evaluateJavaScript` 는 조용히 실패한다.
         sendCloudReady()

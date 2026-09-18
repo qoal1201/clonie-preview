@@ -81,8 +81,7 @@ final class EmbeddingModelStoreTests: XCTestCase {
 
         let paths = EmbeddingModelStore.searchPaths(environment: [:], bundleResourcesURL: resources)
         XCTAssertEqual(paths, [bundled,
-                               EmbeddingModelStore.defaultDirectory,
-                               EmbeddingModelStore.legacyDirectory])
+                               EmbeddingModelStore.defaultDirectory])
 
         switch EmbeddingModelStore.status(environment: [:], bundleResourcesURL: resources) {
         case .ready(let manifest):
@@ -101,22 +100,21 @@ final class EmbeddingModelStoreTests: XCTestCase {
                                                                isDirectory: true)
         XCTAssertEqual(
             EmbeddingModelStore.searchPaths(environment: [:], bundleResourcesURL: resources),
-            [expectedBundle, EmbeddingModelStore.defaultDirectory, EmbeddingModelStore.legacyDirectory]
+            [expectedBundle, EmbeddingModelStore.defaultDirectory]
         )
     }
 
-    func test_04_clonieSupportBeatsLegacySupport() throws {
+    func test_04_onlyClonieSupportIsSearched() throws {
         let resources = try temporaryDirectory()
         let supportRoot = try temporaryDirectory()
         let clonie = try makeReadyModel(at: supportModel(in: supportRoot, product: "Clonie"))
-        _ = try makeReadyModel(at: supportModel(in: supportRoot, product: "Ghostbar"))
+        _ = try makeReadyModel(at: supportModel(in: supportRoot, product: "UnrelatedApp"))
 
         let paths = EmbeddingModelStore.searchPaths(environment: [:],
                                                      bundleResourcesURL: resources,
                                                      supportRoot: supportRoot)
         XCTAssertEqual(paths, [resources.appendingPathComponent(EmbeddingModelStore.bundledDirectoryName,
-                                                                  isDirectory: true), clonie,
-                               supportModel(in: supportRoot, product: "Ghostbar")])
+                                                                  isDirectory: true), clonie])
 
         switch EmbeddingModelStore.status(environment: [:],
                                           bundleResourcesURL: resources,
@@ -124,17 +122,29 @@ final class EmbeddingModelStoreTests: XCTestCase {
         case .ready(let manifest):
             XCTAssertEqual(manifest.directory, clonie)
         default:
-            XCTFail("Clonie support 모델을 이전 Ghostbar 모델보다 먼저 선택해야 한다")
+            XCTFail("Clonie support 모델을 선택해야 한다")
         }
     }
 
-    func test_05_brokenClonieManifestDoesNotFallbackToLegacyModel() throws {
+    func testUnrelatedSupportModelCannotSatisfyMissingClonieModel() throws {
+        let supportRoot = try temporaryDirectory()
+        _ = try makeReadyModel(at: supportModel(in: supportRoot, product: "UnrelatedApp"))
+        switch EmbeddingModelStore.status(environment: [:], bundleResourcesURL: nil,
+                                          supportRoot: supportRoot) {
+        case .missing(let searched):
+            XCTAssertEqual(searched, [supportModel(in: supportRoot, product: "Clonie")])
+        default:
+            XCTFail("다른 제품의 모델로 첫 설치 준비 상태를 숨기면 안 된다")
+        }
+    }
+
+    func test_05_brokenClonieManifestIsReported() throws {
         let resources = try temporaryDirectory()
         let supportRoot = try temporaryDirectory()
         let clonie = supportModel(in: supportRoot, product: "Clonie")
         try FileManager.default.createDirectory(at: clonie, withIntermediateDirectories: true)
         try Data("{ broken".utf8).write(to: clonie.appendingPathComponent("manifest.json"))
-        _ = try makeReadyModel(at: supportModel(in: supportRoot, product: "Ghostbar"))
+        _ = try makeReadyModel(at: supportModel(in: supportRoot, product: "UnrelatedApp"))
 
         switch EmbeddingModelStore.status(environment: [:],
                                           bundleResourcesURL: resources,

@@ -2,6 +2,13 @@
 
 이 파일은 공개 릴리스에서 사용자가 확인할 수 있는 변화만 기록합니다.
 
+## [preview-20260919-clonie1] — 2026-09-19
+
+- 1.0.6: Developer ID 서명·Apple 공증과 배포 앱 번들 구성을 수정했습니다.
+- 다른 제품의 설정·모델·자료 자동 이관을 제거했습니다.
+- 단축키 설정의 특수문자 전달과 잘못된 설정값 처리를 보완했습니다.
+- 자동 검사와 배포 보안 검사는 통과했습니다. 깨끗한 첫 설치·권한 복구·실제 음성은 검증 중입니다.
+
 ## [preview-20260917-clonie1] — 2026-09-17
 
 - Clonie 1.0.5: 편집·문서 가져오기·대화 기록·MCP 변경 확인을 포함한 공개 알파입니다.
@@ -36,11 +43,11 @@
 ### 알려진 한계
 
 - macOS 26 이상 Apple Silicon만 지원합니다. Windows와 Intel Mac은 지원하지 않습니다.
-- 앱 번들 파일 이름은 아직 `Ghostbar.app`입니다.
+- 당시 앱 번들 파일 이름은 현행 `Clonie.app`과 달랐습니다.
 - 같은 Mac의 격리된 Homebrew 설치는 tap 등록, 릴리스 SHA-256, 설치한 실행 파일 SHA와 codesign까지
   확인했습니다. 앱 실행, Gatekeeper·개발자 신뢰 설정, TCC·음성 권한과 다른 Mac의 첫 설치는 아직
   검증하지 않았습니다.
 - Gatekeeper의 **확인 없이 열기**, 마이크·화면 기록 권한과 음성 모델 준비는 사용자가 직접 승인해야 합니다.
 - 검색 관련도와 음성 흐름은 공개 알파에서 계속 확인 중입니다.
 
-[Unreleased]: https://github.com/qoal1201/clonie-preview/compare/preview-20260917-clonie1...main
+[Unreleased]: https://github.com/qoal1201/clonie-preview/compare/preview-20260919-clonie1...main

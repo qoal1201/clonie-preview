@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
-VERSION="1.0.5"
+VERSION="1.0.6"
 APP_NAME="Clonie"
 APP_BUNDLE="Clonie.app"
 BUNDLE_ID="com.local.clonie"
@@ -247,6 +247,7 @@ cat > "$APP_PATH/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleExecutable</key><string>$APP_NAME</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
   <key>CFBundleName</key><string>$APP_NAME</string>
   <key>CFBundleIconFile</key><string>Clonie</string>

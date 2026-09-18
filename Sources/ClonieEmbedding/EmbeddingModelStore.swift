@@ -21,12 +21,6 @@ public enum EmbeddingModelStore {
         .appendingPathComponent("Library/Application Support/Clonie/models/multilingual-e5-small-ko-v2",
                                 isDirectory: true)
 
-    /// 이름 이전 전 설치가 사용하던 자리. 읽기 전용 호환 탐색에만 쓴다.
-    public static let legacyDirectory: URL = FileManager.default
-        .homeDirectoryForCurrentUser
-        .appendingPathComponent("Library/Application Support/Ghostbar/models/multilingual-e5-small-ko-v2",
-                                isDirectory: true)
-
     /// 환경변수로 덮을 수 있다 — **테스트와 CI 가 이걸 쓴다.**
     public static let directoryOverrideKey = "CLONIE_MODEL_DIR"
     /// `.app/Contents/Resources/` 안에서 선택적으로 동봉한 변환 모델의 자리.
@@ -46,7 +40,7 @@ public enum EmbeddingModelStore {
         searchPaths(environment: environment, bundleResourcesURL: bundleResourcesURL, supportRoot: nil)
     }
 
-    /// 테스트·호환성 확인을 위해 Application Support 루트를 주입할 수 있다.
+    /// 테스트을 위해 Application Support 루트를 주입할 수 있다.
     public static func searchPaths(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         bundleResourcesURL: URL? = Bundle.main.resourceURL,
@@ -62,10 +56,8 @@ public enum EmbeddingModelStore {
         }
         if let supportRoot {
             paths.append(Self.supportModelDirectory(named: "Clonie", under: supportRoot))
-            paths.append(Self.supportModelDirectory(named: "Ghostbar", under: supportRoot))
         } else {
             paths.append(defaultDirectory)
-            paths.append(legacyDirectory)
         }
         return paths
     }
