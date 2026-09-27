@@ -1,7 +1,8 @@
 import AppKit
 import Foundation
 
-/// Screen capture policy. Normal launches remain protected in every window.
+/// Screen capture policy. Normal launches request capture exclusion for every window.
+/// Actual exclusion depends on the macOS version and capture path.
 /// A process started with CLONIE_QA_VISIBLE=1 may be captured for native testing.
 /// This opt-in changes no product layout, transparency, data path, or interaction.
 /// The menu-bar indicator identifies the exception and can end it for this launch.
@@ -28,7 +29,7 @@ enum WindowPrivacy {
     }
 
     /// A test run can restore protection without restarting or losing its place.
-    /// New windows and later mode transitions stay protected for this process.
+    /// New windows and later mode transitions retain the exclusion request.
     static func endCaptureTesting() {
         captureTestingEnded = true
         for window in NSApp.windows { apply(to: window) }

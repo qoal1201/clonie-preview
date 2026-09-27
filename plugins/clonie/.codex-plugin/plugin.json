@@ -1,0 +1,38 @@
+{
+  "name": "clonie",
+  "version": "0.2.0",
+  "description": "내 Markdown 저장소를 찾아 활용하고, Clonie에서 검토할 문서 변경을 제안합니다.",
+  "author": {
+    "name": "Sunho Park"
+  },
+  "license": "PolyForm-Perimeter-1.0.1",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Clonie",
+    "shortDescription": "내 저장소를 찾아 쓰고 함께 가꾸기",
+    "longDescription": "설치된 Clonie 앱의 MCP로 Markdown을 검색하고 읽습니다. 요청한 문서 변경은 Clonie에서 검토·승인한 뒤 반영합니다.",
+    "developerName": "Sunho Park",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Clonie에서 이 작업과 관련된 자료를 찾아 도와줘.",
+      "이번 대화에서 다음에 다시 쓸 내용을 Clonie에 기록해줘."
+    ]
+  },
+  "mcpServers": {
+    "clonie": {
+      "command": "/bin/bash",
+      "args": [
+        "./scripts/start-mcp.sh"
+      ],
+      "cwd": ".",
+      "env_vars": [
+        "CLONIE_APP_PATH",
+        "CLONIE_VAULT"
+      ]
+    }
+  }
+}

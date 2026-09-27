@@ -14,11 +14,16 @@ public enum VaultLocator {
 
     public static func resolve(argument: String?,
                                environment: [String: String] = ProcessInfo.processInfo.environment,
-                               defaults: UserDefaults? = UserDefaults(suiteName: appDefaultsSuite),
+                               defaults: UserDefaults? = .standard,
+                               defaultsDomain: String = appDefaultsSuite,
                                fileManager: FileManager = .default) throws -> URL {
+        // 앱에 동봉된 MCP는 Clonie와 같은 bundle identifier를 가진다. 자기 앱 ID로
+        // UserDefaults(suiteName:)을 만들면 macOS가 거부하므로 저장된 앱 도메인을 직접 읽는다.
+        // MCP 실행 폴더나 다른 호스트의 기본 설정은 저장소 선택에 관여하지 않는다.
+        let appVault = defaults?.persistentDomain(forName: defaultsDomain)?[appDefaultsKey] as? String
         let candidates: [String?] = [argument,
                                      environment[environmentKey],
-                                     defaults?.string(forKey: appDefaultsKey)]
+                                     appVault]
         for c in candidates {
             guard let p = c?.trimmingCharacters(in: .whitespacesAndNewlines), !p.isEmpty else { continue }
             // ⚠ `.mcpb` 의 폴더 칸을 비워 두면 Claude Desktop 이 그 칸을 **치환하지 않은

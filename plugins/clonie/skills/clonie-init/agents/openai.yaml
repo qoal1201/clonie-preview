@@ -1,0 +1,5 @@
+interface:
+  display_name: "Clonie 연결 확인"
+  short_description: "앱과 저장소를 확인하고 Clonie 플러그인의 초기 연결과 복구를 돕습니다"
+  brand_color: "#4975E9"
+  default_prompt: "$clonie-init Clonie를 연결하고 현재 앱에서 선택한 저장소를 읽을 수 있는지 확인해줘."

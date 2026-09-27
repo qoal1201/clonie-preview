@@ -19,3 +19,8 @@ globals, rejects a raw closing `script` tag, and regenerates
 returns its content DOM element with the textarea-compatible properties used by the
 Clonie screen. `destroyDetached()` and `destroyAll()` release views; `reset()` also
 clears the bounded per-document undo-state cache.
+
+`appendText(contentElement, text)` inserts an explicitly approved literal string at
+the end as one undoable transaction. It emits the ordinary input event so the
+screen retains revision pins and save recovery. The `value` setter remains a
+non-history hydration API and must not be used for user edits.

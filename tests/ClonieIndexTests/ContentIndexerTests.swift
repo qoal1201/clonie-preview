@@ -110,6 +110,19 @@ final class ContentIndexerTests: XCTestCase {
         XCTAssertEqual(warm.embedded, 0, "해시가 같은데 다시 계산했다 — 증분이 죽었다")
         XCTAssertEqual(warm.reused, plans(frs).count)
         XCTAssertTrue(warm.duplicates.isEmpty, "바뀐 것이 없는데 중복 알림이 났다")
+
+        // 앱은 더 이상 TextEmbedder와 float32 wire 규약을 직접 조합하지 않는다. 새 Index 입구가
+        // 기존 query:/passage: 출력과 비트 단위로 같고, 두 규약을 실제로 구분하는지 잠근다.
+        let sample = "검색 경계를 한 곳에서 관리한다"
+        let query = try indexer.encodedQueryVector(for: sample)
+        let passage = try indexer.encodedPassageVector(for: sample)
+        XCTAssertEqual(indexer.dimensions, indexer.embedder.dimensions)
+        XCTAssertEqual(query,
+                       ContentIndexStore.encode(vector: try indexer.embedder.embed(query: sample)))
+        XCTAssertEqual(passage,
+                       ContentIndexStore.encode(vector: try indexer.embedder.embed(passage: sample)))
+        XCTAssertNotEqual(query, passage,
+                          "query:/passage: 규약이 다른데 같은 벡터를 돌려줬다")
         print("웜   — " + warm.summary)
 
         // 한 장만 고치면 그 한 장만
@@ -459,46 +472,6 @@ final class ContentIndexerTests: XCTestCase {
         print("승인 경계 OK — md \(before.count)장 그대로, 새로 생긴 것은 .clonie/ 안뿐 "
             + "(\(sidecarFiles.joined(separator: ", ")))")
         _ = t
-    }
-
-    // MARK: - 06' 사람이 읽는 한 줄 (모델 없이 돈다)
-
-    /// 띠에 뜨는 글자. **모델 없이 도는 순수 함수라** 여기서 잠근다 —
-    /// 앱 층에 두면 잴 방법이 `.app` 을 띄우는 것밖에 없다.
-    func test_06b_duplicateNoticeReadsLikeASentence() throws {
-        let frs = NeighborCorpus.fragments()
-        XCTAssertNil(ContentIndexer.duplicateNotice([], fragments: frs),
-                     "알릴 것이 없는데 글자를 만들었다 — 빈 띠가 뜨는 자리다")
-
-        let (a, b) = NeighborCorpus.duplicatePairs[0]
-        let one = try XCTUnwrap(ContentIndexer.duplicateNotice(
-            [.init(id: b, otherID: a, score: 0.835)], fragments: frs))
-        // ★ **id 가 아니라 제목으로 부른다.** `deploy-1` 을 보여주면 사람은 그게 뭔지 모른다.
-        XCTAssertTrue(one.contains(NeighborCorpus.fragment(a).title), "짝의 제목을 안 불렀다: \(one)")
-        XCTAssertFalse(one.contains(a), "id 가 그대로 새어나왔다: \(one)")
-        XCTAssertTrue(one.contains(NeighborCorpus.fragment(b).title), "현재 문서도 밝혀야 한다: \(one)")
-        XCTAssertFalse(one.contains("%"), "코사인 점수를 내용 일치율로 표시하면 안 된다: \(one)")
-        XCTAssertFalse(one.contains("합치"), "관련성만으로 합치기를 권하지 않는다: \(one)")
-        XCTAssertFalse(one.contains("그 밖에"), "한 건인데 나머지를 셌다: \(one)")
-        print("알림 한 줄 — \(one)")
-
-        // 여러 건이면 **가장 가까운 것 하나만 이름을 대고** 나머지는 센다. 띠는 한 줄이다.
-        let many = try XCTUnwrap(ContentIndexer.duplicateNotice(
-            [.init(id: b, otherID: a, score: 0.835),
-             .init(id: b, otherID: "conflict-1", score: 0.71)], fragments: frs))
-        XCTAssertTrue(many.contains("그 밖에 1쌍"), "문서 수가 아닌 쌍으로 세어야 한다: \(many)")
-        XCTAssertFalse(many.contains(NeighborCorpus.fragment("conflict-1").title),
-                       "두 번째 제목까지 띠에 넣었다 — 한 줄을 넘긴다: \(many)")
-
-        // 색인에 없는 짝 · 제목 없는 조각에서 **안 죽는다** (볼트는 밖에서도 바뀐다)
-        XCTAssertNotNil(ContentIndexer.duplicateNotice(
-            [.init(id: "x", otherID: "사라진-조각", score: 0.9)], fragments: frs))
-        let t = Date(timeIntervalSince1970: 1_750_000_000)
-        let untitled = Fragment(id: "u", title: "   ", body: "본문만 있다",
-                                questionIds: [], createdAt: t, updatedAt: t)
-        let blank = try XCTUnwrap(ContentIndexer.duplicateNotice(
-            [.init(id: "x", otherID: "u", score: 0.9)], fragments: [untitled]))
-        XCTAssertTrue(blank.contains("제목 없는 문서"), "빈 제목이 「」 로 새어나왔다: \(blank)")
     }
 
     // MARK: - 07 색인 시간 실측 — 콜드/웜

@@ -63,6 +63,7 @@ final class SessionStoreTests: XCTestCase {
     func testQuestionReviewAndRetrievalStateRoundTrip() async throws {
         var original = record(state: .completed)
         original.questionReviews = ["q-1": "done", "q-2": "open"]
+        original.markedQuestions = ["q-1": true]
         original.retrievals = [SessionRetrieval(id: "r-1", query: "예산", scope: "회의",
             questionID: "q-1", requestedAt: 1, completedAt: 2,
             status: "ready", displayedID: "doc-1", displayMode: "manual", how: "뜻")]
@@ -72,6 +73,17 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertEqual(loaded.questionReviews["q-1"], "done")
         XCTAssertEqual(loaded.retrievals[0].displayedID, "doc-1")
         XCTAssertEqual(loaded.retrievals[0].how, "뜻")
+    }
+
+    func testQuestionMarkRequiresExistingQuestionAndDoesNotChangeReview() {
+        var original = record(state: .active)
+        original.retrievals = [SessionRetrieval(id: "r-1", query: "예산", scope: "", questionID: "q-1", requestedAt: 1)]
+        XCTAssertFalse(original.markQuestion(id: "missing", marked: true))
+        XCTAssertTrue(original.markQuestion(id: "q-1", marked: true))
+        XCTAssertEqual(original.markedQuestions, ["q-1": true])
+        XCTAssertTrue(original.questionReviews.isEmpty)
+        XCTAssertTrue(original.markQuestion(id: "q-1", marked: false))
+        XCTAssertTrue(original.markedQuestions.isEmpty)
     }
 
     func testQuestionEligibilityPreservesExistingLiveFillerGate() {
@@ -112,6 +124,7 @@ final class SessionStoreTests: XCTestCase {
         XCTAssertNil(loaded.reviewStatus)
         XCTAssertNotEqual(loaded.reviewStatus, "done")
         XCTAssertEqual(loaded.questionReviews, [:])
+        XCTAssertEqual(loaded.markedQuestions, [:])
         XCTAssertNil(loaded.retrievals[0].questionID)
         XCTAssertNil(loaded.retrievals[0].status)
         XCTAssertNil(loaded.retrievals[0].displayedID)

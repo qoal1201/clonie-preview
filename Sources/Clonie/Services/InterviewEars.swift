@@ -256,6 +256,7 @@ final class InterviewEars {
                 return
             }
             accepted = true
+            connectInput(.them, generation: generation)
         } catch {
             if let pendingStream {
                 if stream === pendingStream { stream = nil; systemTap = nil }
@@ -366,6 +367,7 @@ final class InterviewEars {
         do {
             try engine.start()
             micRunning = true
+            connectInput(.me, generation: generation)
         } catch {
             input.removeTap(onBus: 0)
             failInput(.me, message: "마이크를 시작하지 못했습니다.", generation: generation)
@@ -423,6 +425,13 @@ final class InterviewEars {
 
     private func publishCaptureState() {
         if let readiness { onCaptureState?(readiness.snapshot) }
+    }
+
+    private func connectInput(_ who: Who, generation: Int) {
+        guard startGeneration == generation, !finishing, readiness != nil else { return }
+        let before = readiness?.snapshot
+        readiness?.connect(who.rawValue)
+        if before != readiness?.snapshot { publishCaptureState() }
     }
 
     private func failInput(_ who: Who, message: String, generation: Int) {

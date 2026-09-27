@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "clonie": {
+      "command": "/bin/bash",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/start-mcp.sh"]
+    }
+  }
+}

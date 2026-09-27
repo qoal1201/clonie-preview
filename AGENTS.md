@@ -1,6 +1,6 @@
 # Clonie: instructions for installation and repository work
 
-This repository contains a macOS alpha app. If a user supplies this URL and asks
+This repository contains a macOS app. If a user supplies this URL and asks
 to try Clonie, help them install the release rather than starting a source build.
 Read README.md, INSTALL.md, and PRIVACY.md first. A request to inspect the repository alone
 does not authorize installation or reading the user's personal documents.
@@ -17,7 +17,7 @@ does not authorize installation or reading the user's personal documents.
    `~/Applications/Clonie.app`, checks the release SHA-256 and app signature,
    and refuses to overwrite an existing Clonie.app in that
    folder. `--app-dir` selects another folder.
-4. Read the release version from README and check the installed bundle version (`CFBundleShortVersionString`); the current release is 1.0.6. Confirm that the installed bundle exists and `codesign --verify --deep --strict`
+4. Read the chosen version from Releases and check the installed bundle version (`CFBundleShortVersionString`). Confirm that the installed bundle exists and `codesign --verify --deep --strict`
    succeeds. This verifies its signature, not Apple notarization or first-launch success.
 5. Open the installed app if the user requested to start using it. Let the user
    handle macOS first-launch approval and microphone/screen recording permissions.
@@ -29,6 +29,16 @@ does not authorize installation or reading the user's personal documents.
 No API key, AI subscription, Python, Xcode, or source build is required for the
 bundled app's basic exploration, editing, and local search. Apple speech model
 preparation is a separate first-use step. Microphone-only use searches with the user’s speech; including system audio searches with the other speaker’s speech. Do not start voice collection just to finish installation. PDF/Word import can require a first-use download of conversion tools and models. External AI access is an optional MCP connection, not a prerequisite for installation.
+
+## Optional local AI connection
+
+If the user requests it, follow `plugins/clonie/README.md` to install the app-bundled
+plugin. Do not add a duplicate manual MCP entry. Use local Codex, Work locally,
+or Codex CLI; ordinary Chat and remote Work are separate environments.
+Verify the actual MCP `vaultPath` against the app selection before reading content.
+The AI conversation folder need not match the Clonie folder. A changed app folder
+may require a new AI conversation. `vault_write` creates a proposal; report a saved
+file only after Clonie approval and a fresh `vault_read`.
 
 ## Repository changes
 

@@ -38,6 +38,8 @@ public final class VaultIO {
         case slow
         /// 못 썼다/못 읽었다. **권한이 거부된 경우**를 따로 든다 — 사람이 할 일이 다르다.
         case denied
+        /// 디스크 자체가 읽기 전용이어서 접근 허용으로 해결되지 않는다.
+        case readOnly
         /// 읽은 뒤 같은 파일이 외부에서 달라졌다. 오류 안에 양쪽 내용과 충돌 사본 자리가 있다.
         case conflict(VaultConflictError)
         /// 그 밖의 실패. 딸린 글자는 시스템이 준 설명이다.
@@ -47,15 +49,15 @@ public final class VaultIO {
         public var message: String {
             switch self {
             case .slow:
-                return "볼트에 쓰는 중이다 — 폴더 접근 권한 창이 떠 있으면 그것부터 눌러라. "
-                     + "허용할 때까지 조각이 디스크에 안 앉는다"
+                return "저장소 응답을 기다리고 있습니다. 폴더 접근 권한 창이 열려 있다면 확인해 주세요."
             case .denied:
-                return "볼트 폴더에 접근할 권한이 없다 — 조각이 저장되지 않았다. "
-                     + "권한을 허용하거나 쓸 수 있는 다른 폴더를 볼트로 골라라"
+                return "저장소 폴더를 읽거나 쓸 권한이 없습니다. 폴더 접근 및 쓰기 권한을 확인한 뒤 다시 시도하거나 다른 폴더를 선택해 주세요."
+            case .readOnly:
+                return "읽기 전용 디스크에는 저장할 수 없습니다. 쓰기 가능한 디스크의 폴더를 선택해 주세요."
             case .conflict(let conflict):
                 return conflict.localizedDescription
             case .failed(let why):
-                return "볼트에 저장하지 못했다 — \(why)"
+                return "저장소 작업을 완료하지 못했습니다 — \(why)"
             }
         }
     }
@@ -67,8 +69,7 @@ public final class VaultIO {
         let ns = error as NSError
         if ns.domain == NSCocoaErrorDomain {
             switch ns.code {
-            case NSFileReadNoPermissionError, NSFileWriteNoPermissionError,
-                 NSFileWriteVolumeReadOnlyError:
+            case NSFileReadNoPermissionError, NSFileWriteNoPermissionError:
                 return true
             default: break
             }
@@ -83,9 +84,20 @@ public final class VaultIO {
         return false
     }
 
+    private static func isReadOnlyVolume(_ error: Error) -> Bool {
+        let ns = error as NSError
+        if ns.domain == NSCocoaErrorDomain && ns.code == NSFileWriteVolumeReadOnlyError { return true }
+        if ns.domain == NSPOSIXErrorDomain && ns.code == Int(EROFS) { return true }
+        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? NSError {
+            return isReadOnlyVolume(underlying)
+        }
+        return false
+    }
+
     /// 실패 하나를 화면이 먹는 모양으로. **판정은 여기 하나**다.
     public static func trouble(for error: Error) -> Trouble {
         if let conflict = error as? VaultConflictError { return .conflict(conflict) }
+        if isReadOnlyVolume(error) { return .readOnly }
         return isPermissionDenied(error) ? .denied : .failed((error as NSError).localizedDescription)
     }
 

@@ -32,15 +32,30 @@ final class TwoProcessTests: XCTestCase {
 
     private func call(_ id: Int, _ name: String, _ args: [String: Any]) throws -> [String: Any] {
         let r = try mcp.request(id: id, method: "tools/call", params: ["name": name, "arguments": args])
-        let content = ((r["result"] as? [String: Any])?["content"] as? [[String: Any]]) ?? []
+        let result = try XCTUnwrap(r["result"] as? [String: Any])
+        XCTAssertEqual(result["isError"] as? Bool, false)
+        let content = (result["content"] as? [[String: Any]]) ?? []
         let text = content.first?["text"] as? String ?? "{}"
-        return try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any] ?? [:]
+        let legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+        let structured = try XCTUnwrap(result["structuredContent"] as? [String: Any])
+        XCTAssertEqual(legacy as NSDictionary, structured as NSDictionary,
+                       "Both response forms must preserve the same IDs, revisions, dates, and proposal status.")
+        return structured
+    }
+
+    func testToolErrorHasNoSuccessfulStructuredContent() throws {
+        let response = try mcp.request(id: 2, method: "tools/call", params: [
+            "name": "vault_read", "arguments": ["id": "missing-document"]])
+        let result = try XCTUnwrap(response["result"] as? [String: Any])
+        XCTAssertEqual(result["isError"] as? Bool, true)
+        XCTAssertNil(result["structuredContent"])
     }
 
     func testFragmentWrittenByServerSurvivesAppSave() throws {
         let w = try call(2, "vault_write", ["title": "MCP 가 쓴 조각", "body": "둘째 문으로 들어온 문단", "force": true])
-        XCTAssertEqual(w["written"] as? Bool, true)
-        let path = w["path"] as! String
+        XCTAssertEqual(w["written"] as? Bool, false)
+        try VaultStore(vaultURL: vault).approveProposal(id: w["proposalID"] as! String)
+        let path = try VaultStore(vaultURL: vault).load().paths[w["id"] as! String]!
         XCTAssertTrue(FileManager.default.fileExists(atPath: vault.appendingPathComponent(path).path))
 
         // 앱이 자기 문서(MCP 조각을 모른다)를 그대로 저장한다 — 화면이 매 저장마다 하는 일.
@@ -54,7 +69,8 @@ final class TwoProcessTests: XCTestCase {
     }
 
     func testAppEditAndServerWriteBothLand() throws {
-        _ = try call(2, "vault_write", ["title": "MCP 둘째", "body": "본문", "force": true])
+        let pending = try call(2, "vault_write", ["title": "MCP 둘째", "body": "본문", "force": true])
+        try VaultStore(vaultURL: vault).approveProposal(id: pending["proposalID"] as! String)
         var doc = MCPTestSupport.sampleDocument()
         doc.fragments[0].body = "앱에서 고친 본문"
         try app.save(doc)
@@ -74,7 +90,8 @@ final class TwoProcessTests: XCTestCase {
 
     func testServerNeverWritesIndexSidecar() throws {
         _ = try call(2, "vault_search", ["query": "배포"])
-        _ = try call(3, "vault_write", ["title": "하나 더", "body": "본문", "force": true])
+        let pending = try call(3, "vault_write", ["title": "하나 더", "body": "본문", "force": true])
+        try VaultStore(vaultURL: vault).approveProposal(id: pending["proposalID"] as! String)
         let sidecar = VaultStore(vaultURL: vault).sidecarURL
         XCTAssertFalse(FileManager.default.fileExists(atPath: sidecar.appendingPathComponent("embeddings.json").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: sidecar.appendingPathComponent("links.json").path))
@@ -89,6 +106,23 @@ final class TwoProcessTests: XCTestCase {
         XCTAssertEqual(String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
                         .trimmingCharacters(in: .whitespacesAndNewlines), ClonieMCPVersion.string)
         XCTAssertEqual(p.terminationStatus, 0)
+    }
+
+    func testWriteContractCheckDoesNotOpenAVault() throws {
+        let missingVault = vault.appendingPathComponent("not-created")
+        let p = Process()
+        p.executableURL = MCPTestSupport.productsDirectory.appendingPathComponent("clonie-mcp")
+        p.arguments = ["--write-contract", "--vault", missingVault.path]
+        p.environment = MCPTestSupport.noModelEnvironment
+        let out = Pipe(), err = Pipe()
+        p.standardOutput = out
+        p.standardError = err
+        try p.run(); p.waitUntilExit()
+        XCTAssertEqual(p.terminationStatus, 0)
+        XCTAssertEqual(String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self),
+                       "proposal-v1\n")
+        XCTAssertTrue(err.fileHandleForReading.readDataToEndOfFile().isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: missingVault.path))
     }
 
     /// `stderrText()` 는 메모리 버퍼만 읽는다 — 자식이 멎어도 안 멈춘다는 것을 20초 기다리지 않고 잰다.

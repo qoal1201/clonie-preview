@@ -9,6 +9,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mainSettingsItem: NSMenuItem?
     private var preparingToQuit = false
     private var vaultPicker: NSOpenPanel?
+    private(set) var remoteConnection: RemoteConnectionController?
+    private var pendingRemoteOpen = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !QASession.isQABundle || QASession.current != nil else {
@@ -17,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         NSApp.setActivationPolicy(.accessory)
         installMenus()
+        remoteConnection = RemoteConnectionController()
+        remoteConnection?.access.didChange = { [weak self] _ in self?.chatWindow?.webView.sendRemoteConnectionState() }
         QASnapshot.installQASnapshotObserver()
         QADrive.installQADriveObserver()
         if let session = QASession.current {
@@ -25,6 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             QAChannel.append("session=\(session.id) vault=\(session.vaultURL.path) pid=\(ProcessInfo.processInfo.processIdentifier)",
                              to: QAChannel.outputDirectory + "/session.log")
         } else {
+            // Let the plugin find this installed build without a second connection UI.
+            // Isolated QA never replaces the user's application registration.
+            UserDefaults.standard.set(Bundle.main.bundleURL.path, forKey: "mcpAppPath")
             let hotKeys = GlobalHotKey()
             hotKeys.register(.toggle, RecordingShortcut.toggle) { [weak self] in
                 self?.hotKeyToggleChat()
@@ -134,6 +141,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    func application(_ application: NSApplication, open urls: [URL]) {
+        let scheme = Bundle.main.bundleIdentifier ?? "com.local.clonie"
+        guard urls.contains(where: { $0.absoluteString == "\(scheme)://connect/chat" }) else { return }
+        // This link carries no identity, folder, endpoint, credential or implicit permission.
+        pendingRemoteOpen = true
+        toggleChat()
+        showPendingRemoteConnection()
+    }
+
+    func showPendingRemoteConnection() {
+        guard pendingRemoteOpen, let web = chatWindow?.webView.view, !web.isLoading else { return }
+        web.evaluateJavaScript("openRemoteConnection()") { [weak self] shown, error in
+            if error == nil, shown as? Bool == true { self?.pendingRemoteOpen = false }
+        }
+    }
+
     @objc func configureBackend() {
         DispatchQueue.main.async { [weak self] in
             self?.toggleChat()
@@ -144,6 +167,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func setSettingsEnabled(forMode mode: String) {
         settingsItem?.isEnabled = mode == "stack"
         mainSettingsItem?.isEnabled = mode == "stack"
+        if mode == "stack", pendingRemoteOpen {
+            DispatchQueue.main.async { [weak self] in self?.showPendingRemoteConnection() }
+        }
     }
 
     /// A shortcut becomes persistent only after Carbon accepts it.
@@ -210,12 +236,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // The WebView acknowledges its pending editor save before the process exits.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard !preparingToQuit else { return .terminateLater }
-        guard let editor = chatWindow?.webView else { return .terminateNow }
         preparingToQuit = true
-        editor.prepareForTermination { [weak self] saved in
-            self?.preparingToQuit = false
-            sender.reply(toApplicationShouldTerminate: saved)
+        let finish: (Bool) -> Void = { [weak self] saved in
+            Task { @MainActor in
+                if saved { await self?.remoteConnection?.access.stop(signOut: false) }
+                self?.preparingToQuit = false
+                sender.reply(toApplicationShouldTerminate: saved)
+            }
         }
+        if let editor = chatWindow?.webView { editor.prepareForTermination(completion: finish) }
+        else { finish(true) }
         return .terminateLater
     }
 

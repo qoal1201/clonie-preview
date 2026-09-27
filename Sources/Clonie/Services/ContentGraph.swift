@@ -71,16 +71,13 @@ final class ContentGraph {
 
     /// 조각이 저장되거나 볼트를 새로 읽었을 때 부른다.
     ///
-    /// - Parameter onNotice: 사람에게 보일 한 줄. **주 스레드에서** 불린다.
-    ///   알릴 것이 없으면 아예 안 불린다 — 빈 띠를 띄우지 않는다.
     /// - Parameter onVectors: 화면이 라이브 검색에 쓸 **벡터 꾸러미** JSON (#34).
     ///   **주 스레드에서** 불린다. 색인이 성공했을 때만 온다 — 모델이 없으면 아예 안 불리고,
-    ///   그때 화면은 bigram 으로 돈다(선언된 갈림).
+    ///   파일 탐색·편집은 유지되지만 질문 결과는 검색 준비 상태로 남는다.
     /// - Parameter onState: `indexing` · `ready` · `unavailable` · `error` 중 하나. 모든 전달은
     ///   현재 볼트·색인 세대인지 주 스레드에서도 다시 확인한다.
     func index(fragments: [Fragment],
                questions: [Question],
-               onNotice: @escaping (String) -> Void,
                onVectors: @escaping (String) -> Void,
                onState: @escaping (String) -> Void = { _ in }) {
         // ★ 새 문서 스냅샷이 들어온 순간부터 이전 색인은 낡았다. 큐 앞에서 세대를 올려야
@@ -101,22 +98,17 @@ final class ContentGraph {
                 guard self.isCurrent(generation) else { return }
                 FileHandle.standardError.write(Data("[cue] \(report.summary)\n".utf8))
                 // ★ 코사인·순위·색은 **화면에 산다** (#34, `tests/screen-load.mjs` 자물쇠).
-                //   여기서 하는 것은 벡터를 글자로 만들어 건네는 것뿐이다.
-                //   ⚠ 인코딩은 사이드카와 **같은 것**을 쓴다 — 두 벌이 되면 한쪽이 조용히 낡는다.
-                if let json = Self.vectorPayload(dimensions: indexer.embedder.dimensions,
+                //   앱은 payload를 조립하지만 모델 차원·벡터 부호화는 Index 경계에 맡긴다.
+                if let json = Self.vectorPayload(dimensions: indexer.dimensions,
                                                  fragments: report.vectors,
                                                  passages: report.passageVectors,
-                                                 questions: report.questionVectors) {
+                                                 questions: report.questionVectors,
+                                                 encode: indexer.encodedVector) {
                     self.deliverIndex(generation, value: json, callback: onVectors)
                 }
                 self.deliverIndex(generation, value: "ready", callback: onState)
-                // ⚠ **콜드 빌드에서는 안 알린다.** 처음 색인하는 볼트는 「전부 새 조각」이라
-                //   쌓아둔 중복이 한꺼번에 쏟아진다 — 그건 알림이 아니라 벽이다.
-                guard !report.coldBuild,
-                      let line = ContentIndexer.duplicateNotice(report.duplicates,
-                                                                fragments: fragments)
-                else { return }
-                self.deliverIndex(generation, value: line, callback: onNotice)
+                // 유사 문서는 행성 선택·질문의 추천에서 탐색한다. 색인 완료는 저장 결과를
+                // 경고로 덮지 않는다 — 유사성은 지금 수정해야 할 오류라는 뜻이 아니다.
             } catch {
                 // 색인이 실패해도 **저장은 이미 끝났다.** 사용자의 글은 안 잃는다 —
                 // 잃는 것은 이번 판 그래프뿐이고, 다음 저장이 다시 만든다.
@@ -129,9 +121,9 @@ final class ContentGraph {
     /// 면접 중 들린 질의 하나를 벡터로 (#34).
     ///
     /// ⚠ **색인과 같은 직렬 큐**를 쓴다. `TextEmbedder` 는 스레드 안전을 약속하지 않아서
-    /// 큐를 나누면 두 스레드가 같은 CoreML 모델에 들어간다. 대가는 하나 — 콜드 색인이
-    /// 도는 중이면 첫 질의가 그만큼(`실측`: 조각 50장 4.1초) 기다린다. 그 사이 화면은
-    /// bigram 으로 돌고 있어서 **비어 있지 않다**.
+    /// 큐를 나누면 두 스레드가 같은 CoreML 모델에 들어간다. 콜드 색인이 도는 동안
+    /// 질의도 기다린다. 현재 질문 결과 화면은 의미 벡터가 없으면 `검색 준비 중`만 표시한다.
+    /// 내부 bigram 계산이나 파일 이름 찾기를 질문 검색의 가용성으로 세지 않는다.
     ///
     /// ⚠ **밀린 것은 버린다.** 말은 계속 자라는데 큐가 밀리면 낡은 질의의 벡터가 줄줄이
     /// 도착한다. 화면도 글자를 대조해 안 쓰지만(`scorer`), 안 만드는 편이 싸다.
@@ -147,7 +139,7 @@ final class ContentGraph {
             guard self.isLatestQuery(text), self.isCurrentVault(generation) else { return }
             let b64: String?
             if let indexer {
-                do { b64 = ContentIndexStore.encode(vector: try indexer.embedder.embed(query: text)) }
+                do { b64 = try indexer.encodedQueryVector(for: text) }
                 catch { b64 = nil }
             } else {
                 b64 = nil
@@ -195,17 +187,16 @@ final class ContentGraph {
             self.pendingLock.unlock()
             guard newest == text, self.isCurrentVault(generation) else { return }
             guard let indexer = self.resolveIndexer(), self.isCurrentVault(generation) else { return }
-            let v: [Float]
+            let encoded: String
             do {
-                v = kind == "query" ? try indexer.embedder.embed(query: text)
-                                    : try indexer.embedder.embed(passage: text)
+                encoded = kind == "query" ? try indexer.encodedQueryVector(for: text)
+                                          : try indexer.encodedPassageVector(for: text)
             } catch {
                 FileHandle.standardError.write(Data("[cue] 초안 임베딩 실패: \(error)\n".utf8))
                 return
             }
             guard self.isCurrentVault(generation) else { return }
-            let b64 = ContentIndexStore.encode(vector: v)
-            self.deliverVault(generation) { completion(slot, text, b64) }
+            self.deliverVault(generation) { completion(slot, text, encoded) }
         }
     }
 
@@ -280,7 +271,8 @@ final class ContentGraph {
     private static func vectorPayload(dimensions: Int,
                                       fragments: [String: [Float]],
                                       passages: [String: [ContentIndexer.PassageVector]],
-                                      questions: [String: [[Float]]]) -> String? {
+                                      questions: [String: [[Float]]],
+                                      encode: ([Float]) -> String) -> String? {
         guard !fragments.isEmpty || !passages.isEmpty || !questions.isEmpty else { return nil }
         let encodedPassages: [String: [[String: Any]]] = passages.mapValues { values in
             values.map { value in
@@ -291,15 +283,15 @@ final class ContentGraph {
                     "text": p.text,
                     "sourceText": p.sourceText,
                     "hash": p.hash,
-                    "vectorBase64": ContentIndexStore.encode(vector: value.vector),
+                    "vectorBase64": encode(value.vector),
                 ]
             }
         }
         let payload: [String: Any] = [
             "dimensions": dimensions,
-            "fragments": fragments.mapValues { ContentIndexStore.encode(vector: $0) },
+            "fragments": fragments.mapValues(encode),
             "passages": encodedPassages,
-            "questions": questions.mapValues { $0.map { ContentIndexStore.encode(vector: $0) } },
+            "questions": questions.mapValues { $0.map(encode) },
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: payload) else { return nil }
         return String(data: data, encoding: .utf8)

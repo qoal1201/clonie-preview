@@ -11,7 +11,7 @@ function setup(source='# 시험 문서\n\n## 결정 이유\n\n**정확한 값**�
   w.Range.prototype.getBoundingClientRect=()=>({left:0,right:0,top:0,bottom:0,width:0,height:0});
   const sent=[];
   w.webkit={messageHandlers:new Proxy({}, {get:(_t,name)=>({postMessage:body=>sent.push({name,body})})})};
-  w.eval(screenScript()+`;window.testAPI={ClonieMarkdownEditor,performEditorHistory,openMarkdownLink,receiveDocument,openWorkspaceDocument,editorManualSave,onDocumentSaveFailed,takeEditorDraft,enterFlow,returnFromFlow,clearEditorAutosave,releaseMarkdownEditors,resetMarkdownEditors,canvasGoBack,editorLocation,setPaths:p=>{PATHS=p},state:()=>({save:EDITOR_SAVE_STATE,composing:EDITOR_COMPOSING}),editorAPI:()=>ClonieMarkdownEditor};`);
+  w.eval(screenScript()+`;window.testAPI={ClonieMarkdownEditor,onJevPreviewReady,prepareJevEvidence,updateJevNote,requestJevSupplement,onJevEvidence,applyJevSupplement,jevState:()=>JEV_SUPPLEMENT,jevSetup:()=>{CANVQ="보류 이유";mode="stack"},performEditorHistory,openMarkdownLink,receiveDocument,openWorkspaceDocument,editorManualSave,onDocumentSaveFailed,takeEditorDraft,enterFlow,returnFromFlow,clearEditorAutosave,releaseMarkdownEditors,resetMarkdownEditors,canvasGoBack,editorLocation,setPaths:p=>{PATHS=p},state:()=>({save:EDITOR_SAVE_STATE,composing:EDITOR_COMPOSING,flight:!!SAVE_FLIGHT,pending:SAVE_PENDING}),document:()=>docCopy(DOC),mutateDocumentBody:body=>{DOC.fragments[0].body=body},showNewDocument:()=>{sel=null;PANE.r=340;stackRender()},editorAPI:()=>ClonieMarkdownEditor};`);
   const api=w.testAPI;
   const data={schemaVersion:1,questions:[],asked:[],fragments:[{id:'doc',title:'시험 문서',body:source,questionIds:[]}],paths:{doc:'시험 문서.md'}};
   api.receiveDocument(JSON.stringify(data),null,{kind:'load',revision:'r1'});
@@ -142,6 +142,24 @@ test('typing and undo stay in the same Markdown source, including across setting
   }finally{x.close()}
 });
 
+test('a watcher reload after saved text is undone preserves the redo branch',()=>{
+  const x=setup('첫 본문');try{
+    const bo=x.body(),view=EditorView.findFromDOM(bo);bo.focus();
+    view.dispatch({changes:{from:4,insert:' 추가'},selection:{anchor:7}});
+    x.api.editorManualSave();
+    const request=x.sent.find(s=>s.name==='saveDocument').body;
+    x.api.receiveDocument(request.json,null,{kind:'save',requestID:request.requestID,revision:'r2',savedRevision:'r2'});
+
+    assert.equal(x.api.performEditorHistory('undo'),true);
+    assert.equal(bo.value,'첫 본문');
+    x.api.receiveDocument(request.json,null,{kind:'reload',revision:'r3'});
+
+    assert.equal(x.body()===bo,true,'a reload must not replace an editor with a local history change');
+    assert.equal(x.api.performEditorHistory('redo'),true);
+    assert.equal(bo.value,'첫 본문 추가');
+  }finally{x.close()}
+});
+
 test('the body heading is the single visible title and editing it updates saved title',()=>{
   const x=setup();try{
     const bo=x.body();assert.equal(x.w.document.getElementById('doctitle').hidden,true);
@@ -173,6 +191,61 @@ test('Korean decomposed filenames do not repeat the same document title in the p
     assert.equal(x.api.editorLocation({id:'doc',title:'시험 문서'}),'');
     x.api.setPaths({doc:'결정/시험 문서.md'.normalize('NFD')});
     assert.equal(x.api.editorLocation({id:'doc',title:'시험 문서'}).normalize('NFC'),'결정');
+  }finally{x.close()}
+});
+
+test('Cmd+S without an edit keeps the document and does not send a save',()=>{
+  const x=setup();try{
+    const before=JSON.stringify(x.api.document());
+    const bo=x.body();bo.focus();
+    const event=new x.w.KeyboardEvent('keydown',{key:'s',code:'KeyS',metaKey:true,bubbles:true,cancelable:true});
+    bo.dispatchEvent(event);
+    assert.equal(event.defaultPrevented,true);
+    assert.equal(JSON.stringify(x.api.document()),before,'updatedAt and source stay unchanged');
+    assert.equal(x.sent.filter(s=>s.name==='saveDocument').length,0);
+    assert.equal(x.api.state().save,'saved');
+  }finally{x.close()}
+});
+
+test('a second unchanged Cmd+S keeps an in-flight save pending without reporting success',()=>{
+  const x=setup();try{
+    const bo=x.body(),view=EditorView.findFromDOM(bo);bo.focus();
+    view.dispatch({changes:{from:x.source.length,insert:'저장 중'}});
+    x.api.editorManualSave();
+    const request=x.sent.find(s=>s.name==='saveDocument')?.body;assert.ok(request);
+    let state=x.api.state();
+    assert.equal(state.save,'saving');assert.equal(state.flight,true);assert.equal(state.pending,false);
+
+    x.api.editorManualSave();
+    assert.equal(x.sent.filter(s=>s.name==='saveDocument').length,1);
+    state=x.api.state();
+    assert.equal(state.save,'saving');assert.equal(state.flight,true);assert.equal(state.pending,false);
+
+    x.api.receiveDocument(request.json,null,{kind:'save',requestID:request.requestID,revision:'r2',savedRevision:'r2'});
+    assert.equal(x.sent.filter(s=>s.name==='saveDocument').length,1);
+    assert.equal(x.api.state().save,'saved');
+  }finally{x.close()}
+});
+
+test('unchanged editor saves an unsaved DOC mutation without changing its timestamp',()=>{
+  const x=setup();try{
+    const before=x.api.document().fragments[0].updatedAt;
+    x.api.mutateDocumentBody('배경에서 바뀐 본문');x.body().value='배경에서 바뀐 본문';
+    x.api.editorManualSave();
+    const request=x.sent.find(s=>s.name==='saveDocument')?.body;assert.ok(request);
+    const saved=JSON.parse(request.json).fragments[0];
+    assert.equal(saved.body,'배경에서 바뀐 본문');
+    assert.equal(saved.updatedAt,before);
+  }finally{x.close()}
+});
+
+test('a blank new document is not treated as an already saved no-op',()=>{
+  const x=setup();try{
+    x.api.showNewDocument();
+    assert.equal(x.api.takeEditorDraft().id,null);
+    assert.equal(x.api.editorManualSave(),false);
+    assert.equal(x.sent.filter(s=>s.name==='saveDocument').length,0);
+    assert.equal(x.api.state().save,'dirty');
   }finally{x.close()}
 });
 
@@ -238,5 +311,39 @@ test('only Command-click opens a body link and code examples never become links'
     assert.equal(x.sent.filter(s=>s.name==='openSystem').length,1);
     assert.deepEqual(JSON.parse(JSON.stringify(x.api.editorAPI().links(bo.value))).map(x=>x.target),['proof.pdf']);
     assert.equal(bo.value,x.source);
+  }finally{x.close()}
+});
+
+test('explicit supplement insertion preserves exact note, saves through normal revision path and is one undoable edit',()=>{
+  const x=setup('# 시험 문서\n\n기존 결정');try{
+    const bo=x.body(),text='\n\n아직 제안: 월요일에 다시 검토하자.\n';
+    assert.equal(x.api.ClonieMarkdownEditor.appendText(bo,text),true);
+    assert.equal(bo.value,x.source+text);
+    x.api.editorManualSave();
+    const request=x.sent.find(s=>s.name==='saveDocument').body;
+    assert.equal(JSON.parse(request.json).fragments[0].body,x.source+text);
+    assert.equal(request.revision,'r1');
+    assert.equal(x.api.performEditorHistory('undo'),true);assert.equal(bo.value,x.source);
+    assert.equal(x.api.performEditorHistory('redo'),true);assert.equal(bo.value,x.source+text);
+    assert.equal(x.api.ClonieMarkdownEditor.appendText(x.w.document.createElement('textarea'),'x'),false);
+  }finally{x.close()}
+});
+
+
+test('supplement judgment flows through explicit apply into existing editor save, cannot apply twice, and undo preserves original',()=>{
+  const x=setup('# 시험 문서\n\n인력 부족으로 미뤘다.');try{
+    x.api.jevSetup();x.api.onJevPreviewReady(true);
+    x.api.prepareJevEvidence('보류 이유',[{p:{id:'doc',title:'시험 문서',body:x.source}}]);
+    const note='아직 제안: 인원이 늘었으니 월요일에 재검토하자.';
+    x.api.updateJevNote(note);x.api.requestJevSupplement();
+    x.api.onJevEvidence({requestID:x.api.jevState().requestID,assessments:[{id:'doc',label:'supplement',confidence:.9}]});
+    assert.equal(x.sent.filter(s=>s.name==='saveDocument').length,0);
+    assert.equal(x.api.applyJevSupplement('doc'),true);
+    const request=x.sent.find(s=>s.name==='saveDocument').body;
+    assert.equal(JSON.parse(request.json).fragments[0].body,x.source+'\n\n'+note);
+    assert.equal(request.revision,'r1');
+    assert.equal(x.api.applyJevSupplement('doc'),false);
+    assert.equal(x.sent.filter(s=>s.name==='saveDocument').length,1);
+    assert.equal(x.api.performEditorHistory('undo'),true);assert.equal(x.body().value,x.source);
   }finally{x.close()}
 });

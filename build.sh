@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 
-VERSION="1.0.6"
+VERSION="1.1.0"
 APP_NAME="Clonie"
 APP_BUNDLE="Clonie.app"
 BUNDLE_ID="com.local.clonie"
@@ -83,51 +83,21 @@ PY
 )"
 fi
 
-# The QA visibility gate belongs to WindowPrivacy. This build never exports it.
-# The script only writes the repository-local bundle named above; it does not
-# terminate, install, or remove an app from /Applications.
-echo "→ Building Clonie targets..."
-swift build -c release --product Clonie
-swift build -c release --product clonie-mcp
-
-[ -x "$APP_BINARY" ] || { echo "✗ missing $APP_BINARY" >&2; exit 1; }
-[ -x "$MCP_BINARY" ] || { echo "✗ missing $MCP_BINARY" >&2; exit 1; }
-
-# Replacing a repository-local build artifact is safe; the user's installed app
-# is never addressed by this path.
-echo "→ Creating $APP_BUNDLE..."
-rm -rf "$APP_PATH"
-mkdir -p "$APP_PATH/Contents/MacOS" "$APP_PATH/Contents/Resources"
-cp -R scripts/document-conversion "$APP_PATH/Contents/Resources/"
-mkdir -p "$APP_PATH/Contents/Resources/skills"
-cp -R .agents/skills/clonie-session-record "$APP_PATH/Contents/Resources/skills/"
-cp -R .agents/skills/clonie "$APP_PATH/Contents/Resources/skills/"
-cp "$APP_BINARY" "$APP_PATH/Contents/MacOS/$APP_NAME"
-cp "$MCP_BINARY" "$APP_PATH/Contents/MacOS/clonie-mcp"
-
-copy_if_present() {
-  local source="$1"
-  local destination="$2"
-  if [ -e "$source" ]; then
-    mkdir -p "$(dirname "$destination")"
-    cp -R "$source" "$destination"
+# Fully stage and verify the optional model before Swift build or app replacement.
+# A missing or corrupt model must leave the last signed repository app intact.
+MODEL_STAGE=""
+cleanup_model_stage() {
+  if [ -n "$MODEL_STAGE" ]; then
+    rm -rf "$MODEL_STAGE"
   fi
 }
-
-copy_if_present "$ROOT_DIR/assets/branding/Clonie.icns" \
-  "$APP_PATH/Contents/Resources/Clonie.icns"
-copy_if_present "$ROOT_DIR/assets/branding/ClonieMenuTemplate.png" \
-  "$APP_PATH/Contents/Resources/ClonieMenuTemplate.png"
-copy_if_present "$ROOT_DIR/ThirdPartyNotices" \
-  "$APP_PATH/Contents/Resources/ThirdPartyNotices"
-
-cp "$ROOT_DIR/LICENSE" "$ROOT_DIR/LICENSING.md" "$APP_PATH/Contents/Resources/"
-cp "$ROOT_DIR/LICENSING.md" "$APP_PATH/Contents/Resources/ThirdPartyNotices/"
+trap cleanup_model_stage EXIT
 
 if [ "$INCLUDE_MODEL" -eq 1 ]; then
   MODEL_SOURCE="${CLONIE_MODEL_DIR:-$HOME/Library/Application Support/Clonie/models/multilingual-e5-small-ko-v2}"
+  MODEL_STAGE="$(mktemp -d "${TMPDIR:-/tmp}/clonie-model.XXXXXX")"
   echo "→ Validating and bundling model: $MODEL_SOURCE"
-  python3 - "$MODEL_SOURCE" "$APP_PATH/Contents/Resources" <<'PY'
+  python3 - "$MODEL_SOURCE" "$MODEL_STAGE" <<'PY'
 import hashlib
 import json
 import shutil
@@ -241,6 +211,60 @@ print(f"  {manifest['model_id']}@{str(manifest['revision'])[:12]} · model sha25
 PY
 fi
 
+# The QA visibility gate belongs to WindowPrivacy. This build never exports it.
+
+# Validate before replacing the last working app, just like the optional model preflight.
+if [ -n "${CLONIE_REMOTE_CONFIG:-}" ]; then
+  python3 scripts/validate-remote-config.py "$CLONIE_REMOTE_CONFIG"
+fi
+# The script only writes the repository-local bundle named above; it does not
+# terminate, install, or remove an app from /Applications.
+echo "→ Building Clonie targets..."
+swift build -c release --product Clonie
+swift build -c release --product clonie-mcp
+
+[ -x "$APP_BINARY" ] || { echo "✗ missing $APP_BINARY" >&2; exit 1; }
+[ -x "$MCP_BINARY" ] || { echo "✗ missing $MCP_BINARY" >&2; exit 1; }
+
+# Replacing a repository-local build artifact is safe; the user's installed app
+# is never addressed by this path.
+echo "→ Creating $APP_BUNDLE..."
+rm -rf "$APP_PATH"
+mkdir -p "$APP_PATH/Contents/MacOS" "$APP_PATH/Contents/Resources"
+cp -R scripts/document-conversion "$APP_PATH/Contents/Resources/"
+python3 scripts/package-clonie-plugin.py "$APP_PATH/Contents/Resources/CloniePlugin"
+cp "$APP_BINARY" "$APP_PATH/Contents/MacOS/$APP_NAME"
+cp "$MCP_BINARY" "$APP_PATH/Contents/MacOS/clonie-mcp"
+
+# Public OAuth identifiers/endpoints are release metadata, never a user-entered API key.
+# No configuration is shipped until the operator has provisioned and verified the service.
+if [ -n "${CLONIE_REMOTE_CONFIG:-}" ]; then
+  cp "$CLONIE_REMOTE_CONFIG" "$APP_PATH/Contents/Resources/RemoteConnection.json"
+fi
+
+copy_if_present() {
+  local source="$1"
+  local destination="$2"
+  if [ -e "$source" ]; then
+    mkdir -p "$(dirname "$destination")"
+    cp -R "$source" "$destination"
+  fi
+}
+
+copy_if_present "$ROOT_DIR/assets/branding/Clonie.icns" \
+  "$APP_PATH/Contents/Resources/Clonie.icns"
+copy_if_present "$ROOT_DIR/assets/branding/ClonieMenuTemplate.png" \
+  "$APP_PATH/Contents/Resources/ClonieMenuTemplate.png"
+copy_if_present "$ROOT_DIR/ThirdPartyNotices" \
+  "$APP_PATH/Contents/Resources/ThirdPartyNotices"
+
+cp "$ROOT_DIR/LICENSE" "$ROOT_DIR/LICENSING.md" "$APP_PATH/Contents/Resources/"
+cp "$ROOT_DIR/LICENSING.md" "$APP_PATH/Contents/Resources/ThirdPartyNotices/"
+
+if [ "$INCLUDE_MODEL" -eq 1 ]; then
+  cp -R "$MODEL_STAGE/EmbeddingModel" "$APP_PATH/Contents/Resources/"
+fi
+
 cat > "$APP_PATH/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -250,6 +274,11 @@ cat > "$APP_PATH/Contents/Info.plist" <<PLIST
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
   <key>CFBundleName</key><string>$APP_NAME</string>
+  <key>CFBundleURLTypes</key><array><dict>
+    <key>CFBundleTypeRole</key><string>Editor</string>
+    <key>CFBundleURLName</key><string>$BUNDLE_ID.remote-connection</string>
+    <key>CFBundleURLSchemes</key><array><string>$BUNDLE_ID</string></array>
+  </dict></array>
   <key>CFBundleIconFile</key><string>Clonie</string>
   <key>CFBundleVersion</key><string>$VERSION</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
@@ -276,6 +305,9 @@ codesign --force --deep --sign "$SIGN_ID" --identifier "$BUNDLE_ID" \
   --entitlements "$ENTITLEMENTS" "$APP_PATH"
 rm -f "$ENTITLEMENTS"
 echo "→ Designated requirement: $(codesign -d -r- "$APP_PATH" 2>&1 | grep 'designated' || true)"
+# Manual Swift builds do not get Xcode's LaunchServices refresh. Register just this
+# signed bundle so the previous local build's cached URL handlers cannot hide the new one.
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP_PATH"
 
 if [ "$APP_ONLY" -eq 0 ]; then
   echo "→ Creating $DMG_NAME..."

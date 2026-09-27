@@ -64,6 +64,56 @@ def signature(app, team):
         raise RuntimeError('배포 앱의 최소 마이크 entitlement와 일치하지 않습니다.')
 
 
+def product_contract(app):
+    """Check the distributable product without opening a vault or installing a plugin."""
+    package = app / 'Contents/Resources/CloniePlugin'
+    required = [
+        '.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json',
+        'install.sh', 'README.md', 'plugins/clonie/LICENSE', 'plugins/clonie/README.md',
+        'plugins/clonie/.codex-plugin/plugin.json', 'plugins/clonie/.claude-plugin/plugin.json',
+        'plugins/clonie/.mcp.json', 'plugins/clonie/scripts/start-mcp.sh',
+        'plugins/clonie/skills/clonie-init/scripts/connection.sh',
+        *[f'plugins/clonie/skills/{name}/SKILL.md'
+          for name in ('clonie', 'clonie-init', 'clonie-session-record')],
+    ]
+    for name in required:
+        path = package / name
+        if not path.is_file() or not path.stat().st_size or not path.resolve().is_relative_to(package.resolve()):
+            raise RuntimeError(f'동봉 플러그인 파일이 없거나 올바르지 않습니다: {name}')
+    manifests = {}
+    for host, directory in [('codex', '.codex-plugin'), ('claude', '.claude-plugin')]:
+        manifest = json.loads((package / f'plugins/clonie/{directory}/plugin.json').read_text())
+        if manifest.get('name') != 'clonie' or not isinstance(manifest.get('version'), str) or not manifest['version']:
+            raise RuntimeError(f'{host} 플러그인 이름·버전을 확인하지 못했습니다.')
+        manifests[host] = manifest
+    for host, path, expected in [
+        ('codex', '.agents/plugins/marketplace.json', {'source': 'local', 'path': './plugins/clonie'}),
+        ('claude', '.claude-plugin/marketplace.json', './plugins/clonie'),
+    ]:
+        marketplace = json.loads((package / path).read_text())
+        entries = [item for item in marketplace.get('plugins', []) if item.get('name') == 'clonie']
+        if marketplace.get('name') != 'clonie' or len(entries) != 1 or entries[0].get('source') != expected:
+            raise RuntimeError(f'{host} marketplace가 동봉 Clonie 플러그인을 가리키지 않습니다.')
+    codex = manifests['codex'].get('mcpServers', {}).get('clonie', {})
+    claude = json.loads((package / 'plugins/clonie/.mcp.json').read_text()).get('mcpServers', {}).get('clonie', {})
+    if (codex.get('command') != '/bin/bash' or codex.get('args') != ['./scripts/start-mcp.sh']
+            or codex.get('cwd') != '.' or manifests['codex'].get('skills') != './skills/'
+            or claude.get('command') != '/bin/bash'
+            or claude.get('args') != ['${CLAUDE_PLUGIN_ROOT}/scripts/start-mcp.sh']):
+        raise RuntimeError('동봉 플러그인의 MCP 실행 경로가 일치하지 않습니다.')
+    try:
+        result = subprocess.run([str(app / 'Contents/MacOS/clonie-mcp'), '--write-contract'],
+                                stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError('동봉 MCP의 변경 승인 계약을 확인하지 못했습니다.') from error
+    if result.returncode or result.stdout.strip() != 'proposal-v1':
+        raise RuntimeError('승인 대기 변경을 지원하는 MCP(proposal-v1)가 필요합니다.')
+    return {'write_contract': 'proposal-v1',
+            'plugin_versions': {host: manifest['version'] for host, manifest in manifests.items()},
+            'package_files': {name: sha(package / name) for name in required},
+            'scope': 'bundle compatibility only; host installation and live MCP use are not verified'}
+
+
 def prepare(args):
     key, name = identity(args.identity)
     source = args.app.resolve()
@@ -76,6 +126,7 @@ def prepare(args):
         raise RuntimeError('CFBundlePackageType=APPL이 필요합니다. 앱 번들을 다시 빌드하세요.')
     if not (source / 'Contents/Resources/EmbeddingModel/manifest.json').is_file():
         raise RuntimeError('모델을 동봉한 앱이 필요합니다: build.sh --app-only --include-model')
+    contract = product_contract(source)
     # Refuse accidental reuse, including after an interrupted prepare.
     args.work.mkdir(parents=True, exist_ok=False)
     app = args.work / 'Clonie.app'
@@ -92,7 +143,8 @@ def prepare(args):
     upload = args.work / 'submission.zip'
     run('ditto', '-c', '-k', '--keepParent', app, upload)
     state = {'version': info['CFBundleShortVersionString'], 'team': team,
-             'identity': name, 'submission_sha256': sha(upload), 'status': 'prepared'}
+             'identity': name, 'submission_sha256': sha(upload), 'status': 'prepared',
+             'product_contract': contract}
     save(args.work / 'state.json', state)
     print('배포 서명 준비 완료. submit으로 Apple 공증을 요청하세요.')
 
@@ -153,15 +205,20 @@ def finish(args, state):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['prepare', 'submit', 'finish'])
-    parser.add_argument('--work', required=True, type=Path, help='새 배포별 전용 작업 폴더')
+    parser.add_argument('action', choices=['check', 'prepare', 'submit', 'finish'])
+    parser.add_argument('--work', type=Path, help='새 배포별 전용 작업 폴더 (check는 불필요)')
     parser.add_argument('--app', type=Path, default=Path('Clonie.app'))
     parser.add_argument('--identity', default=os.environ.get('CLONIE_RELEASE_SIGN_ID'))
     parser.add_argument('--profile', default='clonie-notary', help='Keychain에 저장된 notarytool 프로필 이름')
     args = parser.parse_args()
-    args.work = args.work.resolve()
+    if args.action != 'check' and args.work is None:
+        parser.error('--work가 필요합니다.')
+    if args.work is not None:
+        args.work = args.work.resolve()
     try:
-        if args.action == 'prepare':
+        if args.action == 'check':
+            print(json.dumps(product_contract(args.app.resolve()), ensure_ascii=False, indent=2))
+        elif args.action == 'prepare':
             prepare(args)
         else:
             state = json.loads((args.work / 'state.json').read_text())

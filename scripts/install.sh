@@ -1,11 +1,11 @@
 #!/bin/bash
-# Install a pinned preview without Homebrew, sudo, or changes to user documents.
+# Install a pinned release without Homebrew, sudo, or changes to user documents.
 set -euo pipefail
 
-CLONIE_VERSION="20260919-clonie1"
-CLONIE_ARCHIVE_NAME="Clonie-1.0.6-arm64-notarized.zip"
-CLONIE_SHA256="735bf90ca99fe748f69b35cdeab099bb1873696840bac4713e55fcf1ab0dec14"
-CLONIE_URL="https://github.com/qoal1201/clonie-preview/releases/download/preview-${CLONIE_VERSION}/${CLONIE_ARCHIVE_NAME}"
+CLONIE_VERSION="1.1.0"
+CLONIE_ARCHIVE_NAME="Clonie-1.1.0-arm64-notarized.zip"
+CLONIE_SHA256="10f8b0ef6e9b8c41be6cfc4d90e834a07f74a584127af05a4ce98dd5dd5b2329"
+CLONIE_URL="https://github.com/qoal1201/clonie-preview/releases/download/v${CLONIE_VERSION}/${CLONIE_ARCHIVE_NAME}"
 CLONIE_APP_DIR="$HOME/Applications"
 CLONIE_ARCHIVE=""
 CLONIE_WORK=""
@@ -45,10 +45,10 @@ for CLONIE_EXISTING in "$CLONIE_TARGET"; do
     fail "Already exists: $CLONIE_EXISTING. Existing apps are preserved; choose another --app-dir or manage the existing installation first."
   fi
 done
-[ "$(uname -s)" = Darwin ] || fail "This preview requires macOS."
-[ "$(uname -m)" = arm64 ] || fail "This preview requires Apple Silicon."
+[ "$(uname -s)" = Darwin ] || fail "Clonie requires macOS."
+[ "$(uname -m)" = arm64 ] || fail "Clonie requires Apple Silicon."
 CLONIE_OS="$(sw_vers -productVersion)"
-[ "${CLONIE_OS%%.*}" -ge 26 ] || fail "This preview requires macOS 26 or later."
+[ "${CLONIE_OS%%.*}" -ge 26 ] || fail "Clonie requires macOS 26 or later."
 
 cleanup() {
   [ -z "$CLONIE_STAGE" ] || rm -rf "$CLONIE_STAGE"
@@ -59,7 +59,7 @@ trap cleanup EXIT
 
 if [ -z "$CLONIE_ARCHIVE" ]; then
   CLONIE_ARCHIVE="$CLONIE_WORK/$CLONIE_ARCHIVE_NAME"
-  printf 'Downloading Clonie preview %s...\n' "$CLONIE_VERSION"
+  printf 'Downloading Clonie %s...\n' "$CLONIE_VERSION"
   curl --fail --location --proto '=https' --tlsv1.2 --retry 2 \
     --output "$CLONIE_ARCHIVE" "$CLONIE_URL"
 fi

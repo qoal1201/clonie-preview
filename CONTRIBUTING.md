@@ -15,17 +15,17 @@ Clonie의 공개 소스, 설치 파일, 사용 피드백을 이 저장소에서 
 
 ## 소스에서 빌드
 
-Apple Silicon Mac, macOS 26 SDK가 포함된 Xcode 또는 Command Line Tools와 Swift 6.1 이상이 필요합니다.
+Apple Silicon Mac과 macOS 26 SDK가 포함된 Xcode 또는 Command Line Tools가 필요합니다.
 앱 사용만 원하는 경우에는 README의 [배포 앱 설치](INSTALL.md)를 이용하세요.
 
 ```bash
 ./scripts/fetch-model.sh
-./build.sh --app-only --include-model
+CLONIE_SIGN_ID=- ./build.sh --app-only --include-model
 open Clonie.app
 ```
 
 첫 모델 준비에는 외부 다운로드와 변환 도구 설치로 수 GB가 필요할 수 있습니다.
-앱 빌드는 로컬 서명 설정을 사용합니다. 여러 인증서가 있다면 `CLONIE_SIGN_ID`로 지정할 수 있습니다.
+위 명령은 직접 빌드한 앱에 로컬 ad-hoc 서명을 사용합니다. 개발용 인증서를 사용한다면 `CLONIE_SIGN_ID`에 해당 인증서 식별자를 지정할 수 있습니다.
 이 개발 빌드가 Apple 공증을 받은 배포판이 되는 것은 아닙니다.
 
 ## 검사
@@ -33,6 +33,8 @@ open Clonie.app
 ```bash
 swift test
 python3 scripts/test-install.py
+node --test tests/clonie-plugin.test.mjs
+python3 scripts/sync-clonie-plugin.py --check
 python3 scripts/check-public-repo.py --root .
 ```
 
@@ -44,10 +46,11 @@ CLONIE_REQUIRE_EMBEDDING_MODEL=1 swift test --filter ClonieEmbeddingTests
 ```
 
 공개 CI는 문서 링크·민감한 파일명·내부 문구와 비밀정보 패턴을 검사합니다.
-앱 실행·실제 음성·다른 Mac 설치를 검증하는 CI는 아닙니다. PR에는 실제로 수행한 검사를 적어 주세요.
+플러그인 회귀 검사와 Swift 검사는 위 로컬 명령으로 실행할 수 있습니다. 앱 실행·실제 음성·다른 Mac 설치를 검증하는 CI는 아닙니다. PR에는 실제로 수행한 검사를 적어 주세요.
 
 ## 릴리스와 문서
 
+코드·문서는 작은 변경으로 계속 개선합니다. 모든 커밋마다 새 앱을 배포할 필요는 없습니다.
 기능이 바뀌면 사용법·지원 범위·알려진 문제·CHANGELOG도 함께 확인합니다. 화면이 달라졌다면 README 이미지가 맞는지 검토합니다.
 앱 릴리스에서는 다운로드 버전·URL·SHA-256을 설치기와 Cask에 함께 반영합니다. 이미 공개한 파일과 태그는 바꾸지 않습니다.
 

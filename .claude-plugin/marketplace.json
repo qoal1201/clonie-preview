@@ -1,0 +1,12 @@
+{
+  "name": "clonie",
+  "metadata": { "description": "Clonie 앱의 Markdown 저장소를 AI와 함께 활용하는 플러그인" },
+  "owner": { "name": "Sunho Park" },
+  "plugins": [
+    {
+      "name": "clonie",
+      "source": "./plugins/clonie",
+      "description": "내 Markdown 저장소를 찾아 활용하고, Clonie에서 문서 변경을 검토합니다."
+    }
+  ]
+}

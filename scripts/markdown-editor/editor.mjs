@@ -2,6 +2,7 @@ import {
   defaultKeymap,
   history,
   historyKeymap,
+  isolateHistory,
   redo as redoCommand,
   undo as undoCommand
 } from "@codemirror/commands";
@@ -687,4 +688,18 @@ function performHistory(direction) {
   return false;
 }
 
-export { destroyAll, destroyDetached, links, mount, performHistory, reset };
+// Explicit user-approved insertion; unlike the hydration value setter this is undoable.
+function appendText(element, text) {
+  for (const { view } of active) {
+    if (view.contentDOM !== element || !element.isConnected) continue;
+    const from = view.state.doc.length;
+    view.dispatch({ changes: { from, insert: String(text) },
+      selection: { anchor: from + String(text).length }, scrollIntoView: true,
+      annotations: [isolateHistory.of("full"), Transaction.userEvent.of("input")] });
+    view.focus();
+    return true;
+  }
+  return false;
+}
+
+export { appendText, destroyAll, destroyDetached, links, mount, performHistory, reset };

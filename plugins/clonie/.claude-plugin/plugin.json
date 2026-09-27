@@ -1,0 +1,9 @@
+{
+  "name": "clonie",
+  "version": "0.2.0",
+  "description": "내 Markdown 저장소를 찾아 활용하고, Clonie에서 검토할 문서 변경을 제안합니다.",
+  "author": {
+    "name": "Sunho Park"
+  },
+  "license": "PolyForm-Perimeter-1.0.1"
+}

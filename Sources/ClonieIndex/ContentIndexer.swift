@@ -124,7 +124,7 @@ public final class ContentIndexer {
     }
 
     public let store: ContentIndexStore
-    public let embedder: TextEmbedder
+    let embedder: TextEmbedder
     private let model: ContentIndexStore.ModelIdentity
     private let passageMaxTokens: Int
     private let passageOverlapTokens: Int
@@ -137,6 +137,24 @@ public final class ContentIndexer {
         self.passageMaxTokens = min(embedder.manifest.maxSequenceLength,
                                     max(1, passageMaxTokens ?? embedder.manifest.maxSequenceLength))
         self.passageOverlapTokens = max(0, passageOverlapTokens)
+    }
+
+    /// 화면 wire가 선언해야 하는 모델 차원. 호출자는 `TextEmbedder`를 직접 열지 않는다.
+    public var dimensions: Int { embedder.dimensions }
+
+    /// 질의는 e5의 `query:` 규약으로 임베딩하고 화면 wire 형식으로 부호화한다.
+    public func encodedQueryVector(for text: String) throws -> String {
+        encodedVector(try embedder.embed(query: text))
+    }
+
+    /// 문서·초안은 e5의 `passage:` 규약으로 임베딩하고 화면 wire 형식으로 부호화한다.
+    public func encodedPassageVector(for text: String) throws -> String {
+        encodedVector(try embedder.embed(passage: text))
+    }
+
+    /// 색인 보고의 기존 벡터를 화면의 float32-le-base64 wire 형식으로 부호화한다.
+    public func encodedVector(_ vector: [Float]) -> String {
+        ContentIndexStore.encode(vector: vector)
     }
 
     // MARK: - 색인에 들어가는 글자
@@ -250,8 +268,8 @@ public final class ContentIndexer {
     }
 
     /// MCP actor가 보관하는 검색 전용 메모리 캐시. 디스크에는 쓰지 않는다.
-    /// 모델 신원 + 실제 임베딩 문자열 해시만 벡터를 재사용하는 근거다. 문서 ID·경로·범위는
-    /// 캐시하지 않아 이름 변경이나 이동 뒤에도 결과가 현재 문서를 가리킨다.
+    /// 벡터는 모델 신원 + 실제 임베딩 문자열 해시로 재사용한다. 문단 계획은 별도로
+    /// 현재 ID·제목·본문·분할 조건을 확인한다. 경로·검색 결과는 캐시하지 않는다.
     /// 기본 상한은 2048벡터(384차 Float 기준 약 3MiB + 관리 정보)다. 매 검색이 모든 문단을
     /// 훑으므로 가득 차면 신규 저장을 건너뛴다. 순차 스캔이 앞선 캐시를 계속 밀어내지 않는다.
     /// TextEmbedder처럼 동시 호출을 지원하지 않는다. 소유한 actor/직렬 큐에서만 쓴다.
@@ -259,6 +277,36 @@ public final class ContentIndexer {
         private let maximumEntries: Int
         private var model: ContentIndexStore.ModelIdentity?
         private var entries: [String: [Float]] = [:]
+        private var planModel: ContentIndexStore.ModelIdentity?
+        private var plans: [String: (signature: String, values: [Passage], bytes: Int)] = [:]
+
+        // Reuse tokenization, not search results. Bound retained source text independently
+        // of vector storage and discard deleted/out-of-scope documents on every request.
+        func passagePlans(fragments: [Fragment], model: ContentIndexStore.ModelIdentity,
+                          maxTokens: Int, overlapTokens: Int,
+                          compute: (Fragment) -> [Passage]) -> [String: [Passage]] {
+            if planModel != model { plans.removeAll(); planModel = model }
+            let active = Set(fragments.map(\.id))
+            plans = plans.filter { active.contains($0.key) }
+            var result: [String: [Passage]] = [:]
+            var bytes = plans.values.reduce(0) { $0 + $1.bytes }
+            for fragment in fragments {
+                let signature = ContentIndexer.hash("\(maxTokens):\(overlapTokens):\(fragment.title.utf8.count):\(fragment.title)\(fragment.body)")
+                if let cached = plans[fragment.id], cached.signature == signature {
+                    result[fragment.id] = cached.values
+                    continue
+                }
+                if let removed = plans.removeValue(forKey: fragment.id) { bytes -= removed.bytes }
+                let values = compute(fragment)
+                result[fragment.id] = values
+                let cost = values.reduce(0) { $0 + $1.text.utf8.count + $1.sourceText.utf8.count }
+                if plans.count < min(maximumEntries, 256), bytes + cost <= 8 * 1024 * 1024 {
+                    plans[fragment.id] = (signature, values, cost)
+                    bytes += cost
+                }
+            }
+            return result
+        }
 
         public init(maximumEntries: Int = 2048) {
             self.maximumEntries = max(0, maximumEntries)
@@ -303,7 +351,10 @@ public final class ContentIndexer {
     public func search(query: String, fragments: [Fragment], limit: Int = 5,
                        cache: SearchCache? = nil) throws -> [PassageHit] {
         let q = try embedder.embed(query: query)
-        let plans = Dictionary(uniqueKeysWithValues: fragments.map { ($0.id, passages(for: $0)) })
+        let plans = cache?.passagePlans(fragments: fragments, model: model,
+                                       maxTokens: passageMaxTokens, overlapTokens: passageOverlapTokens,
+                                       compute: passages(for:))
+            ?? Dictionary(uniqueKeysWithValues: fragments.map { ($0.id, passages(for: $0)) })
         cache?.prepare(model: model, activeHashes: Set(plans.values.flatMap { $0.map(\.hash) }))
         let stored = store.loadPassages(for: model) ?? [:]
         var values: [String: [PassageVector]] = [:]
@@ -621,37 +672,6 @@ public final class ContentIndexer {
     }
 
     // MARK: - 사람이 읽는 한 줄
-
-    /// 중복 알림을 **띠 하나에 들어갈 한 줄**로 만든다 (#32).
-    ///
-    /// ⚠ 이 함수가 여기 있는 이유는 **`swift test` 가 잴 수 있는 자리**여서다. 앱 층에
-    /// 두면 문자열을 잠글 방법이 `.app` 을 띄우는 것밖에 없다.
-    ///
-    /// 규칙 셋:
-    /// - **id 가 아니라 제목으로 부른다.** `f-1750…` 을 보여주면 사람은 그게 뭔지 모른다.
-    /// - **가장 가까운 문서 쌍을 밝히고 나머지는 쌍으로 센다.** 문서 개수와 구별한다.
-    /// - 코사인 점수는 내용 일치율이나 중복 확률이 아니므로 퍼센트로 표시하지 않는다.
-    /// - **명령하지 않는다.** 「합쳐라」가 아니라 「있다」 — 지울지 합칠지는 사람이 정한다
-    ///   (문턱 간격이 0.037 뿐이라 이 알림은 **틀릴 수 있다**).
-    ///
-    /// - Returns: 알릴 것이 없으면 `nil`. **빈 문자열을 안 돌려준다** — 부르는 쪽이
-    ///   빈 띠를 띄우게 된다.
-    public static func duplicateNotice(_ hits: [DuplicateHit],
-                                       fragments: [Fragment]) -> String? {
-        guard let top = hits.first else { return nil }
-        var titles: [String: String] = [:]
-        for f in fragments {
-            let t = f.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            titles[f.id] = t.isEmpty ? "제목 없는 문서" : t
-        }
-        let current = titles[top.id] ?? "이름을 확인할 수 없는 문서"
-        let other = titles[top.otherID] ?? "이름을 확인할 수 없는 문서"
-        var line = "「\(current)」과 「\(other)」에 비슷한 내용이 있습니다."
-        // 같은 문서가 여러 쌍에 포함될 수 있다. 문서 수로 표현하지 않는다.
-        let more = hits.count - 1
-        if more > 0 { line += " 그 밖에 \(more)쌍" }
-        return line
-    }
 
     // MARK: - ★ 증분 색인
 

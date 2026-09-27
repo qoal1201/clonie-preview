@@ -130,10 +130,17 @@ input:focus,textarea:focus,select:focus{outline:none}
    ⚠ **grid 에서 flex 로 갈아탔다.** 경계면을 끌어 폭을 바꾸므로 칸 폭이 인라인 스타일로
      흐르고, `grid-template-columns` 는 그 값을 부모가 들어야 해서 칸마다 따로 못 준다. */
 #cols{flex:1;display:flex;min-height:0}
-/* 흐름을 막는 안내는 접힌 본문 패널과 무관하게 보인다. */
-#stacknotices:empty,#stacknotices:not(:has(.wb,#sessionerror:not(:empty))){display:none}
-#stacknotices{flex:0 0 auto;max-height:28vh;overflow:auto;padding:8px 20px}
-#stacknotices .wb + .wb{margin-top:6px}
+/* 저장소 상태는 앱 아래 한 줄을 늘 확보한다. 알림이 길거나 여러 개여도 높이는 고정하고,
+   원문만 안에서 스크롤하므로 작업 영역·편집기·승인 버튼의 자리는 움직이지 않는다. */
+#stacknotices{flex:0 0 calc(1.6em + 11px);width:100%;height:calc(1.6em + 11px);min-height:calc(1.6em + 11px);max-height:calc(1.6em + 11px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;padding:5px 20px;border-top:1px solid var(--line);background:var(--panel)}
+#stacknotices:focus-visible{outline:2px solid var(--t2);outline-offset:-2px}
+#stacknotices>.wb,#stacknotices>#sessionerror:not(:empty){white-space:normal;overflow-wrap:anywhere}
+#stacknotices>#sessionerror:not(:empty){font-size:calc(11.5px * var(--text-scale,1));line-height:1.6;color:var(--warn);border-left:2px solid var(--warn);padding-left:11px}
+#stacknotices>:not([hidden]):not(:empty)~:not([hidden]):not(:empty){margin-top:6px}
+#stacknotices>#vb{display:flex;align-items:flex-start;gap:10px}
+#stacknotices>#vb>#vbt{flex:1;min-width:0}
+#stacknotices>#vb>.row{flex:0 0 auto;flex-wrap:nowrap;margin-top:0}
+#stacknotices>#vb .gbtn{padding:0 8px;line-height:1.5}
 /* ★ 왼쪽 칸은 **세 층**이다 — 위 고정(새 조각) · 목록 스크롤 · 아래 고정(파일 올리기).
    위아래를 고정하는 이유는 QA 블로커 F4 그대로다: 칸 하나가 통째로 스크롤이면
    `실측 2026-08-30` 처럼 문이 스크롤 아래로 숨는다.
@@ -345,13 +352,14 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 /* 왼쪽 위 도구모음 — 문서·폴더·접기를 한 줄에 두고, 검색은 그 아래 둔다 */
 .ltools{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-bottom:8px}
 .ltools .ico{flex:0 0 27px;width:27px;height:28px;padding:5px}
-.ltools .ico[hidden]{display:none}
+.ltools .ico[hidden],.ltools[hidden]{display:none}
 .explorer-nav{padding-bottom:6px;border-bottom:1px solid var(--line)}
-.explorer-secondary{flex:0 0 auto;margin:0;padding:8px 12px;border-top:1px solid var(--line)}
+.explorer-nav #explorersettings{margin-left:auto}
+#file-tools,#context-tools{min-height:28px}
 #flowback,#setback{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 #flowback svg,#setback svg{width:16px;height:16px;flex:none}
 #cols{position:relative}
-#workspacetoast{position:absolute;z-index:12;bottom:18px;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);padding:9px 14px;border:1px solid var(--line2);border-radius:9px;background:var(--panel);color:var(--t1);box-shadow:0 4px 18px rgba(0,0,0,.2);pointer-events:none;font-size:calc(12px * var(--text-scale,1))}
+#workspacetoast{color:var(--t1);pointer-events:none;font-size:calc(12px * var(--text-scale,1));overflow-wrap:anywhere}
 #workspacetoast[hidden]{display:none}
 .explorer-create{padding:5px 10px 7px;color:var(--t2)}
 .explorer-create .create-line{display:flex;gap:7px;align-items:center}
@@ -683,6 +691,10 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
 #cvb .cvn.sel .corona,#cvb .cvn.scoped .corona{opacity:.95}
 #cvb .cvn .selhalo{fill:none;stroke:#f5f8ff;stroke-width:1.6;filter:drop-shadow(0 0 4px #d9eaff);opacity:0}
 #cvb .cvn.sel .selhalo,#cvb .cvn.scoped .selhalo{opacity:1}
+#cvb .cvn.proposal-pending .selhalo{opacity:1;stroke:var(--warn);stroke-dasharray:2 4}
+#cvb .cvn.record-hit .selhalo{opacity:1;stroke:var(--acc);stroke-dasharray:3 3}
+#cvb .cvn.record-current .selhalo{opacity:1;stroke:#f5f8ff;stroke-width:1.6;stroke-dasharray:none}
+#cvb .cvn.record-hit .surface{filter:drop-shadow(0 0 12px var(--body-glow))}
 #cvb .cvn.lit-a .d,#cvb .cvn.lit-g .d,#cvb .cvn.sel .d{filter:none}
 #cvb .orbit{stroke:rgba(var(--t1rgb),.12);stroke-width:.8}
 #cvrank .dot,#leftlist .treeicon .dot{background:#c3d2e5}
@@ -743,6 +755,11 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--t2)}
 #cvnav .space-tools{margin-left:auto;display:flex;gap:4px}
 #cvnav .space-tools button{width:28px;height:28px;padding:6px;color:var(--t3)}
 #cvnav .space-tools svg{width:16px;height:16px}
+#top.workspace-top #cvnav>button.galaxy-view{width:auto;flex:0 0 auto;padding:5px 8px}
+#cvb #orbg:focus-visible{outline:none;filter:drop-shadow(0 0 8px white)}
+#cvb #orbg[aria-busy="true"] .corona{opacity:.9}
+.cvrank [data-galaxy-document]{display:block;width:100%;text-align:left;padding:12px 0;border-bottom:1px solid var(--line)}
+.cvrank [data-galaxy-document] small{display:block;color:var(--t3);margin-top:4px;overflow-wrap:anywhere}
 .workspace-empty{position:absolute;inset:auto 15px 25px;text-align:center;color:var(--t3);font-size:calc(12px * var(--text-scale,1));pointer-events:none}
 .workspace-empty button{display:block;margin:10px auto 0;padding:7px 13px;border:1px solid var(--line2);border-radius:5px;color:var(--t1);pointer-events:auto}
 #canvas-star-shower{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
@@ -835,13 +852,19 @@ body.window-hidden #cols #right,body.window-hidden #cvwrap,body.window-hidden #c
 #settingspane #setnav .gbtn{background:none;border:0}
 #settingspane #setnav .active{background:#ffffff09;color:#e3ecf9}
 #settingspane input[type=range]{max-width:180px;margin-left:auto;accent-color:#a9c6f0}
-#settingspane #setvault{width:100%;overflow-wrap:anywhere}
-#settingspane #setvaultbtn{margin-left:auto}
 
 /* Preparation, import and review share workspace typography and controls. */
 #app.live,#app.practice{background:rgba(13,18,27,.72);--acc:#bbd5fa;--acc-d:#88b6ff16;--acc-b:#bbd5fa55}
 #app.stack .gbtn.p{background:#d4e3f3;color:#172432;border-color:transparent}
 #app.practice{background:var(--glass);border:1px solid var(--line2)}
+.use-preparation{position:absolute;inset:0;z-index:220;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.48)}
+.use-preparation-panel{width:min(100%,480px);max-height:100%;overflow:auto;box-sizing:border-box;padding:24px;border:1px solid var(--line2);border-radius:16px;background:var(--panel);box-shadow:0 16px 64px #0008}
+.use-preparation-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.use-preparation-header h2{font-size:18px;margin:0}.use-preparation .flowrow{gap:12px;align-items:center}
+.use-preparation .flowrow select{min-width:0;max-width:65%;padding:7px 10px;color:var(--t1);background:var(--panel);border:1px solid var(--line2);border-radius:6px}.use-preparation .flowhint{font-size:12px;line-height:1.6}
+.use-preparation .flowactions{display:flex;gap:10px;margin-top:20px}.use-preparation #prepare-start{flex:1;padding:12px;font-size:14px}
+.use-preparation details{margin-top:16px;color:var(--t3);font-size:12px}.use-preparation summary{cursor:pointer}
+.use-preparation #prepare-capture-status:empty,.use-preparation #sessionerror:empty{display:none}
 .flowbody{flex:1;overflow:auto;padding:24px 32px;min-width:0}
 .flowsection{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 .flowsection h2{font-size:calc(20px * var(--text-scale,1));font-weight:600;letter-spacing:-.025em}
@@ -868,10 +891,10 @@ details.sessiondraft[open]>:not(summary){margin-top:10px}
 .sessiondraft input:focus-visible,.sessiondraft textarea:focus-visible,.sessiondetails input:focus-visible,.sessiondetails textarea:focus-visible{outline:2px solid var(--me);outline-offset:2px}
 .sessiondraft input::placeholder,.sessiondraft textarea::placeholder,.sessiondetails input::placeholder,.sessiondetails textarea::placeholder{color:var(--t3);opacity:1}
 .sessiondraft input:disabled,.sessiondraft textarea:disabled,.sessiondetails input:disabled,.sessiondetails textarea:disabled{color:var(--t2);-webkit-text-fill-color:var(--t2);opacity:1}
-.sessiondraft,.sessiondetails,.reviewarchive,.reviewarchivebody,.reviewanswers,.reviewquestion{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.sessiondraft,.sessiondetails,.reviewarchive,.reviewarchivebody,.reviewprevious,.reviewanswers,.reviewquestion{min-width:0;max-width:100%;overflow-wrap:anywhere}
 .sessiondraft p,.sessiondetails p,.reviewanswers p{white-space:pre-wrap;overflow-wrap:anywhere}
-.sessiondetails summary,.reviewarchive>summary,.reviewanswers summary{color:var(--t2)}
-.sessiondraft>summary:focus-visible,.sessiondetails summary:focus-visible,.reviewarchive>summary:focus-visible,.reviewanswers summary:focus-visible{outline:2px solid var(--me);outline-offset:2px;border-radius:6px}
+.sessiondetails summary,.reviewarchive>summary,.reviewprevious>summary,.reviewanswers summary{color:var(--t2)}
+.sessiondraft>summary:focus-visible,.sessiondetails summary:focus-visible,.reviewarchive>summary:focus-visible,.reviewprevious>summary:focus-visible,.reviewanswers summary:focus-visible{outline:2px solid var(--me);outline-offset:2px;border-radius:6px}
 .sessiondetails{border-top:1px solid var(--line);padding-top:12px}.sessiondetails summary{cursor:pointer;padding:5px 0}.utterance{padding:12px 0;border-bottom:1px solid var(--line)}.utterance p{white-space:pre-wrap}.utterance>span{color:var(--t2)}
 #sessionstatus{font-size:calc(11px * var(--text-scale,1));color:var(--t2)}.previewinput{display:flex;gap:8px;padding:8px 14px}.previewinput input{flex:1;min-width:0;background:rgba(127,127,127,.1);border:1px solid var(--line2);border-radius:6px;padding:7px}
 .inputmeters{display:flex;gap:8px;align-items:center;padding:0 14px;font-size:calc(11px * var(--text-scale,1));color:var(--t2)}.inputmeters meter{width:44px;height:8px}
@@ -882,12 +905,13 @@ details.sessiondraft[open]>:not(summary){margin-top:10px}
 #sessionreview{width:360px;min-width:300px;max-width:42%;flex-shrink:0;overflow:auto;border-left:1px solid var(--line);padding:0 20px 24px;background:var(--panel)}
 .reviewbar{display:flex;align-items:center;justify-content:space-between;padding:16px 0}.reviewbar .ibtn{width:28px;height:28px}.reviewbar svg{width:16px;height:16px}
 .reviewhistory{display:flex;flex-direction:column;gap:6px;color:var(--t3);font-size:calc(11px * var(--text-scale,1))}.reviewhistory select,.reviewcompactquestions select{width:100%;padding:6px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--t1);font:inherit;color-scheme:dark}
-.reviewquestion{padding:22px 0}.reviewquestion>small{font-size:calc(11px * var(--text-scale,1));color:var(--t3)}.reviewquestion h2{font-size:calc(18px * var(--text-scale,1));line-height:1.5;margin:6px 0 12px}.reviewquestion h3{font-size:calc(12px * var(--text-scale,1));margin:24px 0 8px}
-.reviewsource,.reviewanswers{padding:10px 0;border-bottom:1px solid var(--line);font-size:calc(12px * var(--text-scale,1));line-height:1.65}.reviewsource summary,.reviewanswers summary{cursor:pointer}.reviewsource p,.reviewanswers p{white-space:pre-wrap;color:var(--t2)}.reviewsource small{display:block;color:var(--t3);overflow-wrap:anywhere;margin-bottom:8px}
+.reviewquestion{padding:22px 0}.reviewquestion>small{font-size:calc(11px * var(--text-scale,1));color:var(--t3)}.reviewquestion>.reviewdate{display:block;margin-bottom:4px}.reviewquestion h2{font-size:calc(18px * var(--text-scale,1));line-height:1.5;margin:6px 0 12px}.reviewquestion h3{font-size:calc(12px * var(--text-scale,1));margin:24px 0 8px}
+.reviewsource,.reviewprevious,.reviewanswers{padding:10px 0;border-bottom:1px solid var(--line);font-size:calc(12px * var(--text-scale,1));line-height:1.65}.reviewsource summary,.reviewprevious>summary,.reviewanswers summary{cursor:pointer}.reviewsource>.gbtn{margin-top:8px}.reviewsource p,.reviewanswers p{white-space:pre-wrap;color:var(--t2)}.reviewsource small{display:block;color:var(--t3);overflow-wrap:anywhere;margin-bottom:8px}
 .reviewactions{display:flex;flex-direction:column;gap:8px;padding-top:20px}.reviewdone{display:flex;align-items:center;gap:6px;font-size:calc(12px * var(--text-scale,1));margin-top:18px}.reviewarchive{border-top:1px solid var(--line);padding-top:16px;font-size:calc(12px * var(--text-scale,1))}.reviewarchivebody{padding-top:16px}.reviewarchive .sessiondraft{padding:12px 0}.reviewarchive textarea{min-height:90px}
 .sidebartabs,.recordfilters{display:flex;gap:4px;padding:5px 0}.sidebartabs button,.recordfilters button{flex:1;border-radius:5px;padding:5px;color:var(--t2);font-size:calc(12px * var(--text-scale,1))}.sidebartabs [aria-selected="true"],.recordfilters [aria-pressed="true"]{background:rgba(255,255,255,.08);color:var(--t1)}
 #left-files-panel{display:flex;flex-direction:column;flex:1;min-height:0}#left-files-panel[hidden],#records-pane[hidden]{display:none}
 .reviewentry{flex:1;min-width:0;min-height:0;overflow-y:auto;padding:8px 10px}.recordcards{display:grid;grid-template-columns:minmax(0,1fr);min-width:0;gap:5px}.recordcard{display:block;width:100%;min-width:0;max-width:100%;text-align:left;padding:9px 8px;border:1px solid var(--line);border-radius:6px}.recordcard.selected{background:rgba(255,255,255,.06);border-color:var(--line2)}.recordcard span,.recordcard small{display:block;overflow-wrap:anywhere}.recordcard span{font-size:calc(12px * var(--text-scale,1))}.recordcard small{color:var(--t3);font-size:calc(11px * var(--text-scale,1))}.recordcard .recordpreview{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2);margin:3px 0}.recordactions{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}.recordactions .gbtn{font-size:calc(11px * var(--text-scale,1))}
+.recordgroup{min-width:0}.recordgroup>.reviewquestions{margin:6px 0 10px 12px;padding-left:8px;border-left:1px solid var(--line2)}
 .reviewquestions button{width:100%;display:block;text-align:left;background:none;border:0;border-radius:5px;padding:9px 8px;color:var(--t2);cursor:pointer;font:inherit;font-size:calc(12px * var(--text-scale,1))}.reviewquestions button.selected{background:rgba(255,255,255,.06)}.reviewquestions span{display:block;overflow-wrap:anywhere}.reviewquestions small{display:block;font-size:calc(11px * var(--text-scale,1));color:var(--t3);margin-top:4px}
 
 
@@ -936,7 +960,6 @@ button:disabled{cursor:default}
 .overlayappearance>summary{padding:7px 9px;cursor:pointer;list-style:none;border:1px solid var(--control-border);border-radius:6px;background:#161f2c}
 .overlayappearancepanel{position:absolute;bottom:calc(100% + 8px);right:0;width:240px;padding:14px;background:#151c28;border:1px solid var(--control-border);border-radius:10px;box-shadow:0 8px 30px #0008;z-index:30;display:grid;grid-template-columns:1fr auto;gap:10px}
 .overlayappearancepanel label,.overlayappearancepanel p{grid-column:1/-1}.overlayappearancepanel input{width:100%;min-width:0}.overlayappearancepanel p{font-size:calc(11px * var(--text-scale,1));color:var(--t3);margin:0}
-.connectionsteps{color:var(--t2);line-height:1.7;padding-left:24px;margin:20px 0}.connectionrecord{border-top:1px solid var(--line);margin-top:28px;padding-top:18px}.connectionrecord>summary{cursor:pointer}#mcpsetup:disabled{opacity:.45;cursor:default}
 
 #app.practice .bottom,#app.live .bottom{flex-wrap:wrap}
 #app:is(.practice,.live) :is(.bottom,.inputmeters,.previewinput){background:rgba(13,18,27,.96)}
@@ -965,8 +988,18 @@ button:disabled{cursor:default}
 #changes-pane{overflow:auto;flex:1;padding:10px;min-height:0}#changes-pane[hidden]{display:none}
 .changefilters{display:flex;gap:6px;margin-bottom:12px}.changefilters button{flex:1;font-size:calc(11px * var(--text-scale,1))}
 .changeitem{display:block;width:100%;text-align:left;padding:12px 9px;margin:6px 0;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--t2);cursor:pointer}.changeitem.selected{background:var(--acc-d);border-color:var(--acc)}.changeitem strong{display:block;font-size:calc(12px * var(--text-scale,1));line-height:1.6;overflow-wrap:anywhere}.changeitem small{display:block;color:var(--t3);font-size:calc(10px * var(--text-scale,1));margin-top:6px}
-#changedetail{flex:1;min-width:0;overflow:auto;padding:26px 30px;background:var(--bg);color:var(--t1)}#changedetail h1{font-size:calc(22px * var(--text-scale,1));line-height:1.5;margin:18px 0 8px}#changedetail .changemeta{font-size:calc(12px * var(--text-scale,1));line-height:1.7;color:var(--t3);overflow-wrap:anywhere}.changebar{display:flex;justify-content:space-between;gap:14px;align-items:center}.changeversions{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}.changeversion{border:1px solid var(--line);border-radius:8px;overflow:hidden}.changeversion h3{font-size:calc(12px * var(--text-scale,1));font-weight:500;padding:12px 16px;background:var(--panel);margin:0}.changeversion pre{font:inherit;font-size:calc(13px * var(--text-scale,1));line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;margin:0;min-height:190px}.changeversion.after pre{background:color-mix(in srgb,var(--acc) 8%,transparent)}.changeactions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:9px;margin-top:20px}.changestatus{font-size:calc(12px * var(--text-scale,1));color:var(--t2);min-height:22px;margin-top:12px}.changeerror{color:var(--risk);white-space:pre-wrap}.changeempty{padding:28px 10px;font-size:calc(13px * var(--text-scale,1));color:var(--t3);line-height:1.8}
-@media(max-width:850px){.changeversions{grid-template-columns:1fr}#changedetail{padding:20px}}
+#changedetail{box-sizing:border-box;display:flex;flex:0 0 360px;flex-direction:column;width:360px;max-width:42vw;min-width:260px;min-height:0;overflow:hidden;border-left:1px solid var(--line);background:var(--bg);color:var(--t1)}
+.changeheader{flex:0 0 auto;padding:16px 20px 0}.changebar{display:flex;justify-content:space-between;gap:14px;align-items:center;font-size:12px;color:var(--t2)}
+#changedetail h1{font-size:calc(16px * var(--text-scale,1));line-height:1.5;margin:12px 0 6px}#changedetail .changemeta{font-size:calc(11px * var(--text-scale,1));line-height:1.6;color:var(--t3);overflow-wrap:anywhere;margin:0 0 12px}
+.changeviews{display:flex;gap:4px;padding:0 0 10px;border-bottom:1px solid var(--line)}.changeviews button{flex:1;font-size:12px;padding:7px 4px}.changeviews button[aria-pressed="true"]{background:var(--panel);color:var(--t1)}
+.changedetail-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 20px}.changedetail-scroll [hidden]{display:none!important}
+.changeversion h3{font-size:calc(12px * var(--text-scale,1));font-weight:500;margin:0 0 12px;color:var(--t2)}.changeversion pre{font:inherit;font-size:calc(13px * var(--text-scale,1));line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.changeversion input,.changeversion textarea{box-sizing:border-box;width:100%;padding:12px;background:var(--bg);color:var(--t1);border:1px solid var(--line);border-radius:6px;font:inherit;font-size:13px;line-height:1.7}.changeversion textarea{resize:none;overflow:hidden;min-height:240px;margin-top:8px}
+.change-diff-count{font-size:12px;color:var(--t2);margin:0 0 14px}.change-diff-line{display:flex;gap:8px;font-size:calc(13px * var(--text-scale,1));line-height:1.75;padding:3px 6px;white-space:pre-wrap;overflow-wrap:anywhere}.change-diff-line>span:last-child{min-width:0;flex:1}.change-diff-sign{flex:0 0 10px;user-select:none;color:var(--t3)}.change-diff-line.added{background:color-mix(in srgb,#5fbd86 13%,transparent)}.change-diff-line.removed{background:color-mix(in srgb,var(--risk) 12%,transparent)}.change-diff-line.added .change-diff-sign{color:#74c996}.change-diff-line.removed .change-diff-sign{color:var(--risk)}.change-diff-unchanged{margin:8px 0}.change-diff-unchanged summary{padding:8px;font-size:11px;color:var(--t3);cursor:pointer;border:1px dashed var(--line);border-radius:5px}
+.changefooter{box-sizing:border-box;display:flex;flex-direction:column;flex:0 0 auto;min-height:0;max-height:45%;border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:var(--bg)}.changeactions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:9px;margin-top:0}.changeeffect{font-size:11px;line-height:1.6;color:var(--t3);margin:0 0 10px}.changestatus{font-size:11px;color:var(--t2);margin:8px 0 0}.changestatus:empty{display:none}.changefooter .changeerror{min-height:0;overflow-y:auto;overflow-wrap:anywhere;margin:0 0 8px}.changefooter .changeactions{flex:0 0 auto}.changeerror{color:var(--risk);white-space:pre-wrap}.changeempty{padding:28px 10px;font-size:calc(13px * var(--text-scale,1));color:var(--t3);line-height:1.8}
+@media(max-width:850px){.changeheader{padding:12px 16px 0}.changedetail-scroll{padding:12px 16px}.changefooter{padding:10px 16px calc(10px + env(safe-area-inset-bottom))}}
+.jev-evidence{margin:14px 0;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;line-height:1.5}.jev-evidence small{display:block;width:100%;opacity:.65}.jev-label{display:block;font-size:12px;line-height:1.7;color:var(--t1);font-weight:600}.jev-label:empty{display:none}
+.jev-supplement{font-size:12px;line-height:1.6;margin:16px 0}.jev-supplement summary{cursor:pointer}.jev-supplement label,.jev-supplement small{display:block;margin:8px 0}.jev-supplement textarea{width:100%;box-sizing:border-box;resize:vertical;background:var(--bg);color:var(--t1);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit}.jev-supplement-result{padding:12px 0;border-top:1px solid var(--line)}.jev-supplement-result strong,.jev-supplement-result span{display:block}.jev-note-preview{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;padding:8px;border-left:2px solid var(--line)}
 </style>
 </head>
 <body>
@@ -1441,6 +1474,10 @@ function putEditorDraft(d){
 /* ★ Swift → JS 문서 통로 하나. `meta.revision` 은 Swift 안의 실제 리비전을 가리키는 불투명 표다.
    `save` 확인이면 보낸 뒤 변경만, `reload`면 마지막 수신 뒤 변경만 새 디스크 문서 위에 얹는다. */
 function receiveDocument(json,note,meta){
+  // Check ownership before rendering removes the element the user moved to while saving.
+  const deferredFocus=EDITOR_NAVIGATION?.focusRequest;
+  if(deferredFocus&&!flowFocusTransferable(deferredFocus))deferredFocus.cancelled=true;
+  if(meta?.kind==="load"){SESSION_MAP_SNAPSHOT=null;clearJevEvidence();clearJevRank();JEV_NOTE="";}
   explorerCreateCapture();
   VAULT_CONNECTED=true;
   const moveContext=meta?.kind==="reload"&&meta.vaultAction?.requestID===VAULT_ACTION?.requestID&&
@@ -1464,7 +1501,7 @@ function receiveDocument(json,note,meta){
                      asked:d.asked||[]};
   let next=remote,runPending=false,pendingAuto=false;
   if(meta&&meta.kind==="load"){
-    resetMarkdownEditors();
+    resetMarkdownEditors();resetChangeFeedback();
     FLOW_RETURN=[];FLOW_EPOCH++;FLOW_RESTORE_SEQ++;SETBACK=null;clearWorkspaceToast();
     resetMaintenanceContext();
     /* 첫 기동·볼트 교체다. 옛 볼트의 늦은 저장 확인을 새 볼트에 이어 보내지 않는다. */
@@ -1501,6 +1538,7 @@ function receiveDocument(json,note,meta){
   PATHS=(d&&d.paths)||{};
   VAULT_FOLDERS=(meta&&meta.folders)||[];VAULT_TRASH=(meta&&meta.trash)||[];
   VAULT_ENTRIES=(meta&&meta.entries)||[];
+  galaxyDocumentChanged(meta?.kind==="load");
   if(meta?.kind==="load"||meta?.orbitGroups!==undefined){
     let groups=meta?.orbitGroups||[];
     if(!bridged()&&meta?.orbitGroups===undefined){try{groups=JSON.parse(localStorage.getItem(orbitBrowserKey())||"[]")}catch(e){}}
@@ -1517,9 +1555,9 @@ function receiveDocument(json,note,meta){
 
   if(meta&&meta.kind==="load"){VAULT_LAST_OPERATION=null;VAULT_LAST_OPERATION_LABEL="";}
   notice=note||ORBIT_ERROR||null;
-  /* 초안 벡터도 낡았다 (#33). 지우는 이유는 「틀려서」가 아니라 **가리키던 화면이 사라져서**다 —
-     남겨두면 앞 문서의 답 벡터로 연습 첫 채점이 나온다. */
-  for(const k in DRAFT)delete DRAFT[k];
+  /* 초안 벡터도 색인 입력이 바뀌면 낡았다 (#33). `asked` 기록만 저장한 확인은 같은 화면과
+     같은 글자를 가리키므로 그대로 둔다. */
+  if(meta?.indexChanged!==false)for(const k in DRAFT)delete DRAFT[k];
   /* 볼트 교체·옛 통로는 받기를 버린다. 저장 확인과 같은 볼트의 외부 reload는 **안 버린다**:
      이제 저장마다 문서 확인이 돌아오므로 여기서 지우면 여러 덩이 중 첫 저장 뒤 나머지가 사라진다. */
   if(!meta||meta.kind==="load")INTAKE=null;
@@ -1530,7 +1568,7 @@ function receiveDocument(json,note,meta){
      문제를 해결한 경험" 에 초록이었다.
      ⚠ **색인이 실패하면 `receiveVectors` 가 영영 안 온다** — 그때 낡은 자를 들고 있으면
        그 거짓말이 안 걷힌다. 못 재는 것은 화면이 이미 정직하게 말한다(「색인이 아직 없어요」). */
-  VEC=null;QVEC=null;QUERY_VECTOR_WAITING=null;QUERY_FAILURE=null;
+  if(meta?.indexChanged!==false){VEC=null;QVEC=null;QUERY_VECTOR_WAITING=null;QUERY_FAILURE=null}
   syncDirtyRevisionPins(meta&&meta.kind==="load");
   /* 표식 없던 판으로 만들어진 씨앗을 한 번 끌어올린다 (블로커 F2 이행). 저장까지 해야
      디스크에 앉는다 — 안 그러면 열 때마다 다시 박고 재기동하면 또 1위로 뜬다. */
@@ -1571,6 +1609,14 @@ function receiveDocument(json,note,meta){
     terminationSaveSettled();
     resumeEditorNavigation(true);return;
   }
+  /* 파일 감시가 방금 저장한 내용을 다시 보내는 사이 실행 취소를 하면, 그 본문은 DOC 기준
+     로컬 초안이 된다. 이때 원격 본문으로 편집기를 다시 만든 뒤 초안 문자열만 되쓰면
+     CodeMirror의 redo 분기가 사라진다. 외부 상태는 위에서 합쳤으므로 편집 DOM만 유지하고
+     왼쪽 목록·가운데 우주를 제자리에서 갱신한다. */
+  if(meta?.kind==="reload"&&editor&&(editor.titleDirty||editor.bodyDirty)&&mode==="stack"&&stackView==="edit"&&PANE.r>0){
+    paintHomeList();canvasRefresh();paintEditorSaveState();
+    terminationSaveSettled();return;
+  }
   if(VAULT_CREATE?.composing)VAULT_CREATE.renderPending=true;
   else {render();putEditorDraft(editor);if(actionDialog){app.appendChild(actionDialog);beginDialogFocus(actionDialog,dialogFocus||actionDialog.querySelector("input,select,button"));}}
   if(moveContext){const list=document.getElementById("leftlist");if(list)list.scrollTop=moveContext.frame.scroll||0}
@@ -1580,6 +1626,9 @@ function receiveDocument(json,note,meta){
   else resumeEditorNavigation(meta?.kind==="save");
 }
 function onVaultDisconnected(){
+  clearJevEvidence();JEV_PREVIEW=false;JEV_NOTE="";
+  galaxyDocumentChanged(true);
+  resetChangeFeedback();
   CHANGES=[];CHANGE_DETAIL=null;CHANGE_SELECTED=null;CHANGES_OPEN=false;CHANGE_LOADED=false;CHANGE_VAULT="";CHANGE_BUSY=false;
   resetMarkdownEditors();
   resetMaintenanceContext();
@@ -1664,12 +1713,27 @@ function paintByVectors(){
    제자리에서 고쳐 쓴다 (`paintCur` 이 같은 이유로 같은 모양을 쓴다). */
 function clearWorkspaceToast(){
   if(WORKSPACE_TOAST_TIMER!==null)clearTimeout(WORKSPACE_TOAST_TIMER);
-  WORKSPACE_TOAST_TIMER=null;WORKSPACE_TOAST=null;WORKSPACE_TOAST_SEQ++;
+  WORKSPACE_TOAST_TIMER=null;WORKSPACE_TOAST=null;WORKSPACE_TOAST_SEQ++;CHANGE_SUCCESS_TASK=null;
   paintWorkspaceToast();
+}
+function workspaceNoticeFooter(includeSessionError=true){
+  return `<div id="stacknotices" role="region" aria-label="저장소 알림" tabindex="-1"><div id="workspacetoast" role="status" aria-live="polite" aria-atomic="true" hidden></div>${notice?`<div class="wb" id="nb" role="alert">${esc(notice)}</div>`:""}${includeSessionError?`<div id="sessionerror" role="alert">${esc(SESSION_ERROR)}</div>`:""}</div>`;
+}
+function workspaceNoticeNodeHasContent(node){
+  return !!(String(node?.textContent||"").trim()||Array.from(node?.children||[]).some(workspaceNoticeNodeHasContent));
+}
+function paintWorkspaceNoticeAccess(){
+  const host=document.getElementById("stacknotices");if(!host)return;
+  const active=Array.from(host.children||[]).some(node=>!node.hidden&&workspaceNoticeNodeHasContent(node));
+  host.setAttribute("tabindex",active?"0":"-1");
 }
 function paintWorkspaceToast(){
   const el=document.getElementById("workspacetoast");if(!el)return;
   el.textContent=WORKSPACE_TOAST?.text||"";el.hidden=!WORKSPACE_TOAST;
+  paintWorkspaceNoticeAccess();
+}
+function paintWorkspaceFooter(){
+  paintWorkspaceToast();paintVaultTrouble();paintNotice();paintChangeFeedback();paintWorkspaceNoticeAccess();
 }
 function onIndexNotice(text,{kind="warning"}={}){
   if(!noticeFits(text,mode,false))return;
@@ -1686,7 +1750,7 @@ function onIndexNotice(text,{kind="warning"}={}){
 /* 띄워도 되는 자리인가 — **순수 함수라 `node --test` 가 잠근다.**
    ① 빈 글자는 빈 띠가 된다 ② 면접 중엔 띠 자리가 없다(화면이 통째로 다르다)
    ③ 채우기 제안이 떠 있으면 비킨다 — 그 띠에는 **눌러야 하는 버튼**이 붙어 있어서
-      여기서 덮으면 그 버튼이 사라진다. 중복 알림은 다음 저장에 다시 온다. */
+      여기서 덮으면 그 버튼이 사라진다. */
 const noticeFits=(text,m,offer)=>!!(text&&m==="stack"&&!offer);
 /* ══ 볼트가 말썽이다 (QA 블로커 F1) ═══════════════════════════════════════════
    ★ Swift `VaultIO` 가 **비동기로** 부른다. 저장·읽기가 주 스레드를 떠나면서 실패와 대기가
@@ -1716,29 +1780,31 @@ function paintVaultTrouble(){
   const right=document.getElementById("stacknotices");
   if(!right)return;
   let el=document.getElementById("vb");
-  if(!vaultTrouble){if(el)el.remove();return}
+  if(!vaultTrouble){if(el)el.remove();paintWorkspaceNoticeAccess();return}
   if(!el){
     el=document.createElement("div");el.className="wb";el.id="vb";el.setAttribute("role","alert");
     const t=document.createElement("span");t.id="vbt";
-    const row=document.createElement("div");row.className="row";row.style.marginTop="9px";
+    const row=document.createElement("div");row.className="row";
     const b=document.createElement("button");b.className="gbtn";b.textContent="폴더 다시 고르기";
-    // 저장소 헤더와 같은 연결 동작을 사용한다. 면접 화면에는 이 헤더가 없다.
-    b.onclick=()=>{const picker=document.getElementById("vaultmenu");if(picker)picker.click()};
+    // 보조 화면에는 헤더 버튼이 없어도 같은 미저장 보호와 폴더 선택 경로를 사용한다.
+    b.onclick=requestVaultFolder;
     row.appendChild(b);el.appendChild(t);el.appendChild(row);
     right.insertBefore(el,right.firstChild);
   }
   const tx=document.getElementById("vbt");
   if(tx)tx.textContent=vaultTrouble;   /* esc 가 필요 없다 — textContent 는 태그를 안 판다 */
+  paintWorkspaceNoticeAccess();
 }
 
 /* 안내만 제자리에서 갱신한다. 패널을 열거나 편집기를 다시 짓지 않는다. */
 function paintNotice(){
   const right=document.getElementById("stacknotices");if(!right)return;
   let el=document.getElementById("nb");
-  if(!notice){if(el)el.remove();return}
+  if(!notice){if(el)el.remove();paintWorkspaceNoticeAccess();return}
   if(!el){el=document.createElement("div");el.className="wb";el.id="nb";
     right.insertBefore(el,right.firstChild)}
   el.setAttribute("role","alert");el.textContent=notice;   /* esc 가 필요 없다 — textContent 는 태그를 안 판다 */
+  paintWorkspaceNoticeAccess();
 }
 
 const qtext=id=>{const q=DOC.questions.find(q=>q.id===id);return q?q.text:""};
@@ -2783,6 +2849,7 @@ function workspaceFileIcon(path){
   return FILE_ICON_ASSETS.default;
 }
 const ICO={
+  check:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 8 3 3 7-7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   import:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5v8M5 6.5l3 3 3-3M2 10v4h12v-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   link:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6.5 5 2-2a3.2 3.2 0 0 1 4.5 4.5l-2 2M9.5 11l-2 2A3.2 3.2 0 0 1 3 8.5l2-2M5.5 10.5l5-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
   undo:`<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 3.5v4h4M2.4 7.1A5.2 5.2 0 1 1 3.5 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -2818,61 +2885,242 @@ const app=document.getElementById("app");
      창 크기를 안 건드린다. */
 /* Native sessions own capture and durable records. Preview only simulates the same reading surface. */
 let SESSION=null,SESSION_LIST=[],SESSION_ERROR="",PREVIEW_MIC=false,SESSION_SYSTEM=true;
-let CAPTURE={phase:"stopped",receiving:[],pending:[],failed:{}};
+let CAPTURE={phase:"stopped",connected:[],receiving:[],pending:[],failed:{}};
+let CAPTURE_FAILURES={},CAPTURE_SETTINGS_PENDING=null;
+let PREPARATION_START_PENDING=false,PREPARATION_CANCEL_PENDING=false;
 let SESSION_CORRECTIONS={};
 let SESSION_DRAFT_OPEN={};
 let SESSION_SAVING=new Set(),SESSION_EDITS={},SESSION_QUERY=null,SESSION_REC_SIGNATURE="",SESSION_UI_SIGNATURE="";
 let CHANGES=[],CHANGE_DETAIL=null,CHANGE_SELECTED=null,CHANGE_FILTER="unread",CHANGE_ERROR="",CHANGE_BUSY=false,CHANGE_REQUEST=0,CHANGE_LOADED=false,CHANGES_OPEN=false,CHANGE_VAULT="";
-function changeRequest(action="list",id=null){
-  const requestID=++CHANGE_REQUEST;CHANGE_ERROR="";CHANGE_BUSY=true;
-  post("changeAction",{action,id,requestID});paintDocumentChanges();
+let CHANGE_EDITS={},CHANGE_DRAFT_STATE={},CHANGE_VIEW="diff";
+let CHANGE_PENDING=null,CHANGE_FEEDBACK_TASK=null,CHANGE_SUCCESS_TASK=null;
+const CHANGE_ISSUES=new Map();
+function resetChangeFeedback(){if(CHANGE_BUSY||CHANGE_PENDING)CHANGE_REQUEST++;CHANGE_BUSY=false;CHANGE_PENDING=null;CHANGE_FEEDBACK_TASK=null;CHANGE_SUCCESS_TASK=null;CHANGE_ISSUES.clear();CHANGE_ERROR=""}
+function setChangeIssue(taskID,failures,summary,detail){
+  if(!failures.length){CHANGE_ISSUES.delete(taskID);return}
+  const message=(summary||`남은 ${failures.length}개 확인 필요`)+"\n"+(detail||failures.map(x=>x.title+": "+x.message).join("\n"));
+  CHANGE_ISSUES.set(taskID,{ids:failures.map(x=>x.id),failures,message});
 }
+function paintChangeFeedback(){
+  const host=document.getElementById("stacknotices");if(!host)return;
+  let node=document.getElementById("changefeedback");
+  const task=CHANGES.find(x=>x.id===CHANGE_SELECTED)?.taskID||CHANGE_DETAIL?.taskID||CHANGE_FEEDBACK_TASK;
+  const text=WORKSPACE_SIDEBAR==="changes"?(CHANGE_ISSUES.get(task)?.message||CHANGE_ERROR):"";
+  if(!text){if(node)node.remove();paintWorkspaceNoticeAccess();return}
+  if(!node){node=document.createElement("div");node.id="changefeedback";node.className="wb";node.setAttribute("role","alert");host.appendChild(node)}
+  node.textContent=text;paintWorkspaceNoticeAccess();
+}
+function finishChangeFeedback(data,pending){
+  const previous=CHANGE_ISSUES.get(pending.taskID);
+  if(pending.action==="reject"){
+    if(previous)setChangeIssue(pending.taskID,data.error
+      ?previous.failures.map(x=>pending.targets.some(t=>t.id===x.id)?{...x,message:data.error}:x)
+      :previous.failures.filter(x=>!pending.targets.some(t=>t.id===x.id)));
+    return;
+  }
+  const ids=new Set(pending.targets.map(x=>x.id)),raw=data.appliedProposalIDs;
+  const valid=Array.isArray(raw)&&raw.every(id=>ids.has(id))&&new Set(raw).size===raw.length;
+  const applied=new Set(valid?raw:[]);
+  const failed=pending.targets.filter(x=>!applied.has(x.id));
+  const unresolved=previous?.failures.filter(x=>!ids.has(x.id))||[];
+  setChangeIssue(pending.taskID,unresolved);
+  CHANGE_FEEDBACK_TASK=pending.taskID;
+  if(valid&&ids.size>0&&applied.size===ids.size&&!data.error&&!data.warning&&!data.failedProposals?.length){
+    const label=pending.targets[0]?.title||"문서";
+    const text=pending.action==="approveTask"?`‘${pending.taskTitle}’ 작업의 문서 ${applied.size}개를 모두 저장했습니다.`:`‘${label}’ 문서에 저장했습니다.`;
+    if(WORKSPACE_SIDEBAR==="changes"){onIndexNotice(text,{kind:"success"});CHANGE_SUCCESS_TASK=pending.taskID}return;
+  }
+  const detail=data.error||data.warning||"반영 결과를 확인하지 못했습니다. 변경 목록을 다시 확인해 주세요.";
+  const summary=valid&&applied.size&&failed.length?`${ids.size}개 중 ${applied.size}개 반영 · ${failed.length}개 확인 필요`:"반영 완료를 확인하지 못했습니다.";
+  CHANGE_ERROR=summary+"\n"+detail;
+  const failures=(failed.length?failed:pending.targets).map(x=>({id:x.id,title:x.title,message:data.failedProposals?.find(f=>f.id===x.id)?.message||detail}));
+  setChangeIssue(pending.taskID,[...unresolved,...failures],unresolved.length?null:summary,unresolved.length?null:detail);
+  CHANGE_ERROR=CHANGE_ISSUES.get(pending.taskID)?.message||CHANGE_ERROR;
+  clearWorkspaceToast();
+}
+function paintProposalDraftStatus(){const node=document.getElementById("proposal-draft-status");if(node)node.textContent=CHANGE_DRAFT_STATE[CHANGE_SELECTED]?.message||""}
+function saveProposalDraft(id,edit){
+  const sequence=(CHANGE_DRAFT_STATE[id]?.sequence||0)+1;
+  CHANGE_DRAFT_STATE[id]={sequence,message:"초안 보관 중…"};paintProposalDraftStatus();
+  post("changeAction",{action:"draft",id,...edit,sequence});
+}
+function changeRequest(action="list",id=null,extra={}){
+  const requestID=++CHANGE_REQUEST;CHANGE_ERROR="";CHANGE_BUSY=true;
+  const targets=CHANGES.filter(x=>action==="approveTask"?x.taskID===id:x.id===id).map(x=>({id:x.id,taskID:x.taskID,taskTitle:x.taskTitle,title:action==="approve"?(extra.title||x.title):x.title}));
+  CHANGE_PENDING=["approve","approveTask","reject"].includes(action)?{requestID,action,taskID:targets[0]?.taskID||id,taskTitle:targets[0]?.taskTitle||"선택한 작업",targets}:null;
+  if(CHANGE_PENDING){CHANGE_FEEDBACK_TASK=CHANGE_PENDING.taskID;clearWorkspaceToast()}
+  post("changeAction",{action,id,requestID,...extra});paintDocumentChanges();
+}
+function proposalListSignature(items){return JSON.stringify(items.map(x=>[x.id,x.taskID,x.taskTitle,x.fragmentID,x.title,x.path,x.operation,x.performedAt,x.before?.title,x.before?.body,x.after?.title,x.after?.body]))}
 function onDocumentChanges(data){
   if(!data||typeof data!=="object")return;
+  if(data.requestID&&(data.requestID!==CHANGE_REQUEST||CHANGE_VAULT&&data.vault&&data.vault!==CHANGE_VAULT))return;
+  if(data.action==="draft"){
+    if(data.vault!==CHANGE_VAULT||CHANGE_DRAFT_STATE[data.id]?.sequence!==data.sequence)return;
+    CHANGE_DRAFT_STATE[data.id].message=data.error?"초안 보관 실패: "+data.error:"초안 보관됨 · 승인 전";
+    paintProposalDraftStatus();return;
+  }
   const vaultChanged=!!(CHANGE_VAULT&&data.vault&&CHANGE_VAULT!==data.vault);
-  if(data.vault&&CHANGE_VAULT!==data.vault){CHANGES=[];CHANGE_DETAIL=null;CHANGE_SELECTED=null;CHANGE_LOADED=false;CHANGES_OPEN=false;CHANGE_VAULT=data.vault;if(WORKSPACE_SIDEBAR==="changes")WORKSPACE_SIDEBAR="files"}
-  if(data.requestID&&data.requestID!==CHANGE_REQUEST)return;
-  if(data.action==="list"&&!data.error){
+  if(data.vault&&CHANGE_VAULT!==data.vault){resetChangeFeedback();clearWorkspaceToast();CHANGES=[];CHANGE_EDITS={};CHANGE_DRAFT_STATE={};CHANGE_DETAIL=null;CHANGE_SELECTED=null;CHANGE_LOADED=false;CHANGES_OPEN=false;CHANGE_VAULT=data.vault;if(WORKSPACE_SIDEBAR==="changes")WORKSPACE_SIDEBAR="files"}
+  if(!vaultChanged&&!data.requestID&&data.action==="list"&&!data.error&&!data.warning&&CHANGE_LOADED&&Array.isArray(data.items)&&proposalListSignature(data.items)===proposalListSignature(CHANGES))return;
+  if(Array.isArray(data.items)&&!data.error){
     const known=new Set(CHANGES.map(x=>x.id));
     const fresh=(data.items||[]).filter(x=>!known.has(x.id)&&!x.reviewedAt);
     CHANGES=data.items||[];
-    if(CHANGE_LOADED&&fresh.length&&mode==="stack")onIndexNotice("MCP로 변경된 문서가 있습니다. ‘변경’에서 확인하세요.",{kind:"success"});
+    if(CHANGE_SELECTED&&!CHANGES.some(x=>x.id===CHANGE_SELECTED)){delete CHANGE_EDITS[CHANGE_SELECTED];CHANGE_SELECTED=null;CHANGE_DETAIL=null}
+    if(CHANGE_LOADED&&fresh.length&&mode==="stack")onIndexNotice("외부 AI의 제안이 도착했습니다. ‘변경’에서 확인하세요.",{kind:"success"});
     CHANGE_LOADED=true;
   }
   if(data.detail&&data.detail.id===CHANGE_SELECTED)CHANGE_DETAIL=data.detail;
   if(data.action==="review"||data.action==="restore"){
     if(data.item){CHANGES=CHANGES.map(x=>x.id===data.item.id?data.item:x);if(CHANGE_DETAIL?.id===data.item.id)CHANGE_DETAIL={...CHANGE_DETAIL,...data.item}}
   }
-  CHANGE_ERROR=data.error||data.warning||"";if(data.requestID)CHANGE_BUSY=false;
-  paintDocumentChanges();
+  if(data.requestID||data.error||data.warning)CHANGE_ERROR=data.error||data.warning||"";
+  const pending=CHANGE_PENDING;
+  if(pending&&pending.requestID===data.requestID&&pending.action===data.action){finishChangeFeedback(data,pending);CHANGE_PENDING=null}
+  if(data.requestID)CHANGE_BUSY=false;
+  paintDocumentChanges(!data.requestID&&data.action==="list");
+  if(WORKSPACE_SIDEBAR==="changes"&&mode==="stack"&&stackView==="edit"){canvasMount();canvasWake()}
   if(vaultChanged&&mode==="stack"&&stackView==="edit")stackRender();
 }
 function openDocumentChanges(){
-  if(!VAULT_CONNECTED||!leaveEditorAllowed(openDocumentChanges))return;
-  captureSessionEdits();SESSION_REVIEW_OPEN=false;CHANGES_OPEN=true;WORKSPACE_SIDEBAR="changes";stackView="edit";stackRender();changeRequest();
+  if(!VAULT_CONNECTED)return false;
+  return setWorkspaceSidebar("changes");
 }
-function selectDocumentChange(id){CHANGE_SELECTED=id;CHANGE_DETAIL=null;changeRequest("detail",id)}
+function closeDocumentChange(){
+  CHANGES_OPEN=false;stackRender();paintExplorerTools();
+}
+function selectDocumentChange(id){
+  if(CHANGE_BUSY&&CHANGE_PENDING)return;
+  if(!leaveEditorAllowed(()=>selectDocumentChange(id)))return;
+  const task=CHANGES.find(x=>x.id===id)?.taskID;
+  if(CHANGE_SUCCESS_TASK&&CHANGE_SUCCESS_TASK!==task){clearWorkspaceToast();CHANGE_SUCCESS_TASK=null}
+  CHANGE_FEEDBACK_TASK=task||null;
+  const camera=canvasContextCamera();
+  if(CHANGE_SELECTED!==id)CHANGE_VIEW="diff";
+  CHANGE_SELECTED=id;CHANGE_DETAIL=null;
+  if(WORKSPACE_SIDEBAR==="changes"&&!CHANGES_OPEN){CHANGES_OPEN=true;stackRender()}
+  const item=CHANGES.find(x=>x.id===id);
+  if(CHANGES_OPEN&&item){
+    const path=item.path||PATHS[item.fragmentID]||"";
+    const parent=path.split("/").slice(0,-1).join("/");
+    if(parent!==WORKSPACE_SCOPE)workspaceEnterFolder(parent);
+    WORKSPACE_SELECTED_ID=proposalNodeID(item);CANVQ="";
+    if(CANV){CANV.relatedID=null;CANV.last=null}
+    canvasMount();canvasResumeContextCamera(proposalNodeID(item),camera);
+  }
+  changeRequest("detail",id);
+}
+// Pending documents exist only in the changes visualization, never in DOC or retrieval.
+function proposalNodeID(item){return item.operation==="create"?"@proposal/"+item.id:item.fragmentID}
+function canvasProposal(id){return WORKSPACE_SIDEBAR==="changes"?CHANGES.find(x=>proposalNodeID(x)===id):null}
+function proposalScene(){
+  const fragments=(DOC.fragments||[]).slice(),paths={...PATHS};
+  if(WORKSPACE_SIDEBAR==="changes")for(const item of CHANGES){
+    if(item.operation!=="create")continue;
+    const id=proposalNodeID(item);fragments.push({id,title:item.title});paths[id]=item.path||item.title+".md";
+  }
+  return {fragments,paths};
+}
 function changeListPane(){return `<div id="changes-pane" role="tabpanel" aria-labelledby="sidebar-changes"${WORKSPACE_SIDEBAR==="changes"?"":" hidden"}></div>`}
-function changeDetailPane(){return `<main id="changedetail" aria-label="문서 변경 내역"></main>`}
-function paintDocumentChanges(){
-  const unread=CHANGES.filter(x=>!x.reviewedAt).length,tab=document.getElementById("sidebar-changes");
-  if(tab)tab.innerHTML=`변경${unread?`<span class="changecount">${unread}</span>`:""}`;
+function changeDetailPane(){return `<aside id="changedetail" aria-label="문서 변경 제안"></aside>`}
+function changeEmptyMessage(){return CHANGE_BUSY?"제안을 불러오고 있습니다.":CHANGE_ERROR?"제안 목록을 확인하지 못했습니다.":"승인할 제안이 없습니다."}
+// Compare the exact review draft. Trim common edges before a bounded line LCS;
+// large replacements remain visible in full instead of blocking the UI thread.
+function proposalDiffRows(before,after){
+  const lines=value=>value?String(value.title||"").split("\n").concat([""],String(value.body||"").split("\n")):[];
+  const a=lines(before),b=lines(after);let start=0,end=0;
+  while(start<a.length&&start<b.length&&a[start]===b[start])start++;
+  while(end<a.length-start&&end<b.length-start&&a[a.length-1-end]===b[b.length-1-end])end++;
+  const x=a.slice(start,a.length-end),y=b.slice(start,b.length-end),rows=a.slice(0,start).map(text=>({kind:"same",text}));
+  if(x.length&&y.length&&(x.length+1)*(y.length+1)<=250000){
+    const width=y.length+1,table=new Uint32Array((x.length+1)*width);
+    for(let i=x.length-1;i>=0;i--)for(let j=y.length-1;j>=0;j--)table[i*width+j]=x[i]===y[j]?1+table[(i+1)*width+j+1]:Math.max(table[(i+1)*width+j],table[i*width+j+1]);
+    let i=0,j=0;
+    while(i<x.length||j<y.length){
+      if(i<x.length&&j<y.length&&x[i]===y[j]){rows.push({kind:"same",text:x[i++]});j++}
+      else if(i<x.length&&(j===y.length||table[(i+1)*width+j]>=table[i*width+j+1]))rows.push({kind:"removed",text:x[i++]});
+      else rows.push({kind:"added",text:y[j++]});
+    }
+  }else{for(const text of x)rows.push({kind:"removed",text});for(const text of y)rows.push({kind:"added",text})}
+  return rows.concat(a.slice(a.length-end).map(text=>({kind:"same",text})));
+}
+function proposalDiffHTML(before,after){
+  const rows=proposalDiffRows(before,after),added=rows.filter(r=>r.kind==="added").length,removed=rows.filter(r=>r.kind==="removed").length;
+  if(!added&&!removed)return `<p class="changeempty">원문과 같은 내용입니다.</p>`;
+  const line=row=>`<div class="change-diff-line ${row.kind}"><span class="change-diff-sign" aria-label="${row.kind==="added"?"추가":row.kind==="removed"?"삭제":"유지"}">${row.kind==="added"?"+":row.kind==="removed"?"−":" "}</span><span>${esc(row.text)||" "}</span></div>`;
+  let html=`<p class="change-diff-count">추가 ${added}줄 · 삭제 ${removed}줄</p>`;
+  for(let i=0;i<rows.length;){
+    if(rows[i].kind!=="same"){html+=line(rows[i++]);continue}
+    let end=i;while(end<rows.length&&rows[end].kind==="same")end++;
+    const head=i?2:0,tail=end<rows.length?2:0;
+    if(end-i>head+tail+2){
+      html+=rows.slice(i,i+head).map(line).join("");
+      html+=`<details class="change-diff-unchanged"><summary>같은 내용 ${end-i-head-tail}줄</summary>${rows.slice(i+head,end-tail).map(line).join("")}</details>`;
+      html+=rows.slice(end-tail,end).map(line).join("");
+    }else html+=rows.slice(i,end).map(line).join("");
+    i=end;
+  }
+  return html;
+}
+function paintProposalView(view=CHANGE_VIEW){
+  if(!["diff","edit","original"].includes(view))return;
+  if(view!==CHANGE_VIEW){const scroll=document.querySelector?.("#changedetail .changedetail-scroll");if(scroll)scroll.scrollTop=0}
+  CHANGE_VIEW=view;
+  for(const name of ["diff","edit","original"]){
+    const panel=document.getElementById("proposal-view-"+name),button=document.getElementById("proposal-show-"+name);
+    if(panel){panel.hidden=name!==view;panel.inert=panel.hidden}
+    if(button){button.setAttribute("aria-pressed",String(name===view));button.onclick=()=>paintProposalView(name)}
+  }
+  const d=CHANGE_DETAIL;if(d&&view==="diff"){
+    const panel=document.getElementById("proposal-view-diff");
+    if(panel)panel.innerHTML=proposalDiffHTML(d.before,CHANGE_EDITS[d.id]||d.draft||d.after);
+  }
+  if(view==="edit")resizeProposalEditor();
+}
+function resizeProposalEditor(){
+  const body=document.getElementById("proposal-body");
+  if(body?.scrollHeight){body.style.height="auto";body.style.height=(body.scrollHeight+body.offsetHeight-body.clientHeight)+"px"}
+}
+function paintDocumentChanges(preserveDetail=false){
+  paintContextTools();
+  paintChangeFeedback();
+  const tab=document.getElementById("sidebar-changes");if(tab)tab.innerHTML=`변경${CHANGES.length?`<span class="changecount">${CHANGES.length}</span>`:""}`;
   const list=document.getElementById("changes-pane");
   if(list){
-    const rows=CHANGES.filter(x=>CHANGE_FILTER==="all"||!x.reviewedAt);
-    list.innerHTML=`<div class="changefilters"><button class="gbtn${CHANGE_FILTER==="unread"?" p":""}" data-change-filter="unread">미확인 ${unread}</button><button class="gbtn${CHANGE_FILTER==="all"?" p":""}" data-change-filter="all">전체</button></div>${rows.map(x=>`<button class="changeitem${CHANGE_SELECTED===x.id?" selected":""}" data-change-id="${esc(x.id)}" aria-pressed="${CHANGE_SELECTED===x.id}"><strong>${esc(x.title)}</strong><small>${x.operation==="create"?"추가":"수정"} · MCP · ${esc(new Date(x.performedAt*1000).toLocaleString())}${x.restoredAt?" · 복원됨":""}</small></button>`).join("")||`<p class="changeempty">${CHANGE_BUSY?"불러오는 중…":CHANGE_ERROR?esc(CHANGE_ERROR):"확인할 변경이 없습니다."}</p>`}<p class="flowhint">MCP로 추가·수정한 기록입니다.</p>`;
-    list.querySelectorAll?.("[data-change-id]").forEach(b=>b.onclick=()=>selectDocumentChange(b.dataset.changeId));
-    list.querySelectorAll?.("[data-change-filter]").forEach(b=>b.onclick=()=>{CHANGE_FILTER=b.dataset.changeFilter;paintDocumentChanges()});
+    const tasks=[...new Set(CHANGES.map(x=>x.taskID))];
+    list.innerHTML=tasks.length?tasks.map(task=>{const rows=CHANGES.filter(x=>x.taskID===task);return `<section><h4>${esc(rows[0].taskTitle)}</h4>${rows.map(x=>`<button class="changeitem${x.id===CHANGE_SELECTED?" selected":""}" data-change-id="${esc(x.id)}"${CHANGE_BUSY?" disabled":""}><strong>${esc(x.title)}</strong><small>${x.operation==="create"?"새 문서 제안":"수정 제안"} · 승인 대기</small></button>`).join("")}</section>`}).join(""):`<p class="changeempty">${changeEmptyMessage()}</p>`;
+    list.querySelectorAll("[data-change-id]").forEach(b=>b.onclick=()=>selectDocumentChange(b.dataset.changeId));
   }
   const pane=document.getElementById("changedetail");if(!pane)return;
+  if(preserveDetail&&document.activeElement?.closest?.("#changedetail"))return;
   const d=CHANGE_DETAIL;
-  pane.innerHTML=`<div class="changebar"><span class="changemeta">변경 내역</span><button class="gbtn" id="changeclose">닫기</button></div>${d?`<h1>${esc(d.title)}</h1><div class="changebar"><span class="changemeta">${esc(d.path)}<br/>MCP로 ${d.operation==="create"?"추가":"수정"} · ${esc(new Date(d.performedAt*1000).toLocaleString())}</span><span class="changemeta">${d.restoredAt?"이전 내용으로 복원됨":d.reviewedAt?"확인 완료":"미확인 · 문서에 반영됨"}</span></div><div class="changeversions"><section class="changeversion"><h3>변경 전</h3><pre>${d.before?esc(d.before.title+"\n\n"+d.before.body):"새로 추가한 문서입니다."}</pre></section><section class="changeversion after"><h3>변경 후 · 저장 당시</h3><pre>${esc(d.after.title+"\n\n"+d.after.body)}</pre></section></div><p class="changemeta">저장 당시의 전후 기록입니다. 이후 편집한 내용은 ‘현재 문서 열기’에서 확인할 수 있습니다.</p><div class="changeactions"><button class="gbtn" id="changeopen"${CHANGE_BUSY?" disabled":""}>현재 문서 열기</button>${d.before&&!d.restoredAt?`<button class="gbtn" id="changerestore"${CHANGE_BUSY?" disabled":""}>이전 내용으로 복원…</button>`:""}<button class="gbtn p" id="changereview"${CHANGE_BUSY||d.reviewedAt?" disabled":""}>${d.reviewedAt?"확인 완료":"확인 완료로 표시"}</button></div>`:`<p class="changeempty">${CHANGE_BUSY?"변경 내용을 불러오는 중…":"왼쪽에서 문서를 선택해 변경 전후를 확인하세요."}</p>`}<p class="changestatus changeerror" role="status">${esc(CHANGE_ERROR)}</p>`;
-  document.getElementById("changeclose").onclick=()=>setWorkspaceSidebar("files");
-  const review=document.getElementById("changereview");if(review)review.onclick=()=>changeRequest("review",d.id);
-  const open=document.getElementById("changeopen");if(open)open.onclick=()=>{if(!DOC.fragments.some(x=>x.id===d.fragmentID)){CHANGE_ERROR="현재 저장소에서 이 문서를 찾을 수 없습니다. 이동·삭제 여부를 확인하세요.";paintDocumentChanges();return}setWorkspaceSidebar("files");workspaceOpen(d.fragmentID)};
-  const restore=document.getElementById("changerestore");if(restore)restore.onclick=()=>vaultDialog("이전 내용으로 복원",`<p>‘${esc(d.title)}’을 변경 전 내용으로 되돌립니다.</p><p>이후 다른 편집이 있었다면 복원하지 않습니다.</p>`,"복원",()=>{vaultDialogClose();changeRequest("restore",d.id)});
+  const edit=d?(CHANGE_EDITS[d.id]||d.draft||d.after):null;
+  const taskCount=d?CHANGES.filter(x=>x.taskID===d.taskID).length:0;
+  const emptyText=CHANGE_BUSY?changeEmptyMessage():CHANGES.length?"왼쪽에서 제안을 선택하세요. 승인한 문서만 저장소에 반영됩니다.":changeEmptyMessage();
+  pane.innerHTML=`<div class="changeheader"><div class="changebar"><strong>외부 AI 제안${d?" · 승인 전":""}</strong><button class="gbtn" id="changeclose">닫기</button></div>${d?`<h1>${esc(d.taskTitle)}</h1><p class="changemeta">${esc(d.path)}</p><div class="changeviews" role="group" aria-label="제안 보기"><button class="gbtn" id="proposal-show-diff" aria-controls="proposal-view-diff">변경 부분</button><button class="gbtn" id="proposal-show-edit" aria-controls="proposal-view-edit">제안 편집</button><button class="gbtn" id="proposal-show-original" aria-controls="proposal-view-original">원문</button></div>`:""}</div>
+    <div class="changedetail-scroll">${d?`<section id="proposal-view-diff" aria-label="변경 부분"></section><section id="proposal-view-edit" class="changeversion" aria-label="제안 편집" hidden><h3>제안 · 직접 수정 가능</h3><input id="proposal-title" aria-label="제안 제목" value="${esc(edit.title)}"><textarea id="proposal-body" aria-label="제안 본문" rows="16">${esc(edit.body)}</textarea></section><section id="proposal-view-original" class="changeversion" aria-label="제안 당시 원문" hidden><h3>제안 당시 원문</h3><pre>${d.before?esc(d.before.title+"\n\n"+d.before.body):"새 문서 제안입니다."}</pre></section>`:`<p class="changeempty" role="status">${emptyText}</p>`}</div>
+    <div class="changefooter">${d?`<p class="changeeffect">승인하면 ${d.before?"이 로컬 Markdown 파일에 저장됩니다.":"로컬 저장소에 Markdown 파일이 생성됩니다."}</p><div class="changeactions"><button class="gbtn" id="proposal-reject"${CHANGE_BUSY?" disabled":""}>거절</button><button class="gbtn p" id="proposal-approve"${CHANGE_BUSY?" disabled":""}>이 문서 승인</button>${taskCount>1?`<button class="gbtn" id="proposal-task"${CHANGE_BUSY?" disabled":""}>이 작업의 문서 ${taskCount}개 승인</button>`:""}</div><p id="proposal-draft-status" role="status" class="changestatus"></p>`:!CHANGES.length&&!CHANGE_BUSY&&!CHANGE_ERROR?`<button class="gbtn" id="change-return-files">파일로 돌아가기</button>`:""}</div>`;
+  document.getElementById("changeclose").onclick=closeDocumentChange;
+  const back=document.getElementById("change-return-files");if(back)back.onclick=()=>setWorkspaceSidebar("files",flowFocusRequest(back));
+  if(!d)return;
+  const title=document.getElementById("proposal-title"),body=document.getElementById("proposal-body");
+  title.disabled=body.disabled=CHANGE_BUSY&&!!CHANGE_PENDING;
+  const capture=()=>{CHANGE_EDITS[d.id]={title:title.value,body:body.value}};
+  const persist=()=>{if(CHANGE_BUSY&&CHANGE_PENDING)return;capture();resizeProposalEditor();saveProposalDraft(d.id,CHANGE_EDITS[d.id])};
+  title.oninput=persist;body.oninput=persist;
+  paintProposalView();paintProposalDraftStatus();
+  document.getElementById("proposal-approve").onclick=()=>{capture();changeRequest("approve",d.id,CHANGE_EDITS[d.id])};
+  document.getElementById("proposal-reject").onclick=()=>changeRequest("reject",d.id);
+  const taskApprove=document.getElementById("proposal-task");
+  if(taskApprove)taskApprove.onclick=()=>{capture();changeRequest("approveTask",d.taskID,{edits:CHANGE_EDITS})};
 }
+setInterval(()=>{
+  if(mode!=="stack"||stackView!=="edit"||document.hidden||!VAULT_CONNECTED||CHANGE_BUSY||document.activeElement?.closest?.("#changedetail"))return;
+  post("changeAction",{action:"list"});
+},3000).unref?.();
 let WORKSPACE_SIDEBAR="files",SESSION_RECORD_FILTER="open",SESSION_RECORD_TARGET=null,SESSION_RECORD_REVIEW_PENDING=null;
+let WORKSPACE_TAB_CONTEXT={files:null,records:null,changes:null};
 function sessionActive(){return !!SESSION&&["preparing","active","paused","finishing"].includes(SESSION.state)}
 function sessionAction(action,extra={}){post("sessionAction",{action,...extra})}
 function sessionText(u){return u.corrections?.length?u.corrections[u.corrections.length-1].text:(u.revisions||[]).slice().sort((a,b)=>b.revision-a.revision)[0]?.text||""}
@@ -2882,6 +3130,7 @@ function onSessionState(record,list){
   if(record&&["preparing","active"].includes(record.state))SESSION_RECORD_TARGET=null;
   if(SESSION_RECORD_TARGET&&record&&record.id!==SESSION_RECORD_TARGET&&record.id!==SESSION?.id)return;
   const previous=SESSION;
+  if(previous?.id!==record?.id){CAPTURE_FAILURES={};CAPTURE_SETTINGS_PENDING=null;clearSessionReviewMaterial()}
   if(previous?.id!==record?.id)captureSessionEdits();
   SESSION=record;SESSION_LIST=list||[];
   for(const u of record?.utterances||[]){const key=record.id+":"+u.id;if(SESSION_CORRECTIONS[key]===sessionText(u))delete SESSION_CORRECTIONS[key]}
@@ -2889,27 +3138,34 @@ function onSessionState(record,list){
   if(selectedRecordReady)SESSION_SELECTING=null;
   if(SESSION_RECORD_REVIEW_PENDING&&record?.id===SESSION_RECORD_REVIEW_PENDING.id&&(record.reviewStatus||"open")===SESSION_RECORD_REVIEW_PENDING.status)SESSION_RECORD_REVIEW_PENDING=null;
   const vaultReset=previous&&!record&&!SESSION_LIST.some(r=>r.id===previous.id);
-  if(vaultReset){WORKSPACE_SIDEBAR="files";SESSION_RECORD_FILTER="open";SESSION_RECORD_TARGET=null;SESSION_RECORD_REVIEW_PENDING=null;SESSION_REVIEW_OPEN=false;SESSION_REVIEW_ID=null;SESSION_REVIEW_RECORD=null;SESSION_PREVIEW_CONTEXT=null;SESSION_SELECTING=null;SESSION_QUERY=null;SESSION_EDITS={};SESSION_DRAFT_OPEN={};if(mode==="stack"&&stackView==="edit"){stackRender();return}}
+  if(vaultReset){SESSION_MAP_SNAPSHOT=null;SESSION_REVIEW_MATERIAL=null;SESSION_RECORD_QUESTIONS.clear();WORKSPACE_TAB_CONTEXT={files:null,records:null,changes:null};WORKSPACE_SIDEBAR="files";SESSION_RECORD_FILTER="open";SESSION_RECORD_TARGET=null;SESSION_RECORD_REVIEW_PENDING=null;SESSION_REVIEW_OPEN=false;SESSION_REVIEW_ID=null;SESSION_REVIEW_RECORD=null;SESSION_PREVIEW_CONTEXT=null;SESSION_SELECTING=null;SESSION_RECORD_FOCUS=null;SESSION_QUERY=null;SESSION_EDITS={};SESSION_DRAFT_OPEN={};if(mode==="stack"&&stackView==="edit"){stackRender();return}}
   for(const d of record?.drafts||[])if(d.savedAt||d.error)SESSION_SAVING.delete(d.id);
   if(record){SESSION_LIST=SESSION_LIST.filter(r=>r.id!==record.id);SESSION_LIST.unshift(record)}
-  if(record?.state==="preparing"&&previous?.id!==record.id){SESSION_ERROR="";PREVIEW_MIC=false;CAPTURE={phase:"starting",receiving:[],pending:SESSION_SYSTEM?["me","them"]:["me"],failed:{}};goMode("live")}
-  if(record?.state==="active"&&(previous?.id!==record.id||previous?.state==="preparing")){SESSION_ERROR="";PREVIEW_MIC=false;if(mode!=="live")goMode("live")}
-  if(record&&["completed","interrupted"].includes(record.state)&&mode==="live"){
-    sessionWorkspaceHandoff();goMode("stack");return;
+  if(record?.state==="preparing"&&previous?.id!==record.id){SESSION_ERROR="";PREVIEW_MIC=false;PREPARATION_START_PENDING=false;CAPTURE={phase:"starting",connected:[],receiving:[],pending:SESSION_SYSTEM?["me","them"]:["me"],failed:{}}}
+  if(record?.state==="active"&&!PREPARATION_CANCEL_PENDING&&(previous?.id!==record.id||previous?.state==="preparing")){SESSION_ERROR="";PREVIEW_MIC=false;if(mode!=="live")goMode("live")}
+  if(record&&["completed","interrupted"].includes(record.state)&&!PREPARATION_CANCEL_PENDING&&(mode==="live"||previous?.state==="preparing")){
+    sessionWorkspaceHandoff();if(mode==="live")goMode("stack");else{stackView="edit";stackRender()}return;
   }
+  if(CAPTURE_SETTINGS_PENDING&&record?.state==="paused"){const what=CAPTURE_SETTINGS_PENDING;CAPTURE_SETTINGS_PENDING=null;post("openSystem",{what})}
+  if(mode==="stack"&&stackView==="prepare")paintPreparationPermissions();
+  if(previous?.id===record?.id)refreshSessionMapSnapshot();
   paintSessionControls();
-  const signature=JSON.stringify([record?.id,record?.state,record?.reviewStatus,record?.analysisStatus,record?.drafts,record?.utterances,record?.retrievals,record?.questionReviews,SESSION_LIST.map(r=>[r.id,r.state,r.reviewStatus])]);
+  const signature=JSON.stringify([record?.id,record?.state,record?.reviewStatus,record?.analysisStatus,record?.drafts,record?.utterances,record?.retrievals,record?.questionReviews,record?.markedQuestions,SESSION_LIST.map(r=>[r.id,r.state,r.reviewStatus,r.markedQuestions])]);
   if(mode==="stack"&&(signature!==SESSION_UI_SIGNATURE||selectedRecordReady)){SESSION_UI_SIGNATURE=signature;if(selectedRecordReady)openSessionRecordDetails();else if(SESSION_REVIEW_OPEN)paintSessionReview();else{paintSessionQuestionEntry();bindSessionReview()}}
 }
-function onSessionError(message){SESSION_ERROR=message||"";SESSION_SELECTING=null;SESSION_RECORD_TARGET=SESSION?.id||null;SESSION_RECORD_REVIEW_PENDING=null;SESSION_SAVING.clear();paintSessionControls();if(mode==="stack"){if(SESSION_REVIEW_OPEN)paintSessionReview();else{paintSessionQuestionEntry();bindSessionReview()}}const e=document.getElementById("sessionerror");if(e)e.textContent=SESSION_ERROR}
+function onSessionError(message){const wasSelecting=!!SESSION_SELECTING,focus=wasSelecting&&flowFocusTransferable(SESSION_RECORD_FOCUS)?SESSION_RECORD_FOCUS:null;CAPTURE_SETTINGS_PENDING=null;PREPARATION_START_PENDING=false;SESSION_ERROR=message||"";SESSION_SELECTING=null;SESSION_RECORD_TARGET=SESSION?.id||null;SESSION_RECORD_REVIEW_PENDING=null;SESSION_SAVING.clear();paintSessionControls();if(mode==="stack"&&stackView==="prepare")paintPreparationPermissions();else if(mode==="stack"){if(SESSION_REVIEW_OPEN)paintSessionReview();else{paintSessionQuestionEntry();bindSessionReview()}}const e=document.getElementById("sessionerror");if(e)e.textContent=SESSION_ERROR;paintWorkspaceNoticeAccess();if(wasSelecting){if(focus)restoreFlowFocus([focus.key]);SESSION_RECORD_FOCUS=null}}
 function onCaptureState(value){
   let state;try{state=typeof value==="string"?JSON.parse(value):value}catch(e){return}if(!state)return;
-  CAPTURE={phase:state.phase||"stopped",receiving:state.receiving||[],pending:state.pending||[],failed:state.failed||{}};
+  CAPTURE={phase:state.phase||"stopped",connected:state.connected||state.receiving||[],receiving:state.receiving||[],pending:state.pending||[],failed:state.failed||{}};
+  if(CAPTURE.phase==="starting"){CAPTURE_FAILURES={};onEarTrouble("")}
+  for(const who of CAPTURE.connected)delete CAPTURE_FAILURES[who];
+  Object.assign(CAPTURE_FAILURES,CAPTURE.failed);
   for(const who of ["me","them"]){const label=document.getElementById("input-label-"+who),meter=document.getElementById("input-"+who);
-    const text=CAPTURE.failed[who]?"연결 실패":CAPTURE.receiving.includes(who)?"연결됨":CAPTURE.pending.includes(who)?"연결 중":"대기";
+    const text=CAPTURE.failed[who]?"연결 실패":CAPTURE.connected.includes(who)?"연결됨":CAPTURE.pending.includes(who)?"연결 중":"대기";
     if(label){label.textContent=(who==="me"?"마이크":"상대")+" · "+text;label.title=CAPTURE.failed[who]||""}
     if(meter&&!CAPTURE.receiving.includes(who))meter.value=0;
   }
+  if(mode==="stack"&&stackView==="prepare")paintPreparationPermissions();
   paintSessionControls();
 }
 function onPreviewStopped(){PREVIEW_MIC=false;paintSessionControls();const b=document.getElementById("preview-mic");if(b){b.textContent=SESSION_PREVIEW_CONTEXT?.query?"답변 말해보기":"마이크 시험";b.setAttribute("aria-pressed","false")}}
@@ -2917,12 +3173,43 @@ function onInputLevel(who,level){
   const element=document.getElementById("input-"+who);
   if(element){element.value=Math.min(1,level*10);element.title=level>0.002?"소리 입력 감지됨":"입력 연결됨 · 조용함";const label=document.getElementById("input-label-"+who);if(label)label.textContent=(who==="me"?"마이크":"상대")+" · "+(level>0.002?"입력 중":"연결됨")}
 }
+function sessionMarkTarget(){
+  if(mode==="live")return SESSION_QUERY?.questionID||SESSION_QUERY?.id||null;
+  return SESSION_REVIEW_ID||sessionSelectedQuestion()?.id||null;
+}
+function paintSessionMark(){
+  const id=sessionMarkTarget(),marked=!!SESSION?.markedQuestions?.[id];
+  for(const name of ["mark-question","record-mark","record-detail-mark"]){const b=document.getElementById(name);if(!b)continue;
+    b.disabled=!!SESSION_SELECTING||!id||!sessionQuestions(SESSION).some(q=>q.id===id)||["preparing","finishing"].includes(SESSION?.state);
+    b.textContent=marked?"★ 표시됨":"☆ 다시 볼 질문";b.setAttribute("aria-pressed",String(marked));
+    b.onclick=()=>{if(!SESSION_SELECTING&&!b.disabled)sessionAction("markQuestion",{sessionID:SESSION.id,id,marked:!marked})};
+  }
+}
 function paintSessionControls(){
+  paintSessionMark();
   const state=document.getElementById("sessionstatus"),pause=document.getElementById("pause"),end=document.getElementById("exit");
-  const failure=Object.entries(CAPTURE.failed).map(([who,message])=>(who==="me"?"마이크":"상대 오디오")+": "+message).join(" · ");
+  const failures=mode==="live"?CAPTURE_FAILURES:CAPTURE.failed;
+  const failure=Object.entries(failures).map(([who,message])=>(who==="me"?"마이크":"상대 오디오")+": "+message).join(" · ");
   if(state)state.textContent=mode==="practice"?(SESSION_ERROR||failure||(!PREVIEW_MIC?"미리 사용 · 수집 안 함":CAPTURE.receiving.includes("me")?"마이크 시험 중":"마이크 연결 중")):(SESSION_ERROR||failure||sessionStateLabel());
   if(pause){pause.textContent=SESSION?.state==="paused"?"다시 시작":"일시정지";pause.disabled=["preparing","finishing"].includes(SESSION?.state)}
   if(end)end.disabled=SESSION?.state==="finishing";
+  const recovery=document.getElementById("capture-recovery");
+  if(recovery){
+    let visible=false;
+    for(const [who,what] of [["me","mic"],["them","screen"]]){
+      const button=document.getElementById("capture-"+what);
+      const needed=mode==="live"&&["active","paused"].includes(SESSION?.state)&&!!failures[who]?.includes("권한");
+      if(button){button.hidden=!needed;button.disabled=!!CAPTURE_SETTINGS_PENDING}
+      visible ||= needed;
+    }
+    recovery.hidden=!visible;
+  }
+}
+function openCaptureSettings(what){
+  if(CAPTURE_SETTINGS_PENDING||!["mic","screen"].includes(what))return;
+  if(SESSION?.state==="paused"){post("openSystem",{what});return}
+  if(SESSION?.state!=="active")return;
+  CAPTURE_SETTINGS_PENDING=what;paintSessionControls();sessionAction("pause",{system:SESSION_SYSTEM});
 }
 let USE_PREFERENCES_REVISION=0;
 function saveUsePreferences(){
@@ -2942,48 +3229,93 @@ function openUsePreparation(){
   enterFlow("prepare");post("probeSystem");
   sessionAction("preferences",{revision:++USE_PREFERENCES_REVISION});
 }
+function preparationStarted(){return PREPARATION_START_PENDING||SESSION?.state==="preparing"}
+function preparationFailures(){
+  const wanted=SESSION_SYSTEM?["me","them"]:["me"];
+  return Object.fromEntries(wanted.filter(who=>CAPTURE_FAILURES[who]).map(who=>[who,CAPTURE_FAILURES[who]]));
+}
 function prepareUseRender(){
   const mic={on:"허용됨",ask:"사용할 때 요청",off:"권한 필요"}[SYS.mic]||"확인 중";
-  releaseMarkdownEditors();app.innerHTML=`${flowHeader("사용 시작")}<div id="flowbody" class="flowbody"><div class="flowsection">
-    <h2>대화에서 내 자료 참고하기</h2>
+  let panel=document.getElementById("use-preparation");
+  const existing=!!panel?.parentNode;
+  if(!existing){
+    panel=document.createElement("div");panel.id="use-preparation";panel.className="use-preparation";
+    panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-labelledby","prepare-title");
+    app.appendChild(panel);
+  }
+  const focusID=existing&&panel.contains?.(document.activeElement)?document.activeElement.id:null;
+  panel.innerHTML=`<section class="use-preparation-panel"><header class="use-preparation-header">
+    <h2 id="prepare-title">사용 준비</h2><button id="prepare-close" class="ibtn" aria-label="사용 준비 닫기">×</button></header>
     <label class="flowrow">자료 범위<select id="prepare-scope"><option value="">전체 저장소</option>${(liveTree().suns||[]).map(s=>`<option value="${esc(s.id)}"${LIVE_SUN===s.id?" selected":""}>${esc(s.name)}</option>`).join("")}</select></label>
-    <label class="flowrow">상대 목소리도 듣기<input id="prepare-system" type="checkbox"${SESSION_SYSTEM?" checked":""}></label>
+    <label class="flowrow">통화 상대방 음성도 듣기<input id="prepare-system" type="checkbox" aria-describedby="prepare-system-description prepare-input-hint"${SESSION_SYSTEM?" checked":""}></label>
+    <p id="prepare-system-description" class="flowhint">Zoom·Meet 등 Mac에서 재생되는 소리</p>
     <p id="prepare-input-hint" class="flowhint"></p>
     <div class="flowrow" id="prepare-speech-row"><span>한국어 받아쓰기</span><span id="speechstate">${esc(speechModelText())}</span><button class="gbtn" id="speechprepare">모델 준비</button></div>
     <div class="flowrow" id="prepare-index-row"><span>검색</span><span id="indexstate">${INDEX_STATE==="ready"?"준비됨":esc(indexStateText()||"준비 상태 확인 중")}</span></div>
-    <div class="flowrow" id="prepare-mic-row"><span>마이크 권한</span><span id="prepare-mic-state">${mic}</span><button class="gbtn" id="prepare-mic">마이크 권한 설정</button></div>
-    <div class="flowrow" id="prepare-screen-row"><span>상대 목소리 권한</span><span id="prepare-screen-state"></span><button class="gbtn" id="prepare-screen">상대 오디오 권한 설정</button></div>
-    <p class="flowhint">시작을 누른 뒤 목소리를 수집합니다. 창을 숨기거나 자료를 열어도 계속됩니다. 멈출 때는 일시정지 또는 끝내기를 누르세요.</p>
-    <p class="flowhint">음성 파일은 남기지 않습니다. 대화 기록은 이 저장소에 보관하고, 확인해 저장한 내용만 검색에 사용합니다.</p>
-    <div class="flowactions"><button class="gbtn p" id="prepare-start"${bridged()&&SPEECH_STATE==="ready"?"":" disabled"}>시작</button></div>
-    <div id="sessionerror" role="status">${esc(SESSION_ERROR)}</div></div></div>`;
-  bindFlowHeader();
-  document.getElementById("prepare-scope").onchange=e=>{LIVE_SUN=e.target.value||null;saveUsePreferences()};
-  document.getElementById("prepare-system").onchange=e=>{SESSION_SYSTEM=e.target.checked;saveUsePreferences();paintPreparationPermissions()};
+    <div class="flowrow" id="prepare-mic-row"><span>마이크</span><span id="prepare-mic-state">${mic}</span><button class="gbtn" id="prepare-mic">마이크 설정</button></div>
+    <div class="flowrow" id="prepare-screen-row"><span>상대 목소리</span><span id="prepare-screen-state"></span><button class="gbtn" id="prepare-screen">상대 오디오 설정</button></div>
+    <details><summary>수집·기록 안내</summary><p class="flowhint">시작하면 목소리를 수집합니다. 창을 숨겨도 계속되며, 일시정지 또는 끝내기로 멈춥니다. 음성 파일은 남기지 않고 대화 기록을 이 저장소에 보관합니다. 확인해 저장한 내용만 검색에 사용합니다.</p></details>
+    <p class="flowhint" id="prepare-capture-status" role="status"></p>
+    <div class="flowactions"><button class="gbtn p" id="prepare-start"${bridged()&&SPEECH_STATE==="ready"?"":" disabled"}>시작</button><button class="gbtn" id="prepare-cancel" hidden>취소</button></div>
+    <div id="sessionerror" role="status">${esc(SESSION_ERROR)}</div></section>`;
+  document.getElementById("prepare-close").onclick=cancelUsePreparation;
+  panel.onkeydown=e=>{if(e.key==="Escape"&&!e.isComposing){e.preventDefault();e.stopPropagation?.();cancelUsePreparation()}else containDialogFocus(panel,e)};
+  beginDialogFocus(panel,document.getElementById(focusID||"prepare-scope"));
+  document.getElementById("prepare-scope").onchange=e=>{if(preparationStarted())return;LIVE_SUN=e.target.value||null;saveUsePreferences()};
+  document.getElementById("prepare-system").onchange=e=>{if(preparationStarted())return;SESSION_SYSTEM=e.target.checked;saveUsePreferences();paintPreparationPermissions()};
   paintSpeechModel();
   document.getElementById("prepare-index-row").hidden=INDEX_STATE==="ready";
   paintPreparationPermissions();
   document.getElementById("speechprepare").onclick=()=>{if(["required","error"].includes(SPEECH_STATE)){onSpeechModelState("loading","");post("prepareSpeechModel")}};
   document.getElementById("prepare-mic").onclick=()=>post("openSystem",{what:"mic"});
   document.getElementById("prepare-screen").onclick=()=>post("openSystem",{what:"screen"});
-  document.getElementById("prepare-start").onclick=()=>{if(bridged()&&SPEECH_STATE==="ready"){saveUsePreferences();sessionAction("start",{system:SESSION_SYSTEM})}};
+  document.getElementById("prepare-start").onclick=()=>{
+    if(!bridged()||SPEECH_STATE!=="ready"||PREPARATION_START_PENDING||PREPARATION_CANCEL_PENDING)return;
+    const retry=SESSION?.state==="preparing"&&(Object.keys(preparationFailures()).length>0||!!SESSION_ERROR);
+    if(SESSION?.state==="preparing"&&!retry)return;
+    SESSION_ERROR="";PREPARATION_START_PENDING=!retry;CAPTURE_FAILURES={};
+    CAPTURE={phase:"starting",connected:[],receiving:[],pending:SESSION_SYSTEM?["me","them"]:["me"],failed:{}};
+    saveUsePreferences();paintPreparationPermissions();sessionAction(retry?"retryPreparation":"start",{system:SESSION_SYSTEM});
+  };
+  document.getElementById("prepare-cancel").onclick=()=>cancelUsePreparation();
 }
 function flowHeader(title){return `<div id="top" class="drag hmtop"><button id="flowback" class="gbtn nodrag" aria-label="뒤로가기">${ICO.back}<span>뒤로가기</span></button><strong>${esc(title)}</strong><span style="flex:1"></span><button id="flowhide" class="ibtn nodrag" aria-label="창 숨기기">×</button></div>`}
 function paintPreparationPermissions(){
+  const started=preparationStarted(),failures=preparationFailures();
   for(const [kind,value] of [["mic",SYS.mic],["screen",SYS.screen]]){
+    const who=kind==="mic"?"me":"them",failure=failures[who];
     const state=document.getElementById("prepare-"+kind+"-state"),button=document.getElementById("prepare-"+kind);
-    if(state)state.textContent=!SYS.ready?"확인 중":({on:"허용됨",ask:"사용할 때 요청",unconfirmed:"시작할 때 확인",off:"권한 필요"}[value]||"확인 중");
-    if(button){button.hidden=value==="on";button.disabled=!SYS.ready}
+    if(state)state.textContent=started?(failure?"연결 실패":CAPTURE.connected.includes(who)?"연결됨":"연결 중"):!SYS.ready?"확인 중":({on:"허용됨",ask:"사용할 때 요청",unconfirmed:"시작할 때 확인",off:"권한 필요"}[value]||"확인 중");
+    if(state)state.title=failure||"";
+    if(button){button.hidden=started?!failure:value==="on";button.disabled=started?PREPARATION_CANCEL_PENDING:!SYS.ready}
   }
-  const micRow=document.getElementById("prepare-mic-row");if(micRow)micRow.hidden=SYS.ready&&SYS.mic==="on";
-  const row=document.getElementById("prepare-screen-row");if(row)row.hidden=!SESSION_SYSTEM||(SYS.ready&&SYS.screen==="on");
+  const micRow=document.getElementById("prepare-mic-row");if(micRow)micRow.hidden=!started&&SYS.ready&&SYS.mic==="on";
+  const row=document.getElementById("prepare-screen-row");if(row)row.hidden=!SESSION_SYSTEM||(!started&&SYS.ready&&SYS.screen==="on");
   const hint=document.getElementById("prepare-input-hint");if(hint)hint.textContent=SESSION_SYSTEM?"상대의 질문으로 자료를 찾고, 내 목소리는 대화 기록에 남깁니다.":"내가 말한 질문으로 저장소의 자료를 찾습니다.";
+  for(const id of ["prepare-scope","prepare-system"]){const e=document.getElementById(id);if(e)e.disabled=started}
+  const failureText=Object.entries(failures).map(([who,message])=>(who==="me"?"마이크":"상대 오디오")+": "+message).join(" · ");
+  const status=document.getElementById("prepare-capture-status");
+  if(status)status.textContent=PREPARATION_CANCEL_PENDING?"수집을 중지하고 준비 기록을 정리하는 중…":failureText?failureText+" 수집을 멈췄습니다. 설정을 확인한 뒤 다시 시도하세요.":started?(CAPTURE.phase==="active"?"입력 연결을 확인했습니다. 사용 화면을 여는 중…":"선택한 입력을 연결하는 중입니다. 연결되는 동안 수집이 시작될 수 있습니다."):"";
+  const start=document.getElementById("prepare-start");
+  if(start){const retry=SESSION?.state==="preparing"&&(Object.keys(failures).length>0||!!SESSION_ERROR);start.textContent=retry?"다시 시도":started?"연결 중…":"사용 시작";start.disabled=!bridged()||SPEECH_STATE!=="ready"||PREPARATION_CANCEL_PENDING||started&&!retry}
+  const cancel=document.getElementById("prepare-cancel");if(cancel){cancel.hidden=!started;cancel.disabled=PREPARATION_CANCEL_PENDING}
+}
+function cancelUsePreparation(){
+  if(PREPARATION_CANCEL_PENDING)return;
+  if(!preparationStarted()){returnFromFlow();return}
+  PREPARATION_CANCEL_PENDING=true;paintPreparationPermissions();sessionAction("cancelPreparation");
+}
+function onPreparationCancelled(ok){
+  if(!PREPARATION_CANCEL_PENDING)return;
+  PREPARATION_START_PENDING=false;PREPARATION_CANCEL_PENDING=false;
+  if(ok){returnFromFlow();return}
+  paintPreparationPermissions();
 }
 // 화면 상태의 정본은 기존 전역에 둔다. 복귀 프레임은 사라지는 DOM의 자리만 보존한다.
 function flowElementKey(el){
   if(!el)return null;
   if(el.id)return {id:el.id};
-  for(const attr of ["data-session-draft","data-correct","data-import-retry","data-import-open"]){
+  for(const attr of ["data-session-draft","data-correct","data-import-retry","data-import-open","data-session-record","data-review-question","data-review-document","data-result-document"]){
     const row=el.closest?.("["+attr+"]");
     if(row)return {attr,value:row.getAttribute(attr),child:el===row?-1:Array.from(row.querySelectorAll("input,textarea,button,select")).indexOf(el)};
   }
@@ -2993,6 +3325,19 @@ function flowElement(key){
   if(!key)return null;if(key.id)return document.getElementById(key.id);
   const row=Array.from(app.querySelectorAll?.("["+key.attr+"]")||[]).find(el=>el.getAttribute(key.attr)===key.value);
   return key.child<0?row:row?.querySelectorAll("input,textarea,button,select")[key.child];
+}
+function flowFocusRequest(el){
+  const key=el&&document.activeElement===el?flowElementKey(el):null;
+  return key?{key,element:el}:null;
+}
+function flowFocusTransferable(request){
+  if(!request?.key||request.cancelled)return false;
+  const active=document.activeElement;
+  return !active||active===request.element||active===document.body||active.isConnected===false;
+}
+function restoreFlowFocus(keys){
+  for(const key of keys||[]){const el=flowElement(key);if(el&&!el.disabled){el.focus?.({preventScroll:true});return true}}
+  return false;
 }
 function captureFlowPosition(){
   const active=document.activeElement;
@@ -3023,14 +3368,20 @@ function enterFlow(view){
   FLOW_RETURN.push(captureFlowPosition());FLOW_RESTORE_SEQ++;clearWorkspaceToast();
   stackView=view;stackRender();
 }
+function closePreparationPanel(){
+  const panel=document.getElementById("use-preparation");
+  if(panel?.parentNode){endDialogFocus(panel,false);panel.remove()}
+}
 function returnFromFlow(){
+  if(stackView==="prepare")closePreparationPanel();
   RECSLOT=null;RECMOD=null;document.onkeydown=null;
   const previous=FLOW_RETURN.pop();
   stackView=previous?.epoch===FLOW_EPOCH?previous.view:"edit";stackRender();restoreFlowPosition(previous);
 }
-function bindFlowHeader(){document.getElementById("flowback").onclick=returnFromFlow;document.getElementById("flowhide").onclick=()=>post("closeWindow")}
+function bindFlowHeader(){document.getElementById("flowback").onclick=()=>stackView==="prepare"?cancelUsePreparation():returnFromFlow();document.getElementById("flowhide").onclick=()=>post("closeWindow")}
 function previewQuestion(text){
   const query=String(text||"").trim();if(!query)return;
+  if(!SESSION_PREVIEW_CONTEXT)SESSION_PREVIEW_CONTEXT={origin:"workspace",query,scope:LIVE_SUN||"",returnReview:false};
   if(SESSION_PREVIEW_CONTEXT&&SESSION_PREVIEW_CONTEXT.query!==query){SESSION_PREVIEW_CONTEXT={...SESSION_PREVIEW_CONTEXT,query,returnReview:false,questionID:null};SESSION_REVIEW_ID=null}
   mineV=query;heardV=query;CUR.them.c=query;CUR.them.v="";curWho="them";
   SESSION_QUERY={id:cryptoID(),query,requestedAt:Date.now()/1000};
@@ -3055,29 +3406,85 @@ function paintSessionIndex(){
   });
 }
 function openSessions(){setWorkspaceSidebar("records")}
-function setWorkspaceSidebar(tab){
-  if(!["files","records","changes"].includes(tab))return;
-  if(tab==="changes"){openDocumentChanges();return}
-  if(CHANGES_OPEN){CHANGES_OPEN=false;WORKSPACE_SIDEBAR=tab;stackRender()}
-  explorerCreateCapture();WORKSPACE_SIDEBAR=tab;paintWorkspaceSidebar();paintExplorerTools();
+function captureWorkspaceTabContext(tab=WORKSPACE_SIDEBAR){
+  const editor=takeEditorDraft();
+  WORKSPACE_TAB_CONTEXT[tab]={
+    canvas:CANV?canvasContext():null,
+    nav:(CANV?.navStack||[]).slice(),forward:(CANV?.forwardStack||[]).slice(),
+    editor:editor&&!editor.titleDirty&&!editor.bodyDirty?editor:null,
+    reviewOpen:tab==="records"&&SESSION_REVIEW_OPEN,
+    changesOpen:tab==="changes"&&CHANGES_OPEN,
+  };
+}
+function resetWorkspaceTabSurface(){
+  PANE.r=0;DOCUMENT_RETURN=null;sel=null;WORKSPACE_SELECTED_ID=null;SESSION_MAP_SNAPSHOT=null;SESSION_REVIEW_MATERIAL=null;
+}
+function workspaceTabFrame(context){
+  if(!context?.canvas)return null;
+  let frame=context.canvas;
+  if(frame.selectedID&&!workspaceFile(frame.selectedID)&&!canvasProposal(frame.selectedID)){
+    frame={...frame,selectedID:null,relatedID:null,pane:0,documentReturn:null};
+  }
+  return frame;
+}
+function restoreWorkspaceTabContext(context){
+  const frame=workspaceTabFrame(context);if(!frame)return;
+  canvasRestore(frame);
+  if(CANV){CANV.navStack=(context.nav||[]).slice();CANV.forwardStack=(context.forward||[]).slice()}
+  const current=workspaceSelectedID();
+  if(context.editor&&context.editor.id===current)putEditorDraft(context.editor);
+}
+function setWorkspaceSidebar(tab,focusRequest=null){
+  if(SESSION_SELECTING)return false;
+  if(!["files","records","changes"].includes(tab))return false;
+  if(tab==="changes"&&!VAULT_CONNECTED)return false;
+  if(focusRequest&&!flowFocusTransferable(focusRequest))focusRequest=null;
+  if(tab===WORKSPACE_SIDEBAR){
+    if(tab==="changes"&&!CHANGES_OPEN){CHANGES_OPEN=true;stackRender()}
+    if(tab==="changes")changeRequest();
+    else if(tab==="records")sessionAction("list");
+    if(focusRequest)restoreFlowFocus([{id:"sidebar-"+tab}]);
+    return true;
+  }
+  if(EDITOR_COMPOSING){EDITOR_NAVIGATION=()=>setWorkspaceSidebar(tab,focusRequest);return false}
+  if(!leaveEditorAllowed(()=>setWorkspaceSidebar(tab,focusRequest),focusRequest))return false;
+  if(WORKSPACE_SIDEBAR==="changes"&&tab!=="changes"&&CHANGE_SUCCESS_TASK)clearWorkspaceToast();
+  if(WORKSPACE_SIDEBAR==="records"&&tab!=="records")clearSessionReviewMaterial();
+  captureSessionEdits();captureWorkspaceTabContext();explorerCreateCapture();
+  const context=WORKSPACE_TAB_CONTEXT[tab];
+  WORKSPACE_SIDEBAR=tab;SESSION_REVIEW_OPEN=tab==="records"&&!!context?.reviewOpen;
+  CHANGES_OPEN=tab==="changes"&&(context?!!context.changesOpen:true);stackView="edit";
+  const frame=workspaceTabFrame(context);
+  if(frame)PANE.r=frame.pane||0;else resetWorkspaceTabSurface();
+  stackRender();restoreWorkspaceTabContext(context);
   if(tab==="records"){paintSessionQuestionEntry();bindSessionReview();sessionAction("list")}
+  else if(tab==="changes")changeRequest();
+  if(focusRequest)restoreFlowFocus([{id:"sidebar-"+tab}]);
+  return true;
 }
 function paintWorkspaceSidebar(){
+  paintContextTools();
   for(const tab of ["files","records","changes"]){
     const active=WORKSPACE_SIDEBAR===tab,button=document.getElementById("sidebar-"+tab),panel=document.getElementById(tab==="files"?"left-files-panel":tab==="records"?"records-pane":"changes-pane");
-    if(button){button.setAttribute("aria-selected",String(active));button.tabIndex=active?0:-1}
+    if(button){button.setAttribute("aria-selected",String(active));button.tabIndex=active?0:-1;button.disabled=!!SESSION_SELECTING}
     if(panel){panel.hidden=!active;panel.inert=!active}
   }
 }
 function openSessionRecordDetails(){
   if(!SESSION||SESSION_SELECTING||!leaveEditorAllowed(openSessionRecordDetails))return;
-  captureSessionEdits();SESSION_REVIEW_RECORD=SESSION.id;
-  if(!sessionQuestions(SESSION).some(q=>q.id===SESSION_REVIEW_ID))SESSION_REVIEW_ID=sessionQuestions(SESSION)[0]?.id||null;
-  SESSION_REVIEW_MAP_PENDING=false;SESSION_ARCHIVE_OPEN=false;sessionRender();
+  const focus=flowFocusTransferable(SESSION_RECORD_FOCUS)?SESSION_RECORD_FOCUS:null;
+  if(!focus)SESSION_RECORD_FOCUS=null;
+  captureSessionEdits();if(WORKSPACE_SIDEBAR!=="records")captureWorkspaceTabContext();WORKSPACE_SIDEBAR="records";
+  const questions=sessionQuestions(SESSION),q=(SESSION_REVIEW_RECORD===SESSION.id&&questions.find(q=>q.id===SESSION_REVIEW_ID))||questions.find(q=>q.id===SESSION_RECORD_QUESTIONS.get(SESSION.id))||questions[0];
+  SESSION_REVIEW_RECORD=SESSION.id;SESSION_REVIEW_ID=q?.id||null;
+  if(q)SESSION_RECORD_QUESTIONS.set(SESSION.id,q.id);
+  else clearSessionMapSnapshot();
+  SESSION_REVIEW_MAP_PENDING=!!q;SESSION_ARCHIVE_OPEN=false;sessionRender();
+  if(focus&&!restoreFlowFocus([{id:"review-close"}]))SESSION_RECORD_FOCUS=null;
 }
-function closeSessionRecordDetails(){captureSessionEdits();SESSION_REVIEW_OPEN=false;stackRender()}
+function closeSessionRecordDetails(){const focus=SESSION_RECORD_FOCUS?.key,question=SESSION_REVIEW_ID;captureSessionEdits();clearSessionReviewMaterial();SESSION_REVIEW_OPEN=false;stackRender();if(focus)restoreFlowFocus([focus,question?{attr:"data-review-question",value:question,child:-1}:null,{id:"sidebar-records"}].filter(Boolean));SESSION_RECORD_FOCUS=null}
 function setSessionRecordFilter(status){
-  if(status!=="open"&&status!=="done")return;
+  if(SESSION_SELECTING||(status!=="open"&&status!=="done"))return;
   SESSION_RECORD_FILTER=status;paintSessionQuestionEntry();bindSessionReview();
 }
 function reviewSessionRecord(status){
@@ -3099,7 +3506,14 @@ function sessionDraftPayload(id){
   const draft=SESSION?.drafts?.find(d=>d.id===id)||edit;return draft?{...draft,...edit}:null;
 }
 function sessionPendingDrafts(){captureSessionEdits();return (SESSION?.drafts||[]).concat(Object.values(SESSION_EDITS).filter(d=>d.sessionID===SESSION?.id&&!(SESSION?.drafts||[]).some(x=>x.id===d.id))).filter(d=>!d.savedAt&&!SESSION_SAVING.has(d.id)).map(d=>sessionDraftPayload(d.id)).filter(Boolean)}
-let SESSION_REVIEW_OPEN=false,SESSION_REVIEW_ID=null,SESSION_REVIEW_RECORD=null,SESSION_PREVIEW_CONTEXT=null,SESSION_SELECTING=null,SESSION_ARCHIVE_OPEN=false,SESSION_REVIEW_MAP_PENDING=false;
+let SESSION_MAP_SNAPSHOT=null,SESSION_REVIEW_MATERIAL=null;
+const SESSION_RECORD_QUESTIONS=new Map();
+function clearSessionMapSnapshot(){
+  SESSION_MAP_SNAPSHOT=null;SESSION_REVIEW_MATERIAL=null;CANVQ="";CQV=null;
+  if(CANV){CANV.relatedID=null;CANV.last=null}
+  clearJevRank();clearJevEvidence();
+}
+let SESSION_REVIEW_OPEN=false,SESSION_REVIEW_ID=null,SESSION_REVIEW_RECORD=null,SESSION_PREVIEW_CONTEXT=null,SESSION_SELECTING=null,SESSION_ARCHIVE_OPEN=false,SESSION_REVIEW_MAP_PENDING=false,SESSION_RECORD_FOCUS=null;
 function sessionQuestions(record){
   if(!record)return [];
   const groups=new Map();
@@ -3116,12 +3530,15 @@ function sessionQuestions(record){
   for(const u of record.utterances||[])if(u.who==="me"&&u.questionID&&u.questionID!==u.id&&groups.has(u.questionID)){const text=sessionText(u);if(text.replace(/[\s\p{P}]/gu,""))groups.get(u.questionID).answers.push(text)}
   // Retrieval state and low relevance only order the review queue; they do not prove missing knowledge.
   const priority=q=>{const r=q.retrievals.at(-1);if(!r)return 2;if(r.status&&r.status!=="ready")return 0;if(!r.candidates?.length)return 0;return r.status==="ready"&&Math.max(...r.candidates.map(c=>c.score))<SIM_A?1:2};
-  return [...groups.values()].sort((a,b)=>(a.status==="done")-(b.status==="done")||priority(a)-priority(b));
+  for(const q of groups.values())q.marked=record.markedQuestions?.[q.id]===true;
+  return [...groups.values()].sort((a,b)=>Number(b.marked)-Number(a.marked)||(a.status==="done")-(b.status==="done")||priority(a)-priority(b));
 }
 function resetMaintenanceContext(){
   SESSION_UI_SIGNATURE="";
+  SESSION_RECORD_QUESTIONS.clear();
   WORKSPACE_SIDEBAR="files";SESSION_RECORD_FILTER="open";SESSION_RECORD_TARGET=null;SESSION_RECORD_REVIEW_PENDING=null;
-  SESSION=null;SESSION_LIST=[];SESSION_REVIEW_OPEN=false;SESSION_REVIEW_ID=null;SESSION_REVIEW_RECORD=null;SESSION_PREVIEW_CONTEXT=null;SESSION_SELECTING=null;SESSION_ARCHIVE_OPEN=false;SESSION_REVIEW_MAP_PENDING=false;WORKSPACE_PREVIEW_RETURN=null;SESSION_QUERY=null;SESSION_EDITS={};SESSION_DRAFT_OPEN={};SESSION_CORRECTIONS={};CAPTURE={phase:"stopped",receiving:[],pending:[],failed:{}};LIVE_SUN=null;
+  WORKSPACE_TAB_CONTEXT={files:null,records:null,changes:null};
+  SESSION_MAP_SNAPSHOT=null;SESSION_REVIEW_MATERIAL=null;SESSION=null;SESSION_LIST=[];SESSION_REVIEW_OPEN=false;SESSION_REVIEW_ID=null;SESSION_REVIEW_RECORD=null;SESSION_PREVIEW_CONTEXT=null;SESSION_SELECTING=null;SESSION_ARCHIVE_OPEN=false;SESSION_REVIEW_MAP_PENDING=false;SESSION_RECORD_FOCUS=null;WORKSPACE_PREVIEW_RETURN=null;SESSION_QUERY=null;SESSION_EDITS={};SESSION_DRAFT_OPEN={};SESSION_CORRECTIONS={};CAPTURE={phase:"stopped",connected:[],receiving:[],pending:[],failed:{}};CAPTURE_FAILURES={};CAPTURE_SETTINGS_PENDING=null;PREPARATION_START_PENDING=false;PREPARATION_CANCEL_PENDING=false;LIVE_SUN=null;
 }
 function storedSearchQuestions(){
   return (DOC.asked||[]).filter(a=>a.reviewStatus).map(a=>({id:"search:"+a.id,entryID:a.id,kind:"search",query:a.text,status:a.reviewStatus,answers:[],retrievals:a.reviewRetrieval?[a.reviewRetrieval]:[]}));
@@ -3140,8 +3557,8 @@ function openSearchMaintenance(query,rows,how,scope){
   const state=INDEX_STATE==="error"?"error":INDEX_STATE==="unavailable"?"unavailable":how==="뜻"?"ready":"pending";
   const entry={...(index>=0?asked[index]:{}),id,text,source:"sun",at:index>=0?asked[index].at:now(),reviewStatus:"open",reviewScope:scope||"",reviewRetrieval:{id:cryptoID(),how,query:text,scope:scope||"",requestedAt:stamp,completedAt:state==="ready"?stamp:null,status:state,candidates:(rows||[]).slice(0,3).map(x=>({id:x.p.id,title:x.p.title,path:PATHS[x.p.id]||"",excerpt:x.passage?.sourceText||x.p.body||"",score:Number.isFinite(x.s)?x.s:0}))}};
   if(index>=0)asked[index]=entry;else asked.push(entry);
-  DOC.asked=asked;SESSION_REVIEW_ID="search:"+id;SESSION_REVIEW_OPEN=true;SESSION_REVIEW_MAP_PENDING=true;
-  save();stackView="edit";stackRender();
+  DOC.asked=asked;clearSessionReviewMaterial();SESSION_REVIEW_ID="search:"+id;SESSION_REVIEW_OPEN=true;SESSION_REVIEW_MAP_PENDING=true;
+  save();stackView="edit";sessionRender();
 }
 function openSearchPreview(query,scope){
   if(sessionActive())return;
@@ -3153,7 +3570,41 @@ function sessionSelectedQuestion(){
   const search=storedSearchQuestions().find(q=>q.id===SESSION_REVIEW_ID);if(search)return search;
   const questions=sessionQuestions(SESSION);
   if(SESSION_REVIEW_RECORD!==SESSION?.id){SESSION_REVIEW_RECORD=SESSION?.id;SESSION_REVIEW_ID=null;SESSION_ARCHIVE_OPEN=false}
-  return questions.find(q=>q.id===SESSION_REVIEW_ID)||questions[0]||storedSearchQuestions()[0]||null;
+  return questions.find(q=>q.id===SESSION_REVIEW_ID)||questions[0]||(SESSION?null:storedSearchQuestions()[0])||null;
+}
+function sessionReviewMaterialID(q,r=q?.retrievals?.at(-1)){
+  const candidates=r?.candidates||[],state=SESSION_REVIEW_MATERIAL,recordID=SESSION?.id||"";
+  if(state&&state.recordID===recordID&&state.questionID===q?.id){
+    return state.candidateID&&candidates.some(c=>c.id===state.candidateID)?state.candidateID:null;
+  }
+  return SESSION_REVIEW_OPEN&&WORKSPACE_SIDEBAR==="records"&&q?.id===SESSION_REVIEW_ID?candidates[0]?.id||null:null;
+}
+function setSessionReviewMaterial(candidateID,q=sessionSelectedQuestion(),recordID=SESSION?.id||"",paint=true){
+  if(mode!=="stack"||WORKSPACE_SIDEBAR!=="records"||!q||q.id!==SESSION_REVIEW_ID||recordID!==(SESSION?.id||""))return false;
+  const candidates=q.retrievals?.at(-1)?.candidates||[];
+  if(candidateID!==null&&!candidates.some(c=>c.id===candidateID))return false;
+  SESSION_REVIEW_MATERIAL={recordID,questionID:q.id,candidateID};
+  if(paint&&SESSION_REVIEW_ID===q.id&&SESSION_MAP_SNAPSHOT)sessionPaintSnapshot();
+  return true;
+}
+function clearSessionReviewMaterial(){SESSION_REVIEW_MATERIAL=null}
+function sessionReviewMaterialNode(candidateID,L=CANV){
+  if(!candidateID||!L||!workspaceFile(candidateID))return null;
+  if(L.by?.[candidateID])return {node:L.by[candidateID],representative:false};
+  const path=PATHS[candidateID]||"";
+  const node=(L.nodes||[]).filter(n=>n.kind==="sun"&&n.path&&path.startsWith(n.path+"/")).sort((a,b)=>b.path.length-a.path.length)[0];
+  return node?{node,representative:true}:null;
+}
+function sessionReviewMaterialSelection(L=CANV){
+  const snapshot=SESSION_MAP_SNAPSHOT;if(WORKSPACE_SIDEBAR!=="records"||!snapshot||!SESSION_REVIEW_ID)return null;
+  const candidateID=sessionReviewMaterialID({id:SESSION_REVIEW_ID},{candidates:snapshot.candidates||[]});
+  const candidate=(snapshot.candidates||[]).find(c=>c.id===candidateID),target=sessionReviewMaterialNode(candidateID,L);
+  return candidate&&target?{candidateID,nodeID:target.node.id,title:candidate.title||"문서",representative:target.representative}:null;
+}
+function sessionRecordNodeHit(id,L=CANV){
+  const snapshot=SESSION_MAP_SNAPSHOT,node=L?.by?.[id];
+  if(WORKSPACE_SIDEBAR!=="records"||!snapshot||!node)return false;
+  return (snapshot.candidates||[]).some(c=>c.id===id||(node.kind==="sun"&&node.path&&(PATHS[c.id]||"").startsWith(node.path+"/")));
 }
 function sessionQuestionHint(q){
   const r=q?.retrievals?.at(-1);
@@ -3176,28 +3627,37 @@ function sessionReviewContextActive(){
   const q=sessionSelectedQuestion();return SESSION_REVIEW_OPEN||!!(q&&SESSION_REVIEW_ID);
 }
 function sessionRecordReviewStatus(record){return record?.reviewStatus==="done"?"done":"open"}
-function sessionRecordPreview(record){const first=record.utterances?.find(u=>u.who==="them"&&askable(sessionText(u)));return first?sessionText(first):record.retrievals?.[0]?.query||""}
+function sessionRecordPreview(record){
+  const marked=sessionQuestions(record).find(q=>q.marked);if(marked)return marked.query;
+  const first=record.utterances?.find(u=>(u.who==="them"||u.questionID===u.id)&&askable(sessionText(u).replace(/\p{P}/gu,"").trim()));
+  if(first)return sessionText(first);
+  const initial=record.retrievals?.[0];if(!initial)return "";
+  // The first streaming retrieval can be only one syllable. Keep the first
+  // question's identity, but use its latest text rather than that partial.
+  return record.retrievals.filter(r=>(r.questionID||r.id)===(initial.questionID||initial.id)).at(-1)?.query||initial.query||"";
+}
 function sessionReviewEntry(){
-  const records=SESSION_LIST.filter(r=>sessionRecordReviewStatus(r)===SESSION_RECORD_FILTER).sort((a,b)=>b.startedAt-a.startedAt),selected=records.find(r=>r.id===SESSION?.id);
+  const records=SESSION_LIST.filter(r=>sessionRecordReviewStatus(r)===SESSION_RECORD_FILTER).sort((a,b)=>Number(Object.values(b.markedQuestions||{}).some(Boolean))-Number(Object.values(a.markedQuestions||{}).some(Boolean))||b.startedAt-a.startedAt),selected=records.find(r=>r.id===SESSION?.id);
   const questions=selected?sessionQuestions(SESSION):[],busy=!!SESSION_SELECTING||!!SESSION_RECORD_REVIEW_PENDING||!!SESSION_SAVING.size;
+  const questionList=selected&&!SESSION_SELECTING?`<nav class="reviewquestions" aria-label="선택한 대화의 질문">${questions.length?questions.map(item=>`<button data-review-question="${esc(item.id)}" class="${item.id===SESSION_REVIEW_ID?"selected":""}"${item.id===SESSION_REVIEW_ID?' aria-current="true"':""}${busy?" disabled":""}><span>${item.marked?"★ ":""}${esc(item.query)}</span><small>${item.status==="done"?"확인 완료":esc(sessionQuestionHint(item))}</small></button>`).join(""):'<p class="flowhint">이 대화에는 검색할 질문이 없습니다. 대화 원문을 확인할 수 있습니다.</p>'}</nav>`:"";
   return `<div class="reviewentry" id="records-pane" role="tabpanel" aria-labelledby="sidebar-records"${WORKSPACE_SIDEBAR==="records"?"":" hidden"}>
-    <div class="recordfilters" role="group" aria-label="대화 기록 필터"><button id="records-open" aria-pressed="${SESSION_RECORD_FILTER==="open"}">미완료</button><button id="records-done" aria-pressed="${SESSION_RECORD_FILTER==="done"}">완료 기록</button></div>
-    <div id="recordcards" class="recordcards" aria-label="대화 기록 목록">${records.length?records.map(r=>`<button class="recordcard${r.id===SESSION?.id?" selected":""}" data-session-record="${esc(r.id)}" aria-pressed="${r.id===SESSION?.id}"${busy||sessionActive()?" disabled":""}><span>${esc(new Date(r.startedAt*1000).toLocaleString())}</span>${sessionRecordPreview(r)?`<span class="recordpreview" title="${esc(sessionRecordPreview(r))}" aria-label="${esc(sessionRecordPreview(r))}">${esc(sessionRecordPreview(r))}</span>`:""}<small>질문 ${sessionQuestions(r).length}개${r.state==="interrupted"?" · 중단된 대화":""}</small></button>`).join(""):`<p class="flowhint">${SESSION_RECORD_FILTER==="done"?"완료한 대화가 없습니다.":"미완료 대화가 없습니다."}</p>`}</div>
-    ${SESSION_SELECTING?'<p role="status">대화 기록을 여는 중…</p>':selected?`<div class="recordactions"><button class="gbtn" id="record-details"${busy?" disabled":""}>대화 원문·답변</button><button class="gbtn" id="record-complete"${busy||sessionActive()?" disabled":""}>${SESSION_RECORD_REVIEW_PENDING?"저장 중…":SESSION_RECORD_FILTER==="done"?"다시 열기":"확인 완료"}</button></div><nav class="reviewquestions" aria-label="선택한 대화의 질문">${questions.length?questions.map(item=>`<button data-review-question="${esc(item.id)}" class="${item.id===SESSION_REVIEW_ID?"selected":""}"${busy?" disabled":""}><span>${esc(item.query)}</span><small>${item.status==="done"?"확인 완료":esc(sessionQuestionHint(item))}</small></button>`).join(""):'<p class="flowhint">이 대화에는 검색할 질문이 없습니다. 대화 원문을 확인할 수 있습니다.</p>'}</nav>`:""}</div>`;
+    <div class="recordfilters" role="group" aria-label="대화 기록 필터"><button id="records-open" aria-pressed="${SESSION_RECORD_FILTER==="open"}"${SESSION_SELECTING?" disabled":""}>미완료</button><button id="records-done" aria-pressed="${SESSION_RECORD_FILTER==="done"}"${SESSION_SELECTING?" disabled":""}>완료 기록</button></div>
+    <div id="recordcards" class="recordcards" aria-label="대화 기록 목록">${records.length?records.map(r=>`<div class="recordgroup"><button class="recordcard${r.id===SESSION?.id?" selected":""}" data-session-record="${esc(r.id)}" aria-pressed="${r.id===SESSION?.id}"${busy||sessionActive()?" disabled":""}><span>${esc(new Date(r.startedAt*1000).toLocaleString())}</span>${sessionRecordPreview(r)?`<span class="recordpreview" title="${esc(sessionRecordPreview(r))}" aria-label="${esc(sessionRecordPreview(r))}">${esc(sessionRecordPreview(r))}</span>`:""}<small>${Object.values(r.markedQuestions||{}).filter(Boolean).length?`★ 직접 표시 ${Object.values(r.markedQuestions).filter(Boolean).length}개 · `:""}질문 ${sessionQuestions(r).length}개${r.state==="interrupted"?" · 중단된 대화":""}</small></button>${r.id===selected?.id?questionList:""}${SESSION_SELECTING===r.id?'<p role="status">대화 기록을 여는 중…</p>':""}</div>`).join(""):`<p class="flowhint">${SESSION_RECORD_FILTER==="done"?"완료한 대화가 없습니다.":"미완료 대화가 없습니다."}</p>`}</div></div>`;
 }
 function sessionReviewPanel(){
-  const record=SESSION,questions=sessionQuestions(record),q=questions.find(q=>q.id===SESSION_REVIEW_ID)||questions[0],r=q?.retrievals.at(-1);
+  const record=SESSION,q=sessionSelectedQuestion(),r=q?.retrievals.at(-1);
+  const materialID=sessionReviewMaterialID(q,r),startedAt=record?.startedAt,startedDate=q?.kind!=="search"&&typeof startedAt==="number"&&Number.isFinite(startedAt)?new Date(startedAt*1000):null,started=startedDate&&!Number.isNaN(startedDate.getTime())?startedDate:null;
   const finished=record&&!sessionActive();
   const drafts=[...(record?.drafts||[])];
   for(const draft of Object.values(SESSION_EDITS))if(draft.sessionID===record?.id&&!drafts.some(d=>d.id===draft.id))drafts.push(draft);
   return `<div class="reviewbar"><strong>대화 기록</strong><button class="ibtn" id="review-close" aria-label="대화 기록 닫기">${ICO.close}</button></div>
     <div id="sessionerror" role="status">${esc(SESSION_ERROR)}</div>
     ${record?.events?.some(e=>e.kind==="tailIncomplete")?'<p class="flowhint">마지막 전사가 완전히 확정되기 전에 종료됐습니다. 끝부분을 확인해 주세요.</p>':""}
-    ${sessionActive()?'<p>사용이 끝나면 질문과 당시 자료를 확인할 수 있습니다.</p><button class="gbtn" id="session-return">대화로 돌아가기</button>':q?`<section class="reviewquestion"><small>${q.kind==="search"?"검색에서 남긴 질문":"대화에서 남긴 질문"}</small><h2>${esc(q.query)}</h2>
-    ${q.kind==="search"?"":`<details class="reviewanswers" open><summary>내가 한 답변${q.answers.length?` (${q.answers.length})`:""}</summary>${q.answers.length?q.answers.map(a=>`<p>${esc(a)}</p>`).join(""):'<p class="flowhint">이 질문에 연결된 내 발화가 없습니다. 전체 대화 기록에서 확인할 수 있습니다.</p>'}</details>`}
-    <details class="reviewprevious"><summary>당시 검색 결과 · ${esc(sessionQuestionHint(q))}</summary>${sessionRetrievalNotice(r)?`<p class="flowhint">${esc(sessionRetrievalNotice(r))}</p>`:""}${r?.candidates?.length?r.candidates.map((c,i)=>`<details class="reviewsource"${i===0?" open":""}><summary>${esc(c.title)}${r.displayedID===c.id?" · 펼쳐본 자료":""}</summary><p>${esc(c.excerpt)}</p><small>${esc(c.path)}</small><button class="gbtn" data-review-document="${esc(c.id)}"${workspaceFile(c.id)?"":" disabled"}>현재 문서 열기</button>${workspaceFile(c.id)?"":'<small>이 문서는 현재 저장소에서 열 수 없습니다.</small>'}</details>`).join(""):'<p class="flowhint">당시 검색 근거가 없습니다. 현재 결과에서 자료를 확인하세요.</p>'}
+    ${sessionActive()?'<p>사용이 끝나면 질문과 당시 자료를 확인할 수 있습니다.</p><button class="gbtn" id="session-return">대화로 돌아가기</button>':q?`<section class="reviewquestion">${started?`<small class="reviewdate"><time datetime="${esc(started.toISOString())}">${esc(started.toLocaleString())}</time></small>`:""}<small>${q.kind==="search"?"검색에서 남긴 질문":"대화에서 남긴 질문"}</small><h2>${esc(q.query)}</h2>
+    <details class="reviewprevious" open><summary>당시 검색 결과 · ${esc(sessionQuestionHint(q))}</summary>${sessionRetrievalNotice(r)?`<p class="flowhint">${esc(sessionRetrievalNotice(r))}</p>`:""}${r?.candidates?.length?r.candidates.map(c=>`<details class="reviewsource" data-review-material="${esc(c.id)}"${materialID===c.id?" open":""}><summary>${esc(c.title)}${r.displayedID===c.id?" · 펼쳐본 자료":""}</summary><button class="gbtn" data-review-document="${esc(c.id)}"${workspaceFile(c.id)?"":" disabled"}>현재 문서 열기</button>${workspaceFile(c.id)?"":'<small>이 문서는 현재 저장소에서 열 수 없습니다.</small>'}<p>${esc(c.excerpt)}</p><small>${esc(c.path)}</small></details>`).join(""):'<p class="flowhint">당시 검색 근거가 없습니다. 현재 결과에서 자료를 확인하세요.</p>'}
 </details>
-    <div class="reviewactions"><button class="gbtn" id="review-create">새 문서 추가</button></div>
+    ${q.kind!=="search"&&q.answers.length?`<details class="reviewanswers"><summary>내가 한 답변 (${q.answers.length})</summary>${q.answers.map(a=>`<p>${esc(a)}</p>`).join("")}</details>`:""}
+    <div class="reviewactions"><button class="gbtn" id="record-detail-mark">☆ 다시 볼 질문</button><button class="gbtn" id="record-detail-search-now">현재 저장소에서 다시 검색</button><button class="gbtn" id="review-create">새 문서 추가</button></div>
     <label class="reviewdone"><input id="review-done" type="checkbox"${q.status==="done"?" checked":""}>이 질문 확인 완료</label></section>`:'<section class="reviewquestion"><h2>검색할 질문이 없습니다</h2><p>아래에서 대화 원문을 확인하거나 저장소에 직접 질문할 수 있습니다.</p><button class="gbtn" id="review-free-preview">저장소에서 검색</button></section>'}
     ${record?`<details class="reviewarchive"${SESSION_ARCHIVE_OPEN?" open":""}><summary>전체 대화·기록 초안</summary><div class="reviewarchivebody">${record?`
     ${sessionActive()?'<button class="gbtn p" id="session-return">대화로 돌아가기</button>':`
@@ -3211,12 +3671,26 @@ function sessionReviewPanel(){
     `:"<h2>필요한 대화를 다음 작업으로</h2><p>대화를 마치면 여기서 기록을 보완할 수 있습니다.</p>"}</div></details>`:""}`;
 }
 function bindSessionReview(){
+  paintSessionSelectionLock();
+  paintSessionMark();
   const q=sessionSelectedQuestion(),record=SESSION;
+  app.querySelectorAll?.("[data-review-material]").forEach(row=>{
+    const id=row.dataset.reviewMaterial,recordID=record?.id||"",choose=()=>setSessionReviewMaterial(id,q,recordID);
+    row.onpointerdown=choose;
+    row.onfocusin=choose;
+    row.onfocusout=()=>queueMicrotask(()=>{if(!row.open&&!row.contains?.(document.activeElement)&&sessionReviewMaterialID(q)===id)setSessionReviewMaterial(null,q,recordID)});
+    row.ontoggle=()=>{
+      if(row.isConnected===false)return;
+      const selected=sessionReviewMaterialID(q);
+      if(!row.open){if(selected===id)setSessionReviewMaterial(null,q,recordID);return}
+      if(selected===id||selected===null||row.contains?.(document.activeElement))choose();
+    };
+  });
   app.querySelectorAll?.("details[data-session-draft]").forEach(row=>row.ontoggle=()=>{if(record)SESSION_DRAFT_OPEN[record.id+":"+row.dataset.sessionDraft]=row.open});
   const archive=document.querySelector?.(".reviewarchive");if(archive)archive.ontoggle=()=>{SESSION_ARCHIVE_OPEN=archive.open};
   for(const status of ["open","done"]){const filter=document.getElementById("records-"+status);if(filter)filter.onclick=()=>setSessionRecordFilter(status)}
-  app.querySelectorAll?.("[data-session-record]").forEach(b=>b.onclick=()=>selectSessionReview(b.dataset.sessionRecord));
-  const details=document.getElementById("record-details");if(details)details.onclick=openSessionRecordDetails;
+  app.querySelectorAll?.("[data-session-record]").forEach(b=>b.onclick=()=>selectSessionReview(b.dataset.sessionRecord,flowFocusRequest(b)));
+  const details=document.getElementById("record-details");if(details)details.onclick=()=>{SESSION_RECORD_FOCUS=flowFocusRequest(details);openSessionRecordDetails()};
   const complete=document.getElementById("record-complete");if(complete)complete.onclick=()=>reviewSessionRecord(SESSION?.reviewStatus==="done"?"open":"done");
   app.querySelectorAll?.("[data-review-question]").forEach(b=>b.onclick=()=>sessionChooseQuestion(b.dataset.reviewQuestion));
   const close=document.getElementById("review-close");if(close)close.onclick=closeSessionRecordDetails;
@@ -3227,9 +3701,10 @@ function bindSessionReview(){
     if(q.kind==="search"){DOC.asked=(DOC.asked||[]).map(a=>a.id===q.entryID?{...a,reviewStatus:status}:a);save();paintSessionReview()}
     else sessionAction("questionReview",{sessionID:record.id,id:q.id,status});
   };
-  const create=document.getElementById("review-create");if(create)create.onclick=()=>{SESSION_REVIEW_ID=q.id;SESSION_REVIEW_OPEN=false;stackRender();createFromSidebar("document")};
+  const searchNow=document.getElementById("record-detail-search-now");if(searchNow)searchNow.onclick=()=>{if(!SESSION_REVIEW_OPEN||SESSION_SELECTING||q.id!==SESSION_REVIEW_ID||record?.id!==SESSION?.id)return;clearSessionReviewMaterial();SESSION_REVIEW_OPEN=false;stackRender();canvasAsk(q.query,{log:true,wave:true})};
+  const create=document.getElementById("review-create");if(create)create.onclick=()=>{clearSessionReviewMaterial();SESSION_REVIEW_ID=q.id;SESSION_REVIEW_OPEN=false;stackRender();createFromSidebar("document")};
   const free=document.getElementById("review-free-preview");if(free)free.onclick=()=>{SESSION_REVIEW_OPEN=false;stackRender();document.getElementById("workspacequery")?.focus()};
-  app.querySelectorAll?.("[data-review-document]").forEach(b=>b.onclick=()=>{SESSION_REVIEW_ID=q.id;workspaceOpen(b.dataset.reviewDocument)});
+  app.querySelectorAll?.("[data-review-document]").forEach(b=>b.onclick=()=>{SESSION_REVIEW_ID=q.id;workspaceOpen(b.dataset.reviewDocument,flowFocusRequest(b))});
   const ret=document.getElementById("session-return");if(ret)ret.onclick=()=>goMode("live");
   const add=document.getElementById("session-add");if(add)add.onclick=()=>{
     captureSessionEdits();const id=cryptoID();SESSION_DRAFT_OPEN[record.id+":"+id]=true;SESSION_EDITS[id]={id,fragmentID:cryptoID(),sessionID:record.id,title:"",body:"",sourceIDs:[]};sessionAction("draft",{sessionID:record.id,draft:SESSION_EDITS[id]});sessionRender();
@@ -3246,13 +3721,16 @@ function bindSessionReview(){
     if(input?.value.trim())sessionAction("correct",{sessionID:record.id,id,text:input.value});
   });
 }
-function selectSessionReview(id){
+function selectSessionReview(id,focusRequest=null){
   if(SESSION_SELECTING||SESSION_SAVING.size||SESSION_RECORD_REVIEW_PENDING||sessionActive()||!id||!SESSION_LIST.some(r=>r.id===id))return;
-  if(!leaveEditorAllowed(()=>selectSessionReview(id)))return;
+  if(focusRequest&&!flowFocusTransferable(focusRequest))focusRequest=null;
+  if(!leaveEditorAllowed(()=>selectSessionReview(id,focusRequest),focusRequest))return;
+  SESSION_RECORD_FOCUS=focusRequest;
   if(SESSION?.id===id){openSessionRecordDetails();return}
+  clearSessionReviewMaterial();
   for(const draft of sessionPendingDrafts())sessionAction("draft",{sessionID:SESSION.id,draft});
   SESSION_REVIEW_ID=null;SESSION_REVIEW_MAP_PENDING=false;SESSION_SELECTING=id;SESSION_RECORD_TARGET=id;
-  const pane=document.getElementById("sessionreview");if(pane)pane.inert=true;
+  askLogPending=null;
   paintSessionQuestionEntry();bindSessionReview();
   sessionAction("select",{id});
 }
@@ -3265,32 +3743,72 @@ function paintSessionReview(){
 }
 function paintSessionQuestionEntry(){
   const entry=document.querySelector?.(".reviewentry");if(entry)entry.outerHTML=sessionReviewEntry();
-  paintWorkspaceSidebar();
+  paintWorkspaceSidebar();paintSessionSelectionLock();
+}
+function paintSessionSelectionLock(){
+  const pending=!!SESSION_SELECTING;
+  for(const id of ["cvwrap","sessionreview"]){const pane=document.getElementById(id);if(pane){pane.inert=pending;pane.setAttribute("aria-busy",String(pending))}}
+  const search=document.getElementById("record-search-now");if(search)search.disabled=pending;
+}
+function refreshSessionMapSnapshot(){
+  if(mode!=="stack"||WORKSPACE_SIDEBAR!=="records"||SESSION_SELECTING||!SESSION_MAP_SNAPSHOT||SESSION_REVIEW_RECORD!==SESSION?.id)return;
+  const q=sessionQuestions(SESSION).find(q=>q.id===SESSION_REVIEW_ID);if(!q)return;
+  const r=q.retrievals.at(-1),next=[q.query,r?.scope||"",r?.candidates||[]];
+  const prior=[SESSION_MAP_SNAPSHOT.query,SESSION_MAP_SNAPSHOT.scope||"",SESSION_MAP_SNAPSHOT.candidates];
+  if(JSON.stringify(next)===JSON.stringify(prior))return;
+  SESSION_REVIEW_MAP_PENDING=true;sessionInitialQuestionOnMap({preserveInput:true});
 }
 function sessionWorkspaceHandoff(){
   captureSessionEdits();
+  if(WORKSPACE_SIDEBAR!=="records")captureWorkspaceTabContext();
+  WORKSPACE_TAB_CONTEXT.records=null;clearSessionReviewMaterial();
   WORKSPACE_SIDEBAR="records";SESSION_RECORD_FILTER=sessionRecordReviewStatus(SESSION);SESSION_RECORD_TARGET=SESSION?.id||null;
   const questions=sessionQuestions(SESSION);
   const q=(SESSION_REVIEW_RECORD===SESSION?.id&&questions.find(q=>q.id===SESSION_REVIEW_ID))||questions[0];
   SESSION_REVIEW_RECORD=SESSION?.id;SESSION_REVIEW_ID=q?.id||null;
+  if(q)SESSION_RECORD_QUESTIONS.set(SESSION.id,q.id);else clearSessionMapSnapshot();
   SESSION_REVIEW_OPEN=false;SESSION_REVIEW_MAP_PENDING=!!q;stackView="edit";
   paneApply("r",0);
 }
-function sessionInitialQuestionOnMap(){
+function sessionInitialQuestionOnMap({preserveInput=false}={}){
   if(!SESSION_REVIEW_MAP_PENDING)return;
   const q=SESSION_REVIEW_OPEN?sessionSelectedQuestion():maintenanceQuestions().find(q=>q.id===SESSION_REVIEW_ID);
   if(!q||(!SESSION_REVIEW_MAP_PENDING&&SESSION_REVIEW_ID===q.id))return;
   SESSION_REVIEW_MAP_PENDING=false;SESSION_REVIEW_ID=q.id;
-  const scope=q.retrievals.at(-1)?.scope||"";if(WORKSPACE_SCOPE!==scope)workspaceEnterFolder(scope);
-  for(const id of ["workspacequery","cvq"]){const field=document.getElementById(id);if(field)field.value=q.query}
-  canvasAsk(q.query,{wave:true});
+  const scope=q.retrievals.at(-1)?.scope||"",priorQuery=SESSION_MAP_SNAPSHOT?.query;
+  SESSION_MAP_SNAPSHOT={query:q.query,scope,candidates:q.retrievals.at(-1)?.candidates||[]};
+  CANVQ=q.query;CQV=null;if(CANV)CANV.relatedID=null;
+  clearJevRank();clearJevEvidence();
+  if(WORKSPACE_SCOPE!==scope)workspaceEnterFolder(scope);
+  for(const id of ["workspacequery","cvq"]){const field=document.getElementById(id);if(field&&(!preserveInput||document.activeElement!==field||field.value===priorQuery))field.value=q.query}
+  sessionPaintSnapshot();
+}
+function sessionPaintSnapshot(){
+  const snapshot=SESSION_MAP_SNAPSHOT;if(!snapshot)return;
+  canvasLightsOff();
+  const L=CANV;
+  if(L?.els)for(const n of L.nodes){
+    const lit=sessionRecordNodeHit(n.id,L);
+    const g=L.els.node[n.id],dot=g?.querySelector(".d");
+    if(g){g.setAttribute("class",canvasNodeClass(n.id));g.setAttribute("aria-label",canvasNodeAriaLabel(n))}
+    if(lit&&dot){dot.setAttribute("fill","var(--acc)");canvasBodyOpacity(g,dot,"1")}
+  }
+  const rows=snapshot.candidates.flatMap(c=>{const p=DOC.fragments.find(p=>p.id===c.id);return p?[{p,c:"n",passage:{sourceText:c.excerpt||""}}]:[]});
+  const missing=snapshot.candidates.length-rows.length;
+  const box=document.getElementById("cvrank");
+  if(box){box.innerHTML=`<h4 class="result-heading">당시 표시된 자료</h4><div class="cq">${esc(snapshot.query)}</div>${rows.length?canvasResultRows(rows,true):'<p class="cvnone">현재 열 수 있는 당시 자료가 없습니다.</p>'}${missing?`<p class="flowhint">${missing}개 문서는 이동·삭제되어 열 수 없습니다.</p>`:""}<button class="gbtn" id="record-mark">☆ 다시 볼 질문</button><button class="gbtn" id="record-search-now">현재 저장소에서 다시 검색</button>`;bindCanvasResults(box,rows);box.classList.add("show")}
+  paintSessionMark();
+  const search=document.getElementById("record-search-now");if(search)search.onclick=()=>canvasAsk(snapshot.query,{log:true,wave:true});
+  paintSessionSelectionLock();
+  const tag=document.getElementById("cvhow");if(tag)tag.textContent="";
 }
 function sessionChooseQuestion(id){
   if(SESSION_SELECTING||SESSION_RECORD_REVIEW_PENDING)return;
   if(!leaveEditorAllowed(()=>sessionChooseQuestion(id)))return;
   const q=maintenanceQuestions().find(q=>q.id===id);if(!q)return;
-  captureSessionEdits();WORKSPACE_SIDEBAR="records";SESSION_REVIEW_RECORD=SESSION?.id;SESSION_REVIEW_ID=q.id;
-  SESSION_REVIEW_OPEN=false;SESSION_REVIEW_MAP_PENDING=true;stackView="edit";paneApply("r",0);stackRender();
+  captureSessionEdits();if(WORKSPACE_SIDEBAR!=="records")captureWorkspaceTabContext();paneApply("r",0);clearSessionReviewMaterial();WORKSPACE_SIDEBAR="records";SESSION_REVIEW_RECORD=SESSION?.id;SESSION_REVIEW_ID=q.id;
+  if(SESSION&&sessionQuestions(SESSION).some(item=>item.id===q.id))SESSION_RECORD_QUESTIONS.set(SESSION.id,q.id);
+  SESSION_REVIEW_OPEN=true;SESSION_REVIEW_MAP_PENDING=true;stackView="edit";stackRender();
 }
 function sessionPracticeQuestion(){
   if(sessionActive()){onSessionError("사용을 끝낸 뒤 같은 질문을 미리 사용할 수 있습니다.");return}
@@ -3301,7 +3819,7 @@ function sessionPracticeQuestion(){
   goMode("practice");
 }
 function sessionRender(){
-  captureSessionEdits();WORKSPACE_SIDEBAR="records";SESSION_REVIEW_OPEN=true;stackView="edit";stackRender();
+  captureSessionEdits();if(WORKSPACE_SIDEBAR!=="records")captureWorkspaceTabContext();WORKSPACE_SIDEBAR="records";SESSION_REVIEW_OPEN=true;stackView="edit";stackRender();
 }
 
 let IMPORT_ROWS=[],IMPORT_PROGRESS=null,IMPORT_PICKING=false,IMPORT_DESTINATION=null;
@@ -3329,11 +3847,12 @@ function documentImportRender(){
     <label class="flowrow">넣을 폴더<select id="import-destination"><option value="">저장소 최상위</option>${VAULT_FOLDERS.map(p=>`<option value="${esc(p)}"${p===(IMPORT_DESTINATION??WORKSPACE_SCOPE)?" selected":""}>${esc(p)}</option>`).join("")}</select></label>
     <div class="flowactions"><button class="gbtn p" id="import-pick"${IMPORT_PROGRESS||IMPORT_PICKING?" disabled":""}>파일 선택</button>${IMPORT_PROGRESS?'<button class="gbtn" id="import-cancel">취소</button>':""}</div>
     <div role="status">${IMPORT_PROGRESS?`${esc(IMPORT_PROGRESS.name)} · ${IMPORT_PROGRESS.stage==="preparing"?"첫 변환에 필요한 도구를 준비하고 있습니다":stages[IMPORT_PROGRESS.stage]||"처리"} (${IMPORT_PROGRESS.completed}/${IMPORT_PROGRESS.total})`:""}</div>
-    ${IMPORT_ROWS.map(r=>`<article class="importrow"><strong>${importedDocumentID(r)?`<button class="importdocument" data-import-open="${esc(r.id)}" aria-label="${esc(r.name)} 문서 열기">${esc(r.name)}</button>`:esc(r.name)}</strong><span>${{success:"완료",partial:"일부 변환 · 확인 필요",failed:"실패",cancelled:"취소됨"}[r.status]}</span><p>${esc(r.message||"")}</p>${r.warnings.map(w=>`<p class="flowhint">${esc(w)}</p>`).join("")}${(r.markdownPath||r.originalPath||"").normalize("NFC")!==r.name.normalize("NFC")?`<small>${esc(r.markdownPath||r.originalPath||"")}</small>`:""}${r.retryable?`<button class="gbtn" data-import-retry="${esc(r.id)}"${IMPORT_PROGRESS||IMPORT_PICKING?" disabled":""}>다시 시도</button>`:""}</article>`).join("")}</div></div>`;
+    ${IMPORT_ROWS.map(r=>`<article class="importrow"><strong>${importedDocumentID(r)?`<button class="importdocument" data-import-open="${esc(r.id)}" aria-label="${esc(r.name)} 문서 열기">${esc(r.name)}</button>`:esc(r.name)}</strong><span>${{success:"완료",partial:"일부 변환 · 확인 필요",failed:"실패",cancelled:"취소됨"}[r.status]}</span><p>${esc(r.message||"")}</p>${r.warnings.map(w=>`<p class="flowhint">${esc(w)}</p>`).join("")}${(r.markdownPath||r.originalPath||"").normalize("NFC")!==r.name.normalize("NFC")?`<small>${esc(r.markdownPath||r.originalPath||"")}</small>`:""}${r.retryable?`<button class="gbtn" data-import-retry="${esc(r.id)}"${IMPORT_PROGRESS||IMPORT_PICKING?" disabled":""}>다시 시도</button>`:""}</article>`).join("")}</div></div>${workspaceNoticeFooter()}`;
   bindFlowHeader();document.getElementById("import-destination").value=IMPORT_DESTINATION??WORKSPACE_SCOPE??"";document.getElementById("import-destination").onchange=e=>{IMPORT_DESTINATION=e.target.value};document.getElementById("import-destination").disabled=!!(IMPORT_PICKING||IMPORT_PROGRESS);document.getElementById("import-pick").disabled=!!(IMPORT_PICKING||IMPORT_PROGRESS);document.getElementById("import-pick").onclick=()=>{if(IMPORT_PICKING||IMPORT_PROGRESS)return;IMPORT_PICKING=true;document.getElementById("import-pick").disabled=true;post("importDocuments",{action:"pick",destination:document.getElementById("import-destination").value})};
   const cancel=document.getElementById("import-cancel");if(cancel)cancel.onclick=()=>post("importDocuments",{action:"cancel"});
   app.querySelectorAll("[data-import-retry]").forEach(b=>b.onclick=()=>post("importDocuments",{action:"retry",id:b.dataset.importRetry}));
   app.querySelectorAll("[data-import-open]").forEach(b=>b.onclick=()=>openImportedDocument(b.dataset.importOpen));
+  paintWorkspaceFooter();
   restoreFlowPosition(previous);
 }
 
@@ -3362,9 +3881,9 @@ function render(){
      보냈으니 창 단추는 제때 켜진다 — 가리는 것은 그림 하나다. */
   if(mode==="stack"&&!RECEIVED){
     releaseMarkdownEditors();app.innerHTML=`<div id="top" class="drag workspace-top"><div class="workspace-header-start"><div id="workspace-sidebar-head" style="width:${Math.max(114,PANE.l)}px"><button class="ibtn ico nodrag" id="vaultmenu" title="저장소 폴더 변경" aria-label="저장소 폴더 변경">${ICO.folder}</button></div></div><button class="ibtn ico nodrag" id="golive" aria-label="대화에서 사용" disabled>${ICO.live}</button><div></div></div>
-      <div id="stacknotices" role="status"></div><div class="opening" role="status">저장소를 여는 중…</div>`;
+      <div class="opening" role="status">저장소를 여는 중…</div>${workspaceNoticeFooter()}`;
     document.getElementById("vaultmenu").onclick=requestVaultFolder;
-    paintVaultTrouble();
+    paintWorkspaceFooter();
     return;
   }
   /* 귀는 면접·연습에서만 산다 — 쌓는 동안 마이크·시스템 오디오를 물고 있을 이유가 없다.
@@ -3397,6 +3916,9 @@ function goMode(next){
   if(next==="practice"&&sessionActive()){onSessionError("진행 중인 사용을 먼저 끝내 주세요.");return}
   if(mode==="stack"&&next!=="stack"&&!leaveEditorAllowed(()=>goMode(next)))return;
   if(!canGoMode(next))return;
+  closePreparationPanel();
+  clearJevEvidence();
+  clearJevRank(true);
   /* ★ **기다리던 기록은 화면을 떠날 때 걷는다** (#79 리뷰 (c)2). 벡터는 몇 분 뒤에 올 수 있고
      그때 사람은 이미 다른 모드다 — 안 걷으면 그 옛 글자가 그제서야 기록에 적히고 저장까지 나간다.
      ⚠ `canGoMode` **뒤**다: 전환이 막힌 판(morphing)에서 걷으면 안 떠난 화면의 대기가 사라진다. */
@@ -3414,6 +3936,7 @@ function goMode(next){
     /* 2026-09-07 합의: 준비 중 보던 항성을 자동 승계하지 않는다. 실사용은 전체 저장소로 시작한다. */
     // Keep the scope selected in preparation.
     resetLive();
+    if(!SESSION_SYSTEM)curWho="me";
   }
   /* 연습도 쌓기의 띠를 안 들고 들어간다 (#36). */
   if(next==="practice"){notice=null;SESSION_ERROR="";resetLive()}
@@ -3511,9 +4034,10 @@ function liveRender(){
     ${preview?'<form class="previewinput" id="preview-form"><input id="preview-question" aria-label="시험할 질문" placeholder="자료에 물어볼 질문"><button class="gbtn" type="submit">질문</button></form>':""}
     <div class="hsep"></div><div id="recs"></div><div id="trouble"></div><div id="livequerynotice" class="trouble" role="status" hidden></div>
     <div class="inputmeters"><span id="input-label-me">마이크 · 대기</span><meter id="input-me" min="0" max="1" value="0" aria-label="마이크 입력"></meter>${!preview&&SESSION_SYSTEM?'<span id="input-label-them">상대 · 대기</span><meter id="input-them" min="0" max="1" value="0" aria-label="상대 입력"></meter>':""}<span id="sessionstatus" role="status"></span></div>
+    <div id="capture-recovery" class="trouble" hidden><button class="gbtn nodrag" id="capture-mic" hidden>마이크 권한 설정</button> <button class="gbtn nodrag" id="capture-screen" hidden>상대 오디오 권한 설정</button><div>설정을 열면 수집을 일시정지합니다. 권한 설정 후 돌아와 다시 시작을 누르세요.</div></div>
     <div class="bottom">
       <button class="ibtn nodrag" id="lscope" title="참고할 자료 범위"></button>
-      ${preview?'<button class="gbtn" id="preview-mic">마이크 시험</button>':'<button class="gbtn nodrag" id="pause">일시정지</button>'}
+      ${preview?'<button class="gbtn" id="preview-mic">마이크 시험</button>':'<button class="gbtn nodrag" id="mark-question">☆ 다시 볼 질문</button><button class="gbtn nodrag" id="pause">일시정지</button>'}
       <button class="gbtn nodrag" id="exit">${preview?(SESSION_PREVIEW_CONTEXT?.returnReview!==false&&SESSION_PREVIEW_CONTEXT?"자료 보완으로 돌아가기":"저장소로 돌아가기"):"끝내기"}</button><span style="flex:1"></span>
       <details class="overlayappearance nodrag"><summary>배경</summary><div class="overlayappearancepanel"><label for="overlay-opacity">배경 불투명도</label><input type="range" id="overlay-opacity" min="0.35" max="1" step="0.05" value="${WSTYLE.opacity}" aria-describedby="overlay-appearance-note"><output id="overlay-opacity-value" for="overlay-opacity"></output><p id="overlay-appearance-note"${ACCESSIBILITY.reduceTransparency?"":" hidden"}>macOS의 투명도 줄이기가 적용되어 있습니다.</p></div></details>
       <button class="ibtn nodrag" id="x" aria-label="창 숨기기" title="창 숨기기 · 수집은 유지">×</button></div>
@@ -3546,6 +4070,7 @@ function liveRender(){
       stackView="edit";goMode("stack");
     }else openConfirm();
   };
+  for(const what of ["mic","screen"])document.getElementById("capture-"+what).onclick=()=>openCaptureSettings(what);
   const pause=document.getElementById("pause");if(pause)pause.onclick=()=>sessionAction(SESSION?.state==="paused"?"resume":"pause",{system:SESSION_SYSTEM});
   if(preview){
     document.getElementById("preview-form").onsubmit=e=>{e.preventDefault();previewQuestion(document.getElementById("preview-question").value)};
@@ -3582,7 +4107,7 @@ function paintCur(){
     `<div class="hl"><span class="w">${u.who==="me"?"나":"상대"}</span>${esc(u.text)}</div>`).join("");
   c.className="drag"+(curWho==="me"?" me":"");
   document.getElementById("curw").textContent=curWho==="me"?"나":"상대";
-  tx.dataset.ph=curWho==="me"?"답변을 말하면 관련 자료를 표시합니다":"상대 질문을 기다리는 중…";
+  tx.dataset.ph=mode==="live"&&!SESSION_SYSTEM?"질문을 기다리는 중…":curWho==="me"?"답변을 말하면 관련 자료를 표시합니다":"상대 질문을 기다리는 중…";
   if(document.activeElement===tx)return;   /* 손으로 치는 중엔 안 건드린다 — 커서가 날아간다 */
   tx.innerHTML=esc(cur.c)+(cur.v?`<span class="vol">${cur.c?" ":""}${esc(cur.v)}</span>`:"");
   const box=document.getElementById("curbox");if(box)box.scrollTop=box.scrollHeight;
@@ -3604,7 +4129,8 @@ function applyRank(force){
   /* ★ **범위는 여기서만 걸린다** (#73 Q20). 수확 판정(`resolveHarvest`)은 위에서 이미
      흘러갔고 그것은 **갤럭시로 잰다** — 범위 안에서 빨강이라도 다른 항성이 답하면
      「저장소가 못 덮는 질문」이 아니다. */
-  const r=rank(heardV,undefined,undefined,liveScopeIds(liveTree(),LIVE_SUN)),ids=r.map(x=>x.i);
+  const local=rank(heardV,undefined,undefined,liveScopeIds(liveTree(),LIVE_SUN));
+  const r=reusePreparedRank(heardV,local,LIVE_SUN),ids=r.map(x=>x.i);
   /* 색을 점수와 **같이** 받아 둔다 — 여기서 다시 재면 어느 눈금인지 또 물어야 한다 (#34) */
   const oldList=ORD.list.slice();
   const oldPassage=ORD.passage||{};
@@ -3678,9 +4204,10 @@ function paintManualReading(box){
   const panel=box&&box.querySelector?box.querySelector("[data-manual-read]"):null;
   if(!panel)return;
   const active=!!(openedSnapshot&&openedID===openedSnapshot.id);
+  const wasOpen=!panel.hidden,previousHeight=wasOpen?(panel.getBoundingClientRect?.().height||0):0;
   panel.hidden=!active;
   panel.classList.toggle("open",active);
-  if(!active){panel.dataset.readingKey="";return}
+  if(!active){panel._readingMotion?.cancel();panel.style.overflow="";panel.dataset.readingKey="";return}
   const key=JSON.stringify([openedSnapshot.id,openedSnapshot.passageID]);
   const changed=panel.dataset.readingKey!==key;panel.dataset.readingKey=key;
   panel.dataset.id=openedSnapshot.id;
@@ -3691,7 +4218,22 @@ function paintManualReading(box){
   /* 같은 본문은 다시 쓰지 않는다 — 읽던 위치와 텍스트 선택을 보존한다. */
   const excerpt=displayExcerpt(openedSnapshot.body);
   if(body&&body.textContent!==excerpt){body.textContent=excerpt;body.scrollTop=0}
-  if(changed&&!canvasSystemReduced())panel.animate?.([{opacity:.6,transform:"translateY(4px)"},{opacity:1,transform:"translateY(0)"}],{duration:220,easing:"cubic-bezier(.2,.8,.2,1)"});
+  if(changed){
+    panel._readingMotion?.cancel();panel.style.overflow="";
+    if(!canvasSystemReduced()&&panel.animate){
+      // Make the opening legible without replaying it on every transcript revision.
+      // Reading stays in the same panel; height reveals the body instead of an instant layout jump.
+      const height=panel.getBoundingClientRect?.().height||panel.scrollHeight||0;
+      panel.style.overflow="hidden";
+      const motion=panel.animate([
+        {height:previousHeight+"px",minHeight:wasOpen?"54px":"0px",opacity:.72},
+        {height:height+"px",minHeight:"54px",opacity:1}
+      ],{duration:480,easing:"cubic-bezier(.22,.61,.36,1)"});
+      panel._readingMotion=motion;
+      const settled=()=>{if(panel._readingMotion===motion){panel.style.overflow="";panel._readingMotion=null}};
+      motion?.finished?.then(settled,settled);
+    }
+  }
   const close=panel.querySelector("[data-manual-close]");if(close)close.onclick=closeManualReading;
 }
 /* 카드 셋은 **한 번만 짓고 내용만 갈아끼운다** — 매 어절 다시 지으면 화면이 끊긴다 */
@@ -3832,7 +4374,6 @@ function stackRender(){
   if(stackView==="prepare")return prepareUseRender();
   if(stackView==="sessions")return sessionRender();
   if(stackView==="import")return documentImportRender();
-  if(stackView==="connection")return aiConnectionRender();
   if(stackView==="ingest")return ingestRender();
   const cur=sel!==null?DOC.fragments[sel]:null;
   /* ★ 머리글 = **아이콘만** (#74 C4 · design.md §5: *"글자는 툴팁에"*).
@@ -3850,16 +4391,15 @@ function stackRender(){
       <div class="workspace-header-end"><span id="indexstate" role="status">${esc(indexStateText())}</span>
       <button class="ibtn ico nodrag" id="cvjoy" aria-label="별빛 흩뿌리기" title="별빛 흩뿌리기">${ICO.sparkle}</button>
       ${bridged()?"":`<button class="ibtn ico nodrag" id="gear" title="설정" aria-label="설정">${ICO.gear}</button><button class="ibtn ico nodrag" id="x" title="닫기" aria-label="닫기">${ICO.close}</button>`}</div></div>
-    <div id="stacknotices" role="status">${notice?`<div class="wb" id="nb" role="alert">${esc(notice)}</div>`:""}${SESSION_REVIEW_OPEN?"":`<div id="sessionerror" role="alert">${esc(SESSION_ERROR)}</div>`}</div>
     <div id="cols" class="${PANE.r&&!SESSION_REVIEW_OPEN&&!CHANGES_OPEN?"document-open":""}${workspaceQueryContextActive()?" query-context":""}">${explorerPane()}
-    <div id="workspacetoast" role="status" aria-live="polite" aria-atomic="true" hidden></div>${CHANGES_OPEN?changeDetailPane():canvasPane()}
-    ${CHANGES_OPEN?"":SESSION_REVIEW_OPEN?`<aside id="sessionreview" data-session-id="${esc(SESSION?.id||"")}" aria-label="대화 기록">${sessionReviewPanel()}</aside>`:`<button class="rzr" id="rzr" data-zip="${PANE.r?0:1}" title="끌어서 폭을 바꿔요 — 좁히면 접혀요"></button><div id="right"${PANE.r?"":' class="zip"'} style="width:${PANE.r}px">${editPanel(cur)}</div>`}</div>`;
-  bindExplorerPane();paintWorkspaceToast();paintDocumentChanges();
+    ${canvasPane()}
+    ${CHANGES_OPEN?changeDetailPane():SESSION_REVIEW_OPEN?`<aside id="sessionreview" data-session-id="${esc(SESSION?.id||"")}" aria-label="대화 기록">${sessionReviewPanel()}</aside>`:`<button class="rzr" id="rzr" data-zip="${PANE.r?0:1}" title="끌어서 폭을 바꿔요 — 좁히면 접혀요"></button><div id="right"${PANE.r?"":' class="zip"'} style="width:${PANE.r}px">${editPanel(cur)}</div>`}</div>
+    ${workspaceNoticeFooter(!SESSION_REVIEW_OPEN)}`;
+  bindExplorerPane();paintWorkspaceFooter();paintDocumentChanges();
   /* ★ 가운데 칸을 세운다 — **홈을 그릴 때마다 한 번**이다. `canvasMount` 가 SVG 알맹이를
      짓고 그 뒤로는 속성만 바뀐다(그 함수 머리글). 배치(`CANV`)는 서명이 같으면 살아 있어서
      사람이 끌어 둔 위상이 저장 한 번에 안 날아간다. */
-  if(!CHANGES_OPEN)canvasBindPane();
-  else {const joy=document.getElementById("cvjoy");if(joy)joy.disabled=true}
+  canvasBindPane();
   if(!CHANGES_OPEN&&!SESSION_REVIEW_OPEN)bindResizer("rzr","right","r");
   bindSessionReview();
   document.getElementById("golive").onclick=openUsePreparation;
@@ -3880,7 +4420,7 @@ function stackRender(){
 }
 function paintWorkspaceConnectionState(){
   const disconnected=!VAULT_CONNECTED;
-  for(const id of ["golive","nw","newfolder","explorerimport","explorerconnection","explorerhome","lfind","workspacequery","workspaceask","cvq","emptycreate"]){
+  for(const id of ["golive","nw","newfolder","explorerimport","explorerhome","lfind","workspacequery","workspaceask","cvq","emptycreate"]){
     const control=document.getElementById(id);if(control)control.disabled=disconnected;
   }
   paintExplorerTools();
@@ -3978,6 +4518,26 @@ function paintExplorerCreation(){
   row.querySelector("#createerror").textContent=state.error;
   if(state.refocus){input.focus({preventScroll:true});if(state.selection)input.setSelectionRange(...state.selection);state.refocus=false}
 }
+function paintContextTools(){
+  const files=document.getElementById("file-tools"),context=document.getElementById("context-tools");
+  if(files){files.hidden=WORKSPACE_SIDEBAR!=="files";files.inert=files.hidden}
+  if(!context)return;
+  context.hidden=WORKSPACE_SIDEBAR==="files";context.inert=context.hidden;
+  const button=(id,label,icon,disabled=false)=>`<button class="ibtn ico" id="${id}" title="${label}" aria-label="${label}"${disabled?" disabled":""}>${icon}</button>`;
+  if(WORKSPACE_SIDEBAR==="records"){
+    const selected=SESSION_LIST.some(r=>r.id===SESSION?.id&&sessionRecordReviewStatus(r)===SESSION_RECORD_FILTER);
+    const busy=!selected||!!SESSION_SELECTING||!!SESSION_RECORD_REVIEW_PENDING||!!SESSION_SAVING.size;
+    const done=SESSION?.reviewStatus==="done";
+    context.setAttribute("aria-label","기록 작업");
+    context.innerHTML=button("record-details","선택한 대화 원문·답변",ICO.file,busy)+button("record-complete",done?"선택한 대화 다시 열기":"선택한 대화 확인 완료",done?ICO.undo:ICO.check,busy||sessionActive());
+    document.getElementById("record-details").onclick=openSessionRecordDetails;
+    document.getElementById("record-complete").onclick=()=>reviewSessionRecord(done?"open":"done");
+  }else if(WORKSPACE_SIDEBAR==="changes"){
+    context.setAttribute("aria-label","변경 제안 작업");
+    context.innerHTML=button("change-details","선택한 제안 열기",ICO.file,CHANGE_BUSY||!CHANGES.some(c=>c.id===CHANGE_SELECTED));
+    document.getElementById("change-details").onclick=()=>selectDocumentChange(CHANGE_SELECTED);
+  }else context.innerHTML="";
+}
 function paintExplorerTools(){
   const back=document.getElementById("explorerback");
   if(back)back.disabled=!CHANGES_OPEN&&!SESSION_REVIEW_OPEN&&!(PANE.r>0&&DOCUMENT_RETURN)&&!CANV?.navStack?.length;
@@ -3992,35 +4552,33 @@ function paintExplorerTools(){
 }
 function explorerPane(){
   return `<div id="left"${PANE.l?"":' class="zip"'} style="width:${PANE.l}px">
-    <div id="lefttop"><div class="ltools explorer-nav" role="toolbar" aria-label="탐색 이동">
+    <div id="lefttop"><div class="ltools explorer-nav" role="toolbar" aria-label="공통 도구">
         <button class="ibtn ico" id="explorerback" aria-label="이전 탐색으로" title="이전 탐색으로">${ICO.back}</button>
         <button class="ibtn ico" id="explorerhome" title="전체 저장소" aria-label="전체 저장소">${ICO.home}</button>
-      </div><div class="ltools" role="toolbar" aria-label="파일 작업">
+        <button class="ibtn ico" id="explorersettings" title="설정" aria-label="설정">${ICO.gear}</button>
+      </div><div class="ltools" id="file-tools" role="toolbar" aria-label="파일 작업">
         <button class="ibtn ico" id="nw" title="새 문서" aria-label="새 문서">${ICO.filePlus}</button>
         <button class="ibtn ico" id="newfolder" title="새 폴더" aria-label="새 폴더">${ICO.folderPlus}</button>
         <button class="ibtn ico" id="foldall" title="모두 접기" aria-label="모두 접기">${ICO.collapse}</button>
         <button class="ibtn ico" id="explorerimport" title="자료 가져오기" aria-label="자료 가져오기">${ICO.import}</button>
         <button class="ibtn ico" id="explorerundo" title="파일 작업 되돌리기" aria-label="파일 작업 되돌리기"${VAULT_LAST_OPERATION?"":" disabled"}>${ICO.undo}</button>
       </div>
+      <div class="ltools" id="context-tools" role="toolbar" aria-label="탭 작업" hidden></div>
       <div class="sidebartabs" role="tablist" aria-label="저장소 탐색"><button id="sidebar-files" role="tab" aria-controls="left-files-panel" aria-selected="${WORKSPACE_SIDEBAR==="files"}" tabindex="${WORKSPACE_SIDEBAR==="files"?0:-1}">파일</button><button id="sidebar-records" role="tab" aria-controls="records-pane" aria-selected="${WORKSPACE_SIDEBAR==="records"}" tabindex="${WORKSPACE_SIDEBAR==="records"?0:-1}">기록</button><button id="sidebar-changes" role="tab" aria-controls="changes-pane" aria-selected="${WORKSPACE_SIDEBAR==="changes"}" tabindex="${WORKSPACE_SIDEBAR==="changes"?0:-1}">변경</button></div></div>
     <div id="left-files-panel" role="tabpanel" aria-labelledby="sidebar-files"${WORKSPACE_SIDEBAR==="files"?"":" hidden"}><div class="lrow"><input id="lfind" type="search" aria-label="파일 찾기" placeholder="파일 찾기" value="${esc(LFIND)}"></div><span class="lhits" id="lhits"></span><div id="leftlist" role="tree" aria-label="파일 탐색기"></div></div>${sessionReviewEntry()}${changeListPane()}
-    <div class="ltools explorer-secondary" role="toolbar" aria-label="연결 및 설정">
-      <button class="ibtn ico" id="explorerconnection" title="외부 AI 연결" aria-label="외부 AI 연결">${ICO.link}</button>
-      <button class="ibtn ico" id="explorersettings" title="설정" aria-label="설정">${ICO.gear}</button>
-    </div></div><button class="rzr" id="rzl" data-zip="${PANE.l?0:1}" title="탐색기 너비 조절"></button>`;
+    </div><button class="rzr" id="rzl" data-zip="${PANE.l?0:1}" title="탐색기 너비 조절"></button>`;
 }
 function bindExplorerPane(){
   paintHomeList();bindResizer("rzl","left","l");bindExplorerRoot();
-  for(const tab of ["files","records","changes"]){const button=document.getElementById("sidebar-"+tab);if(button){button.onclick=()=>setWorkspaceSidebar(tab);button.onkeydown=e=>{if(!["ArrowLeft","ArrowRight","Home","End"].includes(e.key))return;e.preventDefault();const tabs=["files","records","changes"],next=e.key==="Home"?tabs[0]:e.key==="End"?tabs[2]:tabs[(tabs.indexOf(tab)+(e.key==="ArrowRight"?1:2))%3];setWorkspaceSidebar(next);document.getElementById("sidebar-"+next)?.focus()}}}
+  for(const tab of ["files","records","changes"]){const button=document.getElementById("sidebar-"+tab);if(button){button.onclick=()=>setWorkspaceSidebar(tab,flowFocusRequest(button));button.onkeydown=e=>{if(!["ArrowLeft","ArrowRight","Home","End"].includes(e.key))return;e.preventDefault();const tabs=["files","records","changes"],next=e.key==="Home"?tabs[0]:e.key==="End"?tabs[2]:tabs[(tabs.indexOf(tab)+(e.key==="ArrowRight"?1:2))%3];setWorkspaceSidebar(next,flowFocusRequest(button))}}}
   paintWorkspaceSidebar();
-  const back=document.getElementById("explorerback");if(back)back.onclick=()=>CHANGES_OPEN?setWorkspaceSidebar("files"):canvasGoBack();
+  const back=document.getElementById("explorerback");if(back)back.onclick=canvasGoBack;
   const home=document.getElementById("explorerhome");if(home)home.onclick=explorerGoHome;
   const settings=document.getElementById("explorersettings");if(settings)settings.onclick=openSettingsScreen;
   document.getElementById("nw").onclick=()=>createFromSidebar("document");
   const nf=document.getElementById("newfolder");
   if(nf)nf.onclick=()=>createFromSidebar("folder");
   const importer=document.getElementById("explorerimport");if(importer)importer.onclick=openDocumentImport;
-  const connection=document.getElementById("explorerconnection");if(connection)connection.onclick=openAIConnectionScreen;
   const undo=document.getElementById("explorerundo");if(undo)undo.onclick=explorerUndoFileOperation;
   const lf=document.getElementById("lfind");
   if(lf)lf.oninput=()=>{LFIND=lf.value;paintHomeList()};
@@ -4051,10 +4609,11 @@ function requestVaultFolder(){
   setTimeout(()=>{pickFree(PICKING,"vault");paintPicking("vaultmenu","vault")},PICK_FREE_MS);
 }
 /* 파일 정리: 디스크 확인 전에는 문서·경로를 먼저 바꾸지 않는다. */
-function leaveEditorAllowed(next){
+function leaveEditorAllowed(next,focusRequest=null){
   clearEditorAutosave();
   if(!vaultHasDraft())return true;
   if(next){
+    if(focusRequest)next.focusRequest=focusRequest;
     EDITOR_NAVIGATION=next;
     if(!SAVE_FLIGHT){
       const draft=takeEditorDraft();
@@ -4381,7 +4940,8 @@ function paintSpeechModel(){
   if(e)e.textContent=speechModelText();
   if(b){b.disabled=["unknown","loading","ready","unsupported"].includes(SPEECH_STATE);b.textContent=SPEECH_STATE==="loading"?"준비 중…":SPEECH_STATE==="error"?"다시 준비":"모델 준비"}
   const row=document.getElementById("prepare-speech-row");if(row)row.hidden=SPEECH_STATE==="ready";
-  const start=document.getElementById("prepare-start");if(start)start.disabled=!bridged()||SPEECH_STATE!=="ready";
+  if(mode==="stack"&&stackView==="prepare")paintPreparationPermissions();
+  else{const start=document.getElementById("prepare-start");if(start)start.disabled=!bridged()||SPEECH_STATE!=="ready"}
 }
 function onSpeechModelState(state,message){SPEECH_STATE=state;SPEECH_MESSAGE=message||"";paintSpeechModel()}
 function indexStateText(){return {indexing:"검색 준비 중…",ready:"",unavailable:"검색 모델을 불러올 수 없습니다",error:"검색을 준비하지 못했습니다"}[INDEX_STATE]||""}
@@ -4411,6 +4971,37 @@ function editPanel(cur){
     <div id="doctitle"><input id="ti" aria-label="문서 제목" placeholder="제목" value="${cur?esc(cur.title):""}"></div>
     <div id="docbody" class="docbody"><textarea id="bo" aria-label="문서 내용" placeholder="">${cur?esc(cur.body):""}</textarea></div>`;
 }
+/* 기록에서 현재 문서를 읽는 한 번의 왕복에만 패널 자리를 싣는다. 대화·질문·후보가
+   모두 같은 새 DOM일 때만 되돌려 다른 기록이나 볼트에 열린 자료가 새지 않게 한다. */
+function sessionReadingSources(){
+  return Array.from(app.querySelectorAll?.(".reviewsource")||[]).map(row=>{
+    const button=row.querySelector?.("[data-review-document]"),id=button?.dataset.reviewDocument;
+    return id?{id,row}:null;
+  }).filter(Boolean);
+}
+function captureSessionReadingState(candidateID){
+  const pane=document.getElementById("sessionreview"),recordID=SESSION?.id??null,questionID=sessionSelectedQuestion()?.id,vault=SYS.vault||"";
+  if(!SESSION_REVIEW_OPEN||!pane||!questionID)return null;
+  const sources=sessionReadingSources();
+  if(!sources.some(source=>source.id===candidateID))return null;
+  return {vault,recordID,questionID,candidateID,sources:sources.map(source=>({id:source.id,open:!!source.row.open})),scrollTop:pane.scrollTop||0,scrollLeft:pane.scrollLeft||0};
+}
+function restoreSessionReadingState(state){
+  const pane=document.getElementById("sessionreview"),recordID=SESSION?.id??null,questionID=sessionSelectedQuestion()?.id,vault=SYS.vault||"";
+  if(!state||!pane||!SESSION_REVIEW_OPEN||vault!==state.vault||recordID!==state.recordID||questionID!==state.questionID)return false;
+  const sources=sessionReadingSources();
+  if(!sources.some(source=>source.id===state.candidateID))return false;
+  const open=new Map((state.sources||[]).map(source=>[source.id,!!source.open]));
+  for(const source of sources)if(open.has(source.id))source.row.open=open.get(source.id);
+  const restoreScrollOnce=()=>{
+    if(document.getElementById("sessionreview")!==pane||(SYS.vault||"")!==state.vault||(SESSION?.id??null)!==state.recordID||sessionSelectedQuestion()?.id!==state.questionID
+        ||!sessionReadingSources().some(source=>source.id===state.candidateID))return;
+    pane.scrollTop=state.scrollTop||0;pane.scrollLeft=state.scrollLeft||0;
+  };
+  restoreScrollOnce();
+  if(typeof requestAnimationFrame==="function")requestAnimationFrame(restoreScrollOnce);
+  return true;
+}
 function closeWorkspaceDocument(options={}){
   if(!leaveEditorAllowed(()=>closeWorkspaceDocument(options)))return false;
   const frame=DOCUMENT_RETURN;
@@ -4429,26 +5020,43 @@ function closeWorkspaceDocument(options={}){
     // 닫기는 문서를 열기 전 방문으로 복귀한다. 같은 위치를 뒤로 가기에서 다시 밟지 않는다.
     if(Number.isInteger(frame.navDepth)){CANV.navStack=(CANV.navStack||[]).slice(0,frame.navDepth);CANV.forwardStack=[];paintExplorerTools()}
   }else paintCanvasNavigation();
-  if(frame?.reviewQuestionID&&maintenanceQuestions().some(q=>q.id===frame.reviewQuestionID)){
-    SESSION_REVIEW_ID=frame.reviewQuestionID;SESSION_REVIEW_OPEN=true;SESSION_REVIEW_MAP_PENDING=false;stackRender();
-  }
+  if(WORKSPACE_SIDEBAR==="changes"&&frame?.changeReturnID&&CHANGES.some(c=>c.id===frame.changeReturnID))selectDocumentChange(frame.changeReturnID);
+  const returnToReview=frame?.reviewQuestionID&&maintenanceQuestions().some(q=>q.id===frame.reviewQuestionID);
+  if(returnToReview){SESSION_REVIEW_ID=frame.reviewQuestionID;SESSION_REVIEW_OPEN=true;SESSION_REVIEW_MAP_PENDING=false;stackRender()}
+  /* 기록 상세까지 다시 연 최종 폭에서 카메라 기준을 맞춘다. 중간의 문서 없는 폭을
+     기준으로 남기면 다음 resize 때 그 차이가 뒤늦게 한꺼번에 적용된다. */
+  if(frame?.viewport)canvasReconcileViewport();
+  if(returnToReview)restoreSessionReadingState(frame.reviewReading);
+  if(frame?.focusReturn)restoreFlowFocus([frame.focusReturn,frame.reviewQuestionID?{attr:"data-review-question",value:frame.reviewQuestionID,child:-1}:null,{id:frame.reviewQuestionID?"sidebar-records":"sidebar-"+WORKSPACE_SIDEBAR}].filter(Boolean));
   return true;
 }
-function openWorkspaceDocument(id){
+function openWorkspaceDocument(id,focusRequest=null){
+  if(SESSION_SELECTING)return false;
+  const focus=flowFocusTransferable(focusRequest)?focusRequest:null;
+  const changeReturnID=CHANGES_OPEN?CHANGE_SELECTED:null;
+  if(CHANGES_OPEN){if(!leaveEditorAllowed(()=>openWorkspaceDocument(id,focusRequest),focusRequest))return false;CHANGES_OPEN=false;stackRender()}
   const reviewQuestionID=SESSION_REVIEW_OPEN?sessionSelectedQuestion()?.id:null;
+  const reviewReading=reviewQuestionID?captureSessionReadingState(id):null;
+  /* 기록 상세을 걷으면 가운데 칸이 즉시 넓어져 카메라가 새 viewport에 맞춰진다.
+     확대·위치는 그 렌더 전에 보관하되, 질문의 경로·검색 맥락은 렌더가 확정한 값을 쓴다. */
+  const reviewBefore=reviewQuestionID&&CANV?canvasContext():null;
+  const reviewCamera=reviewBefore?{vt:reviewBefore.vt,viewport:canvasViewport()}:null;
   if(SESSION_REVIEW_OPEN){captureSessionEdits();SESSION_REVIEW_OPEN=false;stackRender()}
   if(!reviewQuestionID&&PANE.r>0&&sel!==null&&DOC.fragments[sel]?.id===id)return true;
-  if(!leaveEditorAllowed(()=>openWorkspaceDocument(id)))return false;
+  if(!leaveEditorAllowed(()=>openWorkspaceDocument(id,focusRequest),focusRequest))return false;
   const i=DOC.fragments.findIndex(p=>p.id===id);if(i<0)return false;
   /* 문서를 여러 장 이어 읽어도 닫기는 처음 열기 전의 위치·질문으로 돌아간다.
      파일의 폴더로 들어가기 전에 보존하고, 명시적으로 지도를 탐색하면 paneApply가 해제한다. */
-  if((PANE.r===0||reviewQuestionID)&&CANV)DOCUMENT_RETURN={...canvasContext(),navDepth:CANV.navStack?.length||0,...(reviewQuestionID?{reviewQuestionID}:{} )};
+  if((PANE.r===0||reviewQuestionID||changeReturnID)&&CANV){
+    const returning={...canvasContext(),navDepth:CANV.navStack?.length||0,...(reviewCamera||{})};
+    DOCUMENT_RETURN={...returning,...(reviewQuestionID?{reviewQuestionID}:{}),...(reviewReading?{reviewReading}:{}),...(changeReturnID?{changeReturnID}:{}),...(focus?{focusReturn:focus.key}:{})};
+  }
   if(sel!==i||PANE.r===0)canvasRemember();
   const parent=(PATHS[id]||"").split("/").slice(0,-1).join("/");if(!workspaceQueryContextActive()&&parent!==WORKSPACE_SCOPE)workspaceEnterFolder(parent);
   sel=i<0?null:i;WORKSPACE_SELECTED_ID=id;revealWorkspaceFile(id);paneOpen("r");
   if(CANV?.els){CANV.follow=null;CANV.glide=null;CANV.nodes.forEach(n=>CANV.els.node[n.id].setAttribute("class",canvasNodeClass(n.id)))}
   if(stackView==="settings"){stackView="edit";stackRender()}else{canvasPaintPanel();paintHomeList()}
-  treeScrollSel();paintCanvasNavigation();return true;
+  treeScrollSel();paintCanvasNavigation();if(focus&&DOCUMENT_RETURN?.focusReturn)restoreFlowFocus([{id:"closedoc"}]);return true;
 }
 
 /* 본문 Markdown 링크의 상대경로를 현재 볼트 안에서 해석한다.
@@ -4520,6 +5128,16 @@ function editorManualSave(){
   // 조합 중인 글자를 확정하거나 편집기를 다시 만들지 않는다. 조합 완료 뒤 자동 저장한다.
   if(EDITOR_COMPOSING)return false;
   clearEditorAutosave();
+  const draft=takeEditorDraft();
+  // 실패한 저장은 DOC에 초안을 이미 옮겨 둔 상태라 다시 보내야 한다.
+  // 그 외의 변경 없는 ⌘S는 updated와 원문을 다시 쓰지 않는다.
+  if(EDITOR_SAVE_STATE!=="failed"&&draft?.id&&!draft.titleDirty&&!draft.bodyDirty){
+    if(SAVE_FLIGHT||SAVE_PENDING){setEditorSaveState("saving");return true}
+    // 현재 편집 DOM만 같고 DOC에 아직 저장하지 않은 조각이 있으면
+    // 시각을 다시 바꾸지 않고 기존 문서 저장만 이어간다.
+    if(changedFragmentIDs(VAULT_BASE,DOC).length)return save("auto");
+    setEditorSaveState("saved");return true
+  }
   // auto는 저장 확인 때 현재 편집 DOM을 유지하는 경로다. 단축키는 기다리지 않고 즉시 보낸다.
   return saveEditorValue("auto");
 }
@@ -4578,7 +5196,7 @@ function bindEditPanel(cur,pre){
   if(ti)ti.oninput=remember;
   if(bo)bo.oninput=remember;
   const compositionStart=()=>{EDITOR_COMPOSING=true;clearEditorAutosave()};
-  const compositionEnd=()=>{EDITOR_COMPOSING=false;remember()};
+  const compositionEnd=()=>{EDITOR_COMPOSING=false;remember();resumeEditorNavigation(true)};
   if(ti){ti.oncompositionstart=compositionStart;ti.oncompositionend=compositionEnd}
   if(bo?.classList?.contains("cm-content")){
     bo.addEventListener("compositionstart",compositionStart);
@@ -4609,6 +5227,143 @@ function bindEditPanel(cur,pre){
 let LZIP={};
 /* 수동 궤도는 실제 파일 경로의 관계만 저장한다. 폴더·본문·검색 순위와 분리한다. */
 let ORBIT_GROUPS=[],ORBIT_ERROR=null;
+// Jev's arrangement is a saved view. PATHS and the physical explorer remain authoritative.
+let GALAXY={record:null,signature:"",active:false,pending:null,sequence:0,error:"",group:null};
+function galaxySignature(){return JSON.stringify((DOC.fragments||[]).map(p=>[p.id,PATHS[p.id]||"",p.title,p.body]).sort((a,b)=>a[0].localeCompare(b[0])))}
+function galaxyVisible(){return GALAXY.active&&!!GALAXY.record&&WORKSPACE_SIDEBAR==="files"&&!WORKSPACE_SCOPE}
+function galaxyDocumentChanged(reset=false){
+  const signature=galaxySignature();
+  if(reset||GALAXY.signature&&GALAXY.signature!==signature){
+    if(GALAXY.pending)post("cancelGalaxyArrangement",{});
+    GALAXY.record=null;GALAXY.signature="";GALAXY.active=false;GALAXY.pending=null;GALAXY.group=null;
+    GALAXY.error=reset?"":"문서가 바뀌었어요. 흰 갤럭시를 눌러 다시 정렬할 수 있어요.";
+  }
+}
+function galaxyAnchors(fragments=DOC.fragments,vec=VEC){
+  const docs=fragments.slice().sort((a,b)=>a.id.localeCompare(b.id));
+  if(docs.length<2||docs.length>64)return [];
+  // Native indexing supplies multiple passages for long Markdown. Use the same
+  // document-pair metric as related planets, and measure each pair only once.
+  const scores=new Map();
+  const similarity=(a,b)=>{
+    const key=JSON.stringify([a.id,b.id].sort());
+    if(!scores.has(key))scores.set(key,passagePairScore(a,b,vec));
+    return scores.get(key);
+  };
+  if(docs.some(a=>docs.some(b=>similarity(a,b)===null)))return [];
+  const central=docs.map(p=>({p,s:docs.reduce((sum,q)=>sum+similarity(p,q),0)})).sort((a,b)=>b.s-a.s||a.p.id.localeCompare(b.p.id));
+  const anchors=[central[0].p],count=Math.min(6,Math.max(1,Math.round(Math.sqrt(docs.length))),docs.length-1);
+  while(anchors.length<count){
+    const next=docs.filter(p=>!anchors.includes(p)).map(p=>({p,d:1-Math.max(...anchors.map(a=>similarity(p,a)))}))
+      .sort((a,b)=>b.d-a.d||a.p.id.localeCompare(b.p.id))[0];
+    if(!next||next.d<.05)break;
+    anchors.push(next.p);
+  }
+  return anchors.map(p=>p.id);
+}
+function galaxyGroups(record=GALAXY.record){
+  if(!record)return [];
+  const groups=record.anchorIDs.map((id,index)=>({id:"@galaxy/"+id,index,name:DOC.fragments.find(p=>p.id===id)?.title||"문서 묶음",members:[id]}));
+  const ungrouped={id:"@galaxy/unassigned",index:-1,name:"아직 묶지 않은 문서",members:[]};
+  for(const row of record.assignments)(row.group<0?ungrouped:groups[row.group])?.members.push(row.documentID);
+  if(ungrouped.members.length)groups.push(ungrouped);
+  return groups;
+}
+function galaxyValidRecord(record){
+  if(!record||record.schemaVersion!==1||record.policy!=="representative-subject-choice-v1"||!Array.isArray(record.anchorIDs)||!Array.isArray(record.assignments))return false;
+  if(!record.anchorIDs.length||record.anchorIDs.length>6)return false;
+  const ids=record.anchorIDs.concat(record.assignments.map(r=>r.documentID)),actual=DOC.fragments.map(p=>p.id);
+  return ids.length===actual.length&&new Set(ids).size===ids.length&&ids.every(id=>actual.includes(id))
+    &&record.assignments.every(r=>Number.isInteger(r.group)&&r.group>=-1&&r.group<record.anchorIDs.length);
+}
+function galaxyArrange(){
+  if(mode!=="stack")return;
+  if(WORKSPACE_SIDEBAR!=="files"||!VAULT_CONNECTED)return;
+  if(!leaveEditorAllowed(galaxyArrange))return;
+  if(GALAXY.pending){galaxyPanel();return}
+  galaxyDocumentChanged();
+  if(GALAXY.record){galaxyShow();return}
+  GALAXY.error="";
+  if(!JEV_PREVIEW||!bridged()){
+    GALAXY.error="이 실행에는 Jev 정렬 연결이 준비되지 않았어요. 기존 폴더와 검색은 계속 사용할 수 있어요.";galaxyPanel();return;
+  }
+  const anchorIDs=galaxyAnchors();
+  if(!anchorIDs.length||!VAULT_REVISION||INDEX_STATE!=="ready"){GALAXY.error="첫 정렬은 Markdown 2~64개와 준비된 의미 색인이 필요해요.";galaxyPanel();return}
+  const requestID="galaxy-"+(++GALAXY.sequence);
+  GALAXY.signature=galaxySignature();GALAXY.pending={requestID,revision:VAULT_REVISION,signature:GALAXY.signature,completed:0,total:DOC.fragments.length-anchorIDs.length};
+  paneApply("r",0);galaxyPanel();paintCanvasNavigation();
+  post("arrangeGalaxy",{requestID,revision:VAULT_REVISION,anchorIDs});
+}
+function onGalaxyArrangement(result){
+  if(result?.restore){
+    if(result.revision!==VAULT_REVISION||GALAXY.pending||changedFragmentIDs(VAULT_BASE,DOC).length||!galaxyValidRecord(result.record))return;
+    GALAXY.record=result.record;GALAXY.signature=galaxySignature();paintCanvasNavigation();return;
+  }
+  const pending=GALAXY.pending;
+  if(!pending||result?.requestID!==pending.requestID)return;
+  if(result.error){GALAXY.pending=null;GALAXY.error=result.error;galaxyPanel();paintCanvasNavigation();return}
+  if(!result.record){pending.completed=result.completed||0;pending.total=result.total||pending.total;galaxyPanel();return}
+  GALAXY.pending=null;
+  if(result.revision!==pending.revision||pending.signature!==galaxySignature()||!galaxyValidRecord(result.record)){
+    GALAXY.error="자료가 바뀌었어요. 다시 정렬해 주세요.";galaxyPanel();return;
+  }
+  GALAXY.record=result.record;GALAXY.signature=pending.signature;GALAXY.error="";
+  if(mode==="stack"&&WORKSPACE_SIDEBAR==="files")galaxyShow();
+}
+function galaxyShow(){
+  if(!GALAXY.record)return;
+  canvasRemember();const old=CANV;
+  const from={};
+  for(const p of DOC.fragments){
+    const node=old?.by[p.id]||old?.nodes.filter(n=>n.kind==="sun"&&n.path&&(PATHS[p.id]||"").startsWith(n.path+"/")).sort((a,b)=>b.path.length-a.path.length)[0];
+    from[p.id]=node?{x:node.x,y:node.y}:old?.gc||{x:CV_W/2,y:CV_H/2};
+  }
+  GALAXY.active=true;WORKSPACE_SCOPE="";paneApply("r",0);
+  CANVQ="";CQV=null;GALAXY.group=null;sel=null;WORKSPACE_SELECTED_ID=null;
+  const query=document.getElementById("workspacequery");if(query)query.value="";
+  const L=canvasUniverse();L.relatedID=null;L.follow=null;L.glide=null;
+  canvasMount();canvasLightsOff();canvasFit(true);
+  if(!cvReduced()&&!document.hidden)L.rearrange={from,t0:performance.now()};
+  galaxyPanel();paintCanvasNavigation();canvasWake();
+}
+function galaxyFolderView(){
+  if(!leaveEditorAllowed(galaxyFolderView))return;
+  canvasRemember();GALAXY.active=false;canvasMount();canvasFit(true);canvasRelight();paintCanvasNavigation();
+}
+function galaxyPanel(groupID=null){
+  const box=document.getElementById("cvrank");if(!box||WORKSPACE_SIDEBAR!=="files")return;
+  const group=galaxyGroups().find(g=>g.id===groupID);
+  const pending=GALAXY.pending;
+  if(group){
+    box.innerHTML=`<h4>${esc(group.name)}</h4><p class="cvnone">같은 주제로 제안된 문서 ${group.members.length}개 · 원래 파일 위치는 유지됩니다.</p>`
+      +group.members.map(id=>{const p=DOC.fragments.find(p=>p.id===id);return `<button class="cvhit" data-galaxy-document="${esc(id)}"><strong>${esc(p?.title||id)}</strong><small>${esc(PATHS[id]||"")}</small></button>`}).join("");
+  }else{
+    const text=GALAXY.error||(pending?`문서의 주제를 비교하고 있어요 · ${pending.completed}/${pending.total}`:GALAXY.record?`${DOC.fragments.length}개 문서를 ${galaxyGroups().length}개 묶음으로 정리했습니다. 항성을 눌러 둘러보세요.`:"");
+    box.innerHTML=`<h4>${pending?"갤럭시 정렬 중":"갤럭시 정렬"}</h4><p class="cvnone" role="status">${esc(text)}</p>`
+      +(GALAXY.record&&!pending?`<p class="cvnone">대표 문서의 주제로 묶은 첫 제안입니다. 파일 위치는 유지되며, 같은 결과를 다시 사용할 수 있어요.</p>`:"")
+      +(pending?`<button id="galaxy-cancel" class="gbtn">정렬 중단</button>`:GALAXY.error?`<button id="galaxy-retry" class="gbtn">다시 시도</button>`:"");
+  }
+  box.classList.add("show");
+  box.querySelectorAll("[data-galaxy-document]").forEach(button=>button.onclick=()=>canvasNavigateFile(button.dataset.galaxyDocument));
+  const cancel=document.getElementById("galaxy-cancel");if(cancel)cancel.onclick=()=>post("cancelGalaxyArrangement",{});
+  const retry=document.getElementById("galaxy-retry");if(retry)retry.onclick=galaxyArrange;
+}
+function galaxyScene(){
+  const center={x:CV_W/2,y:CV_H/2},bodies=[],groups=galaxyGroups();
+  const extent=Math.max(...groups.map(g=>90+Math.floor((g.members.length-1)/5)*44));
+  const radius=Math.max(230,(extent+70)/Math.sin(Math.PI/Math.max(2,groups.length)));
+  groups.forEach((g,i)=>{
+    const angle=2*Math.PI*i/groups.length-.8,id=g.id;
+    bodies.push({id,kind:"sun",semantic:true,members:g.members,name:g.name,path:"",parent:null,r:24,ring:radius,ang:angle,flatten:.8,fixed:true,x:center.x+radius*Math.cos(angle),y:center.y+radius*Math.sin(angle)*.8});
+    g.members.forEach((documentID,j)=>{
+      const ringIndex=Math.floor(j/5),count=Math.min(5,g.members.length-ringIndex*5),path=PATHS[documentID]||"";
+      bodies.push({id:documentID,kind:"planet",semantic:true,path,name:path.split("/").pop()||DOC.fragments.find(p=>p.id===documentID)?.title,
+        parent:id,r:14,ring:90+ringIndex*44,ang:2*Math.PI*(j%5)/count+i*.7,flatten:.62,tilt:-.18,period:48+ringIndex*14,
+        orbitKey:g.id+"/"+ringIndex,orbitCount:count,sharedOrbit:true,motionKey:g.id+"/"+ringIndex});
+    });
+  });
+  return {bodies,center};
+}
 const orbitParent=path=>String(path||"").split("/").slice(0,-1).join("/");
 function orbitNormalize(groups,paths){
   const available=new Set(paths||[]),used=new Set(),ids=new Set(),out=[];
@@ -4901,24 +5656,20 @@ function folderBodies(dir,prefix){
    - Returns: `{id:"__galaxy", name, suns:[…]}` · 항성은 **이름 정렬 순**(각도가 그 순서다) */
 function workspaceEntryID(e){return "@file/"+e.id+"/"+e.path}
 function workspaceFiles(){
-  const files=(DOC.fragments||[]).map(p=>({p,path:PATHS[p.id]||(p.title||p.id)+".md"}));
-  const known=new Set(files.map(x=>x.path));
-  for(const e of VAULT_ENTRIES){
-    if(e.kind==="folder"||known.has(e.path))continue;
-    files.push({p:{id:workspaceEntryID(e),title:e.path.split("/").pop(),entry:e},path:e.path});
-  }
-  return files;
+  // 탐색·우주·검색은 같은 Markdown 문서를 쓴다. 파일 작업의 충돌/영향 검사에
+  // 필요한 전체 파일 목록(VAULT_ENTRIES)은 보존하되 행성으로 합성하지 않는다.
+  return (DOC.fragments||[]).map(p=>({p,path:PATHS[p.id]||(p.title||p.id)+".md"}));
 }
 function workspaceFile(id){return workspaceFiles().find(f=>f.p.id===id)||null}
 function workspaceSelectedID(){return WORKSPACE_SELECTED_ID||(sel!==null&&DOC.fragments[sel]?.id)||null}
-function workspaceOpen(id){
+function workspaceOpen(id,focusRequest=null){
+  if(SESSION_SELECTING)return false;
   const f=workspaceFile(id);if(!f)return;
-  if(!f.p.entry)return openWorkspaceDocument(id);
+  if(!f.p.entry)return openWorkspaceDocument(id,focusRequest);
   if(f.p.entry.manageable===false)return onIndexNotice("이 항목은 탐색과 파일 정리 대상에서 제외됩니다.");
   vaultRequest({action:"openEntry",path:f.path});
 }
 function vaultTree(fragments,paths,vaultName,folders,entries){
-  if(entries){const knownPaths=new Set(Object.values(paths||{}));const extra=entries.filter(e=>e.kind!=="folder"&&!knownPaths.has(e.path));paths=Object.assign({},paths);fragments=(fragments||[]).slice();extra.forEach(e=>{const id=workspaceEntryID(e);paths[id]=e.path;fragments.push({id,title:e.path.split("/").pop(),entry:e})})}
   const P=paths||{},root={dirs:Object.create(null),files:[]},loose=[];
   (fragments||[]).filter(Boolean).forEach(p=>{
     const raw=P[p.id];
@@ -4940,6 +5691,11 @@ function vaultTree(fragments,paths,vaultName,folders,entries){
   (folders||[]).forEach(path=>{
     const segs=String(path).split("/");
     if(segs.some(x=>!x||x==="."||x===".."))return;
+    // Markdown이 없는 이미지/코드 전용 가지는 감춘다. 실제 빈 폴더는 새 문서를
+    // 만들 위치이므로 유지한다. 전체 카탈로그를 줄이지 않아 폴더 이동 시 첨부 파일도 검사된다.
+    const prefix=path+"/";
+    if(entries?.some(e=>e.kind!=="folder"&&e.path.startsWith(prefix))&&
+       !(fragments||[]).some(p=>P[p.id]?.startsWith(prefix)))return;
     let cur=root;
     segs.forEach(name=>{if(!Object.prototype.hasOwnProperty.call(cur.dirs,name))cur.dirs[name]={dirs:Object.create(null),files:[]};cur=cur.dirs[name]});
   });
@@ -5342,7 +6098,7 @@ const canvasSig=(fragments,paths)=>(fragments||[]).map(p=>p.id+">"+(((paths||{})
 /* 한 판을 세운다. 서명이 같으면 **살려 둔다** — 사람이 끌어 둔 위상이 저장 한 번에 안 날아가게. */
 /* 서명은 **여기 한 자리**에서만 잰다 — 묻는 쪽과 짓는 쪽이 다른 무리를 쓰면 씨앗 한 장에
    판이 매번 다시 지어진다(#74·#75 리뷰). 무리 = 씨앗 포함 `DOC.fragments`. */
-const canvasSigNow=()=>canvasSig(DOC.fragments||[],PATHS)+"/folders:"+VAULT_FOLDERS.join("|")+"/entries:"+VAULT_ENTRIES.map(e=>e.id+":"+e.path).join("|")+"/scope:"+WORKSPACE_SCOPE+"/orbits:"+JSON.stringify(ORBIT_GROUPS);
+const canvasSigNow=()=>"proposals:"+(WORKSPACE_SIDEBAR==="changes"?CHANGES.map(x=>x.id+":"+x.path+":"+x.title).join("|"):"")+"/"+canvasSig(DOC.fragments||[],PATHS)+"/folders:"+VAULT_FOLDERS.join("|")+"/entries:"+VAULT_ENTRIES.map(e=>e.id+":"+e.path).join("|")+"/scope:"+WORKSPACE_SCOPE+"/orbits:"+JSON.stringify(ORBIT_GROUPS)+"/galaxy:"+(galaxyVisible()?JSON.stringify(GALAXY.record):"");
 function workspaceFolderID(path){return "@folder/"+path}
 /* A fixed projection keeps map controls two dimensional. Nested, separated ellipses
    encode file orbits; folders are stationary destinations beyond this system. */
@@ -5363,13 +6119,13 @@ function workspaceOrbitPath(n){
 }
 /* 밀집 장면은 서로 다른 반지름을 유지한 채 빈 각도를 찾는다. 의미를 추정해 묶지 않는다.
    같은 속도로 돌리는 평면 투영이므로 배치 때 확보한 간격이 공전 중에도 유지된다. */
-function workspaceOrbitLayout(units,dense){
+function workspaceOrbitLayout(units,dense,minRadius=160){
   const points=[],out=[];let previousRadius=0;
   units.forEach((unit,j)=>{
     const count=unit.files.length;
     let radius=160+j*104,angle=j*1.37;
     if(dense){
-      radius=Math.max(previousRadius+2,Math.sqrt(160*160+points.length*2600),count>1?76/(2*Math.sin(Math.PI/count)):0);
+      radius=Math.max(previousRadius+2,Math.sqrt(minRadius*minRadius+points.length*2600),count>1?76/(2*Math.sin(Math.PI/count)):0);
       search:for(;;radius+=16){
         for(let attempt=0;attempt<24;attempt++){
           angle=j*2.3999632297+attempt*2.3999632297;
@@ -5390,9 +6146,17 @@ function workspaceScene(tree,path,groups){
   if(path)bodies.push({id,kind:"sun",path,name:path.split("/").pop(),parent:null,r:26,ring:0,ang:0,cx:center.x,cy:center.y,x:center.x,y:center.y});
   const folders=Object.keys(dir.dirs||{}).sort();
   const files=(dir.files||[]).slice().sort((a,b)=>a.path.localeCompare(b.path));
-  const units=orbitOrderedFiles(files,groups),dense=units.length>10||files.length>36;
-  const rings=workspaceOrbitLayout(units,dense);
+  // Approval previews must not switch the stored vault into a different density mode.
+  const stored=files.filter(f=>!f.p.id.startsWith("@proposal/"));
+  const pending=files.filter(f=>f.p.id.startsWith("@proposal/"));
+  const storedUnits=orbitOrderedFiles(stored,groups);
+  const pendingUnits=orbitOrderedFiles(pending,[]),units=storedUnits.concat(pendingUnits);
+  const dense=storedUnits.length>10||stored.length>36,pendingDense=!dense&&pendingUnits.length>10;
+  const rings=pendingDense
+    ?workspaceOrbitLayout(storedUnits,false).concat(workspaceOrbitLayout(pendingUnits,true,160+storedUnits.length*104))
+    :workspaceOrbitLayout(units,dense);
   const outer=rings.length?rings[rings.length-1].radius:160;
+  const storedOuter=storedUnits.length?rings[storedUnits.length-1].radius:160;
   const starRadius=Math.max(outer+150,folders.length*84/(2*Math.PI*.72));
   const place=(n,ring,ang,extra)=>{
     Object.assign(n,{parent:path?id:null,ring,ang,cx:center.x,cy:center.y},extra);
@@ -5400,8 +6164,11 @@ function workspaceScene(tree,path,groups){
     bodies.push(n);
   };
   folders.forEach((name,i)=>place({id:workspaceFolderID(path?path+"/"+name:name),path:path?path+"/"+name:name,name,kind:"sun",r:18},starRadius,2*Math.PI*i/Math.max(1,folders.length)-.65,{fixed:!!path,flatten:.72,tilt:-.18,period:ORBIT_PERIOD.sun}));
-  rings.forEach((ring,j)=>ring.files.forEach((f,i)=>place({id:f.p.id,path:f.path,name:f.file,kind:"planet",r:14},ring.radius,2*Math.PI*i/ring.files.length+ring.angle,{flatten:dense?.62:.28+(j%3)*.15,tilt:dense?-.18:-.5+(j%3)*.44,period:dense?100:34+j*14,orbitIndex:j,perspectiveBase:dense?0:outer,
-    orbitKey:ring.key,sharedOrbit:ring.shared,orbitCount:ring.files.length,motionKey:dense?"packed-system":ring.shared?ring.key:null})));
+  rings.forEach((ring,j)=>{
+    const packed=dense||(pendingDense&&j>=storedUnits.length);
+    ring.files.forEach((f,i)=>place({id:f.p.id,path:f.path,name:f.file,kind:"planet",r:14},ring.radius,2*Math.PI*i/ring.files.length+ring.angle,{flatten:packed?.62:.28+(j%3)*.15,tilt:packed?-.18:-.5+(j%3)*.44,period:packed?100:34+j*14,orbitIndex:j,perspectiveBase:packed?0:j<storedUnits.length?storedOuter:outer,
+      orbitKey:ring.key,sharedOrbit:ring.shared,orbitCount:ring.files.length,motionKey:packed?"packed-system":ring.shared?ring.key:null}));
+  });
   return {bodies,center};
 }
 function canvasUniverse(){
@@ -5415,8 +6182,9 @@ function canvasUniverse(){
   /* ⚠ **옛 판의 루프를 먼저 끊는다** (matt Standards 리뷰 #75). 안 끊으면 저장·받기마다 새 판이
      생기는데 옛 프레임이 새 판을 읽고 다시 예약해 루프가 둘, 셋으로 는다 — CPU 0 이 거짓이 된다. */
   canvasStop();
-  const tree=vaultTree(F,PATHS,null,VAULT_FOLDERS,VAULT_ENTRIES);
-  let lay=workspaceScene(tree,WORKSPACE_SCOPE,ORBIT_GROUPS);if(!lay){WORKSPACE_SCOPE="";lay=workspaceScene(tree,"",ORBIT_GROUPS)}
+  const scene=proposalScene();
+  const tree=vaultTree(scene.fragments,scene.paths,null,VAULT_FOLDERS,VAULT_ENTRIES);
+  let lay=galaxyVisible()?galaxyScene():workspaceScene(tree,WORKSPACE_SCOPE,ORBIT_GROUPS);if(!lay){WORKSPACE_SCOPE="";lay=workspaceScene(tree,"",ORBIT_GROUPS)}
   const by={};
   lay.bodies.forEach(b=>{by[b.id]=b});
   /* ★ 공전이 몸마다 드는 것 넷 (#75). **배치는 안 건드린다** — `base` 가 `orbitLayout` 이 낸
@@ -5427,14 +6195,14 @@ function canvasUniverse(){
     b.base=b.ang;b.phase=0;b.clk=0;
     const old=previous?.by[b.id];
     if(old&&old.orbitKey===b.orbitKey&&old.orbitCount===b.orbitCount&&old.period===b.period){b.clk=old.clk;b.phase=old.phase;b.ang=orbitAngle(b.base+b.phase,b.clk,b.period)}
-    b.sun=WORKSPACE_SCOPE||"@workspace-root";b.period=b.period||ORBIT_PERIOD.planet;
+    b.sun=b.semantic?(b.parent||b.id):WORKSPACE_SCOPE||"@workspace-root";b.period=b.period||ORBIT_PERIOD.planet;
     if(!b.ring)b.fixed=true;
     const p=b.parent?by[b.parent]:null;
     b.reach=(p?p.reach:0)+b.ring;
   });
   CANV={sig:sig,vault:SYS.vault,tree:tree,nodes:lay.bodies,by:by,gc:lay.center,scoped:null,
         vt:{k:1,x:0,y:0},els:null,last:null,wave:null,src:null,
-        viewClock:previous?.viewClock||0,viewRoll:previous?.viewRoll||0,
+        viewClock:previous?.viewClock||0,viewRoll:previous?.viewRoll||0,labelsReadable:previous?.labelsReadable,
         /* 공전 루프가 드는 것 — 프레임 id · 지난 프레임 시각 · 스치고 있는 몸 · 카메라 글라이드 */
         anim:{raf:0,last:0},hover:null,glide:null};
   if(previous){
@@ -5448,6 +6216,10 @@ function canvasUniverse(){
     CANV.focusID=kept.id;CANV.focusPath=kept.path;
     CANV.scoped=tree.suns.some(n=>n.id===kept.scoped)?kept.scoped:null;
     CANV.vt=Object.assign({},kept.vt);CANV.follow=kept.follow||null;CANV.restoreVT=true;
+    // Keep the dimensions that this camera was framed against. A tab can rebuild
+    // the scene and change the side panel width in the same render.
+    const viewport=previous.viewport||CANVAS_RESIZE?.viewport;
+    if(viewport)CANV.viewport={...viewport};
   }
   CANV.focusPath=WORKSPACE_SCOPE||null;CANV.focusID=WORKSPACE_SCOPE?workspaceFolderID(WORKSPACE_SCOPE):null;CANV.scoped=WORKSPACE_SCOPE||null;
   canvasReflow();
@@ -5569,6 +6341,7 @@ function canvasBox(){
   let rx=CV_ORB+16,ry=CV_ORB+16;
   L.nodes.forEach(n=>{
     const a=n.ring,b=a*(n.flatten||1),pad=n.r+32;
+    if(n.semantic&&n.parent){const p=L.by[n.parent];rx=Math.max(rx,Math.abs(p.x-G.x)+a+pad);ry=Math.max(ry,Math.abs(p.y-G.y)+b+pad);return}
     if(n.perspectiveBase){rx=Math.max(rx,a*1.66+pad);ry=Math.max(ry,a*1.15+pad)}
     else{const c=Math.cos(n.tilt||0),s=Math.sin(n.tilt||0);rx=Math.max(rx,Math.hypot(a*c,b*s)+pad);ry=Math.max(ry,Math.hypot(a*s,b*c)+pad)}
   });
@@ -5581,7 +6354,8 @@ function canvasCenter(){const L=CANV;return (L&&L.gc)?{x:L.gc.x,y:L.gc.y}:{x:CV_
 function canvasNodeClass(id){
   const L=CANV,b=L?L.by[id]:null,it=(L&&L.last)?L.last.by[id]:null;
   const kind=b?b.kind:"planet";
-  const base="cvn k"+kind+(isSelId(id)?" sel":"");
+  const material=sessionReviewMaterialSelection(L);
+  const base="cvn k"+kind+(isSelId(id)?" sel":"")+(canvasProposal(id)?" proposal-pending":"")+(sessionRecordNodeHit(id,L)?" record-hit":"")+(material?.nodeID===id?" record-current":"");
   /* 항성은 **1단(항성 검색)의 색**을 든다 — 그 아래 별들과 다른 자에서 온 색이라 자리를 갈라 뒀다 */
   if(kind==="sun"){
     const su=(L&&L.last&&L.last.suns)?L.last.suns[id]:null;
@@ -5591,6 +6365,12 @@ function canvasNodeClass(id){
   if(kind==="center")return base+(L&&L.focusID===id?" scoped":"");
   return base+(!it||it.self?"":((it.top?" top"+(it.top>1?" k"+it.top:""):"")
     +(it.lit?(it.c==="g"?" lit-g":it.c==="a"?" lit-a":" lit-r"):" dim")));
+}
+function canvasNodeAriaLabel(n){
+  const proposal=canvasProposal(n.id),material=sessionReviewMaterialSelection(CANV);
+  let label=(n.name||(DOC.fragments.find(p=>p.id===n.id)||{}).title||"문서")+(proposal?" · 승인 대기":"");
+  if(material?.nodeID===n.id)label+=material.representative?` · ${material.title} 포함 · 선택한 당시 자료`:" · 선택한 당시 자료";
+  return label;
 }
 function canvasApplyVT(){
   const L=CANV;if(!L||!L.els)return;
@@ -5609,6 +6389,11 @@ function canvasReflow(){
     const pos=workspaceOrbitPoint(n,n.ang);
     n.x=n.cx+pos.x;n.y=n.cy+pos.y;n.depth=pos.z;n.displayScale=pos.scale;
   });
+  if(L.rearrange){
+    const u=cvReduced()||document.hidden?1:Math.min(1,(performance.now()-L.rearrange.t0)/1100),ease=1-Math.pow(1-u,3);
+    for(const n of L.nodes){const from=L.rearrange.from[n.id]||G;n.x=from.x+(n.x-from.x)*ease;n.y=from.y+(n.y-from.y)*ease}
+    if(u>=1)L.rearrange=null;
+  }
 }
 /* 천체·궤도·파동 위치를 현재 장면에 맞춘다. */
 function canvasPlace(){
@@ -5639,9 +6424,11 @@ function canvasPlace(){
   }
   canvasLabels();
 }
-/* 라벨은 장면을 만들 때 한 번 짓고 기존 공전 루프에서 크기만 보정한다. */
+/* 축소된 전체 우주에서는 이름을 감추고 확대하면 기존 라벨을 복원한다.
+   숨김/복귀 경계를 나눠 휠·카메라 애니메이션의 경계에서 깜빡이지 않게 한다. */
 function canvasLabels(){
   const L=CANV;if(!L?.els?.labels)return;
+  L.labelsReadable=L.vt.k>=(L.labelsReadable===false?.6:.5);
   const hovered=L.by[L.hover],orbitKey=hovered?canvasOrbitKey(hovered):null,target=L.drag?.target?.key;
   const state=String(orbitKey)+"/"+String(target);
   if(L.els.hoverOrbit!==state){
@@ -5653,7 +6440,7 @@ function canvasLabels(){
     L.els.hoverOrbit=state;
   }
   for(const n of L.nodes){
-    const label=L.els.labels[n.id],show=n.kind==="sun"||isSelId(n.id)||L.hover===n.id;
+    const label=L.els.labels[n.id],show=(L.labelsReadable||n.semantic&&n.kind==="sun")&&(n.kind==="sun"||isSelId(n.id)||!!canvasProposal(n.id)||L.hover===n.id);
     if(!label)continue;
     label.style.display=show?"":"none";if(!show)continue;
     const scale=Math.max(.03,L.vt.k*(n.kind==="planet"?.92*(n.displayScale||1):1));
@@ -5833,8 +6620,13 @@ function canvasMount(){
   const ripple=el("circle",{class:"ripple",r:"0",opacity:"0",fill:"none",
     stroke:"var(--t2)","stroke-width":"1.6"});
   /* 2026-09-11 사용자 정정: 갤럭시는 흰 항성 표면으로 표현한다. 질문은 상단 입력에서 한다. */
-  const orb=el("g",{id:"orbg","pointer-events":"none","aria-hidden":"true"});
-  orb.style.display=WORKSPACE_SCOPE?"none":"";
+  const orb=el("g",{id:"orbg",role:"button",tabindex:"0","aria-label":"갤럭시 정렬"});
+  orb.style.cursor="pointer";
+  orb.appendChild(el("circle",{r:44,fill:"transparent"}));
+  const orbTitle=el("title");orbTitle.textContent="갤럭시 정렬";orb.appendChild(orbTitle);
+  orb.onclick=ev=>{ev.stopPropagation();galaxyArrange()};
+  orb.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();ev.stopPropagation();galaxyArrange()}};
+  paintGalaxyControl(orb);
   canvasStellarBody(orb,34,"galaxy","galaxy",el);
   gw.appendChild(ripple);gw.appendChild(orb);
   L.els={root:root,orb:orb,ripple:ripple,bodies:gn,sky:sky,skyPoints:skyPoints,node:{},labels:{},beam:{},ring:{},ringAt:{},ringTilt:{},ringShared:{},tring:{}};
@@ -5875,16 +6667,18 @@ function canvasMount(){
     g.appendChild(el("circle",{class:"d",r:String(n.r),fill:"var(--t3)"}));
     g.appendChild(el("circle",{class:"shine",r:String(n.r*.13),cx:"0",cy:"0"}));
     const label=el("text",{class:"node-label","text-anchor":"middle","aria-hidden":"true"});
+    const proposal=canvasProposal(n.id);
     const name=(n.kind==="planet"?(names[n.path]||n.name):n.name||"").normalize("NFC");
-    label.textContent=name.length>22?name.slice(0,21)+"…":name;
+    label.textContent=(name.length>22?name.slice(0,21)+"…":name)+(proposal?" · 승인 대기":"");
     g.appendChild(label);L.els.labels[n.id]=label;
     g.dataset.f=n.id;g.dataset.kind=n.kind;
     g.setAttribute("role","button");g.setAttribute("tabindex","0");
-    g.setAttribute("aria-label",n.name||(DOC.fragments.find(p=>p.id===n.id)||{}).title||"문서");
-    g.onclick=ev=>{if(ev.detail===0){if(n.kind==="sun")canvasScopeSun(n.id);else canvasNavigateFile(n.id)}};
-    g.oncontextmenu=ev=>{ev.preventDefault();ev.stopPropagation();vaultFileMenu({id:n.id,path:n.path,folder:n.kind==="sun"},{x:ev.clientX,y:ev.clientY,trigger:g})};
+    g.setAttribute("aria-label",canvasNodeAriaLabel(n));
+    g.onclick=ev=>{if(ev.detail===0){if(n.kind==="sun")canvasScopeSun(n.id);else if(!canvasActivateContextDocument(n.id))canvasNavigateFile(n.id)}};
+    g.oncontextmenu=ev=>{ev.preventDefault();ev.stopPropagation();if(proposal||n.semantic)return;vaultFileMenu({id:n.id,path:n.path,folder:n.kind==="sun"},{x:ev.clientX,y:ev.clientY,trigger:g})};
     g.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){
       ev.preventDefault();if(n.kind==="sun"||n.kind==="center")canvasScopeSun(n.id);
+      else if(canvasActivateContextDocument(n.id))return;
       else if(ev.key==="Enter")workspaceOpen(n.id);else canvasSelect(n.id);
     }};
     /* ★ 스치면 **그 계가 느려진다** (#75 2 · design.md §3) — 툴팁과 같은 손잡이에 얹는다.
@@ -6108,12 +6902,13 @@ function canvasPaint(q,qv,how,opt){
   L.scoped=sunId;
   let res=rank(q,qv,VEC),scope=null;
   if(sunId){res=res.filter(row=>(PATHS[row.p.id]||"").startsWith(sunId+"/"));scope={};res.forEach(row=>{scope[row.p.id]=true})}
+  if(how==="뜻")res=jevRankRows(q,res,null,sunId);
   const sunBy={};
   if(how==="뜻")L.nodes.filter(n=>n.kind==="sun").forEach(n=>{
-    const best=res.find(row=>(PATHS[row.p.id]||"").startsWith(n.path+"/"));
+    const best=res.find(row=>n.semantic?n.members.includes(row.p.id):(PATHS[row.p.id]||"").startsWith(n.path+"/"));
     if(best)sunBy[n.id]={id:n.id,s:best.s,c:best.c};
   });
-  const sc=canvasScale(how),green=sc.green,amber=sc.amber;
+  const sc=res.some(x=>x.jevRanked)?{green:.75,amber:.5}:canvasScale(how),green=sc.green,amber=sc.amber;
   const C=canvasCenter();
   const P=canvasPlan(res,stars,C,CV_TOP,{scope:scope,sunId:sunId,suns:sunBy});
   L.last=P;L.src=null;             /* 질문의 근원은 갤럭시의 태양이다 */
@@ -6160,21 +6955,286 @@ function canvasPaint(q,qv,how,opt){
   return P;
 }
 /* 순위 상자 — 라이브 카드와 **같은 셋**, 같은 규율. 원값(0.884 류)은 QA 게이트 뒤다 (#61 E) */
+// Cloud 개발 미리보기: 명시적 버튼에서만 선택 후보를 보낸다. 검색 점수와 구별한다.
+let JEV_PREVIEW=false,JEV_CONTEXT=null,JEV_SEQUENCE=0;
+let JEV_RANK=null,JEV_RANK_TIMER=null;
+const JEV_RANK_CACHE=new Map();
+let JEV_RESTORED=[];
+function clearJevRank(keepCompleted=false){
+  if(JEV_RANK_TIMER)clearTimeout(JEV_RANK_TIMER);
+  JEV_RANK_TIMER=null;JEV_RANK=null;
+  if(!keepCompleted){JEV_RANK_CACHE.clear();JEV_RESTORED=[]}
+  else for(const [key,c] of JEV_RANK_CACHE){
+    if(c.status!=="done"||c.error)JEV_RANK_CACHE.delete(key);
+  }
+}
+// Reuse only an exact, completed preparation. This function never queues inference.
+function preparedCorpusSignature(){
+  return JSON.stringify(DOC.fragments.map(p=>[p.id,p.title,p.body,PATHS[p.id]||""]));
+}
+function onPreparedRanks(revision,records){
+  if(!VAULT_CONNECTED||revision!==VAULT_REVISION||!Array.isArray(records))return;
+  const parts=doc=>JSON.stringify((doc.fragments||[]).map(p=>[p.id,p.title,p.body]));
+  // A disk snapshot must not bless an unsaved local edit.
+  if(parts(DOC)!==parts(VAULT_BASE))return;
+  const corpusSignature=preparedCorpusSignature();
+  JEV_RESTORED=records.slice(-12).flatMap(r=>{
+    if(typeof r.query!=="string"||!r.query.trim()||!Array.isArray(r.candidates)||!r.candidates.length||r.candidates.length>8)return [];
+    if(new Set(r.candidates.map(p=>p.id)).size!==r.candidates.length)return [];
+    const candidates=r.candidates.map(c=>DOC.fragments.find(p=>p.id===c.id));
+    if(candidates.some((p,i)=>!p||PATHS[p.id]!==r.candidates[i].path)||r.candidates.some(c=>typeof c.score!=="number"||!Number.isFinite(c.score)||c.score<0||c.score>1))return [];
+    return [{query:r.query,sourceID:r.sourceID||null,scope:r.scope||null,vault:SYS.vault,
+      corpusSignature,candidates:candidates.map(p=>({id:p.id,title:p.title,body:p.body})),
+      status:"done",error:"",assessments:r.candidates.map(c=>({id:c.id,score:c.score}))}];
+  });
+  if(JEV_RANK?.status==="queued"&&adoptPreparedRank(JEV_RANK)){
+    if(JEV_RANK.sourceID)canvasPaintFrom(JEV_RANK.sourceID);else canvasPaint(JEV_RANK.query,CQV,"뜻");
+  }
+}
+function adoptPreparedRank(c){
+  const saved=JEV_RESTORED.find(r=>r.corpusSignature===preparedCorpusSignature()&&r.vault===SYS.vault&&
+    preparedQuestionKey(r.query)===preparedQuestionKey(c.query)&&(r.sourceID||null)===(c.sourceID||null)&&
+    (r.scope||null)===(c.scope||null)&&r.candidates.length===c.candidates.length&&
+    r.candidates.every(p=>c.candidates.some(x=>x.id===p.id&&x.body===p.body&&x.title===p.title)));
+  if(!saved)return false;
+  c.status="done";c.error="";c.assessments=saved.assessments;return true;
+}
+function preparedQuestionKey(query){return String(query||"").trim().replace(/[?？]+$/u,"").trimEnd()}
+function reusePreparedRank(query,rows,scope=null){
+  if(!VAULT_CONNECTED||!rows.length||rows.some(x=>x.how!=="뜻"))return rows;
+  const corpus=preparedCorpusSignature();
+  for(const c of [...JEV_RESTORED,...JEV_RANK_CACHE.values()].reverse()){
+    if(c.status!=="done"||c.error||c.sourceID||preparedQuestionKey(c.query)!==preparedQuestionKey(query)||c.vault!==SYS.vault
+       ||(c.scope||null)!==(scope||null)||c.corpusSignature!==corpus)continue;
+    const by=new Map(rows.map(x=>[x.p.id,x]));
+    if(c.candidates.some(p=>!by.has(p.id))||c.assessments.length!==c.candidates.length)continue;
+    const scores=new Map(c.assessments.map(a=>[a.id,a.score]));
+    if(c.candidates.some(p=>!Number.isFinite(scores.get(p.id))))continue;
+    const prepared=c.candidates.map(p=>by.get(p.id)).sort((a,b)=>scores.get(b.p.id)-scores.get(a.p.id));
+    // Keep local similarity and source spans intact; reuse the prepared order only.
+    return prepared.concat(rows.filter(x=>!scores.has(x.p.id)));
+  }
+  return rows;
+}
+function retryFailedJevRank(){
+  if(JEV_RANK?.status==="done"&&JEV_RANK.error){JEV_RANK_CACHE.delete(JEV_RANK.signature);JEV_RANK=null}
+}
+function jevRankCurrent(c){
+  if(!c||!JEV_PREVIEW||mode!=="stack"||!VAULT_CONNECTED||c.vault!==SYS.vault)return false;
+  if(c.sourceID){
+    const source=DOC.fragments.find(p=>p.id===c.sourceID);
+    if(CANV?.relatedID!==c.sourceID||!source||source.body!==c.sourceBody||source.title!==c.sourceTitle)return false;
+  }else if(CANV?.relatedID||CANVQ!==c.query||(CANV?.focusPath||null)!==c.scope)return false;
+  return c.candidates.every(p=>{const live=DOC.fragments.find(x=>x.id===p.id);return live&&live.body===p.body&&live.title===p.title});
+}
+// Send several relevant source spans, not only a possibly generic opening passage.
+function jevRankExcerpts(row,sourceID){
+  const body=row.p.body||"",passages=VEC?.passages?.[row.p.id]||[];
+  const sourceVectors=sourceID?(VEC?.passages?.[sourceID]||[]).map(p=>p.v):[CQV?.q===CANVQ?CQV.v:null];
+  const scored=passages.map(p=>({text:p.sourceText,score:Math.max(-Infinity,...sourceVectors.map(v=>cosv(v,p.v)??-Infinity))}))
+    .filter(p=>Number.isFinite(p.score)).sort((a,b)=>b.score-a.score);
+  const selected=[];
+  for(const text of [row.passage?.sourceText,...scored.map(p=>p.text)]){
+    if(!text||!body.includes(text)||selected.some(t=>t.includes(text)||text.includes(t)))continue;
+    selected.push(text);if(selected.length===3)break;
+  }
+  return selected.length?selected:[body.slice(0,10000)];
+}
+// Both entrances consume the same reordered rows before making the list and universe plan.
+function jevRankRows(query,rows,sourceID=null,scope=null){
+  if(mode!=="stack"||!VAULT_CONNECTED||!VAULT_REVISION)return rows;
+  const source=sourceID?DOC.fragments.find(p=>p.id===sourceID):null;
+  const candidates=rows.filter(x=>x.p.id!==sourceID&&x.c!=="n"&&Number.isFinite(x.s)&&x.p.body?.trim()).slice(0,8)
+    .map(x=>({id:x.p.id,title:x.p.title,body:x.p.body,text:String(x.passage?.sourceText||x.p.body).slice(0,10000),excerpts:jevRankExcerpts(x,sourceID)}));
+  if(!candidates.length)return rows;
+  const signature=JSON.stringify([SYS.vault,query,sourceID,source?.body,source?.title,scope,candidates]);
+  let c=JEV_RANK_CACHE.get(signature);
+  if(!c){
+    c={signature,corpusSignature:preparedCorpusSignature(),query,sourceID,sourceBody:source?.body,sourceTitle:source?.title,scope,vault:SYS.vault,candidates,status:"queued",assessments:[],error:""};
+    adoptPreparedRank(c);
+    if(!JEV_PREVIEW&&c.status!=="done")return rows;
+    JEV_RANK_CACHE.set(signature,c);
+    if(JEV_RANK_CACHE.size>12)JEV_RANK_CACHE.delete(JEV_RANK_CACHE.keys().next().value);
+  }
+  if(JEV_RANK!==c&&c.status==="pending")c.status="queued";
+  JEV_RANK=c;
+  if(c.status==="queued"&&JEV_PREVIEW){
+    if(JEV_RANK_TIMER)clearTimeout(JEV_RANK_TIMER);
+    JEV_RANK_TIMER=setTimeout(()=>{JEV_RANK_TIMER=null;requestJevRank(c)},350);
+  }
+  if(c.status!=="done"||c.error)return rows;
+  const by=new Map(c.assessments.map(a=>[a.id,a.score]));
+  return rows.filter(x=>by.has(x.p.id)).map(x=>({...x,s:by.get(x.p.id),c:by.get(x.p.id)>=.75?"g":by.get(x.p.id)>=.5?"a":"r",jevRanked:true}))
+    .sort((a,b)=>b.s-a.s);
+}
+function requestJevRank(c){
+  if(mode!=="stack")return;
+  if(JEV_RANK!==c||c.status!=="queued"||!jevRankCurrent(c))return;
+  if(adoptPreparedRank(c)){
+    if(c.sourceID)canvasPaintFrom(c.sourceID);else canvasPaint(c.query,CQV,"뜻");return;
+  }
+  if(!JEV_PREVIEW)return;
+  c.requestID="jev-rerank-"+(++JEV_SEQUENCE);c.status="pending";
+  post("judgeEvidence",{purpose:"rerank",requestID:c.requestID,query:c.query,...(c.sourceID?{sourceID:c.sourceID}:{}),...(c.scope?{scope:c.scope}:{}),revision:VAULT_REVISION,
+    candidates:c.candidates.map(p=>({id:p.id,revision:VAULT_REVISION,text:p.text,excerpts:p.excerpts}))});
+}
+function jevRankStatus(){
+  const c=JEV_RANK;if(!jevRankCurrent(c))return "";
+  const text=c.error?"검색을 다듬지 못해 기본 결과를 표시합니다.":c.status==="done"?"":"검색 결과를 정리하고 있어요…";
+  return text?`<p class="result-low" role="status">${esc(text)}</p>`:"";
+}
+function onJevRank(result){
+  const c=JEV_RANK;
+  if(!jevRankCurrent(c)||c.requestID!==result?.requestID)return;
+  const answers=result.assessments;
+  const valid=Array.isArray(answers)&&answers.length===c.candidates.length&&new Set(answers.map(a=>a.id)).size===answers.length&&
+    answers.every(a=>c.candidates.some(p=>p.id===a.id)&&typeof a.score==="number"&&Number.isFinite(a.score)&&a.score>=0&&a.score<=1);
+  c.status="done";c.error=result.error||(!valid?"invalid-rank":"");c.assessments=c.error?[]:answers;
+  if(c.sourceID)canvasPaintFrom(c.sourceID);else canvasPaint(c.query,CQV,"뜻");
+}
+const JEV_LABELS={direct:"직접 근거",partial:"일부 근거",unresolved:"명시적으로 미정",background:"관련 배경",unrelated:"질문 근거 아님"};
+function clearJevEvidence(){JEV_CONTEXT=null;JEV_SUPPLEMENT=null;JEV_SEQUENCE++}
+function onJevPreviewReady(enabled){
+  JEV_PREVIEW=enabled===true;
+  clearJevRank();
+  clearJevEvidence();
+}
+function jevEvidenceCurrent(context){
+  return !!context&&JEV_PREVIEW&&mode==="stack"&&VAULT_CONNECTED&&context.query===CANVQ&&
+    context.candidates.every(c=>{
+      const p=DOC.fragments.find(p=>p.id===c.id);
+      return p&&p.body===c.body&&p.title===c.title;
+    });
+}
+function prepareJevEvidence(query,rows){
+  if(!JEV_PREVIEW||mode!=="stack"||!rows.length||!VAULT_REVISION){clearJevEvidence();return;}
+  const candidates=rows.map(x=>({id:x.p.id,title:x.p.title,body:x.p.body,text:(x.passage&&x.passage.sourceText)||x.p.body||""}));
+  const signature=JSON.stringify([query,candidates]);
+  if(!jevEvidenceCurrent(JEV_CONTEXT)||JEV_CONTEXT.signature!==signature){
+    JEV_CONTEXT={query,candidates,signature,requestID:null,status:"idle",assessments:[],error:""};
+  }
+}
+function jevEvidenceControls(){
+  if(!jevEvidenceCurrent(JEV_CONTEXT))return "";
+  return `<div class="jev-evidence" id="jev-evidence"><button class="gbtn" id="jev-check">근거 확인</button><span id="jev-status" role="status" aria-live="polite"></span><small>Cloud 개발 미리보기 · 질문과 아래 후보 본문을 Jev로 보냅니다.</small></div>`;
+}
+function paintJevEvidence(){
+  const c=JEV_CONTEXT,current=jevEvidenceCurrent(c),button=document.getElementById("jev-check"),status=document.getElementById("jev-status");
+  if(button){button.disabled=!current||c.status==="pending";button.onclick=requestJevEvidence}
+  if(status)status.textContent=!current?"자료가 바뀌었습니다. 다시 검색해 주세요.":c.status==="pending"?"근거 확인 중…":c.error|| (c.status==="done"?"표시된 후보에 대한 AI 판단입니다. 원문을 확인해 주세요.":"");
+  const box=document.getElementById("cvrank");
+  if(box)box.querySelectorAll("[data-jev-result]").forEach(el=>{
+    const a=current&&c.assessments.find(a=>a.id===el.dataset.jevResult);
+    el.textContent=a?JEV_LABELS[a.label]||"판단 확인 필요":"";
+  });
+}
+function requestJevEvidence(){
+  const c=JEV_CONTEXT;
+  if(!jevEvidenceCurrent(c)||c.status==="pending"||!VAULT_REVISION)return;
+  c.requestID="jev-"+(++JEV_SEQUENCE);c.status="pending";c.error="";c.assessments=[];
+  post("judgeEvidence",{requestID:c.requestID,query:c.query,revision:VAULT_REVISION,
+    candidates:c.candidates.map(p=>({id:p.id,revision:VAULT_REVISION,text:p.text}))});
+  paintJevEvidence();
+}
+function onJevEvidence(result){
+  if(String(result?.requestID||"").startsWith("jev-rerank-")){onJevRank(result);return}
+  if(String(result?.requestID||"").startsWith("jev-supplement-")){onJevSupplement(result);return}
+  const c=JEV_CONTEXT;
+  if(!c||result?.requestID!==c.requestID||!jevEvidenceCurrent(c))return;
+  const answers=result.assessments;
+  const valid=Array.isArray(answers)&&answers.length===c.candidates.length&&
+    new Set(answers.map(a=>a.id)).size===answers.length&&answers.every(a=>c.candidates.some(p=>p.id===a.id)&&Object.hasOwn(JEV_LABELS,a.label));
+  c.status="done";c.error=result.error||(!valid?"판단 결과를 확인하지 못했습니다. 다시 시도해 주세요.":"");
+  c.assessments=c.error?[]:answers;
+  paintJevEvidence();
+}
+const JEV_RELATIONS={already_present:"이미 있는 내용",supplement:"보완 후보",conflict:"기존 내용과 충돌",unrelated:"관련 없음",uncertain:"판단에 필요한 맥락 부족"};
+let JEV_NOTE="",JEV_SUPPLEMENT=null;
+function jevSupplementCurrent(c){
+  return !!c&&c.note===JEV_NOTE&&jevEvidenceCurrent(c);
+}
+function jevSupplementControls(){
+  if(!jevEvidenceCurrent(JEV_CONTEXT))return "";
+  return `<details class="jev-supplement" ${JEV_NOTE?"open":""}><summary>새로 알게 된 내용 남기기</summary><label for="jev-note">기존 자료와 비교할 메모</label><textarea id="jev-note" rows="3" maxlength="2000" placeholder="새로 확인한 사실이나 다음에 검토할 내용을 적어 주세요.">${esc(JEV_NOTE)}</textarea><button class="gbtn" id="jev-supplement-check">문서와 비교</button><small>입력한 메모와 표시된 후보 문서의 전체 본문을 Jev로 보냅니다. 판정만으로 저장하지 않습니다.</small><div id="jev-supplement-status" role="status" aria-live="polite"></div><div id="jev-supplement-results"></div></details>`;
+}
+function updateJevNote(note){
+  JEV_NOTE=String(note);JEV_SUPPLEMENT=null;paintJevSupplement();
+}
+function paintJevSupplement(){
+  const input=document.getElementById("jev-note"),button=document.getElementById("jev-supplement-check"),status=document.getElementById("jev-supplement-status"),results=document.getElementById("jev-supplement-results");
+  if(input)input.oninput=()=>updateJevNote(input.value);
+  const c=JEV_SUPPLEMENT,current=jevSupplementCurrent(c);
+  if(button){button.disabled=!jevEvidenceCurrent(JEV_CONTEXT)||!JEV_NOTE.trim()||current&&c.status==="pending";button.onclick=requestJevSupplement}
+  if(status)status.textContent=!current?"":c.error|| (c.status==="pending"?"문서와 비교 중…":c.status==="done"?"표시된 후보만 비교한 AI 판단입니다. 원문과 메모를 확인해 주세요.":"");
+  if(!results)return;
+  results.innerHTML=!current?"":c.assessments.map(a=>{
+    const p=c.candidates.find(p=>p.id===a.id);
+    return `<div class="jev-supplement-result"><strong>${esc(p.title)}</strong><small>${esc(PATHS[p.id]||"")}</small><span>${esc(JEV_RELATIONS[a.label])}</span>${a.label==="supplement"?`<blockquote class="jev-note-preview">${esc(c.note)}</blockquote><p>확인하면 이 문서 끝에 이 메모를 그대로 추가하고 자동 저장합니다. 기존 내용은 유지하며 편집기에서 실행 취소할 수 있습니다.</p><button class="gbtn" data-jev-append="${esc(p.id)}">이 문서에 메모 추가</button>`:`<p>${a.label==="conflict"?"서로 다른 내용을 자동으로 합치지 않습니다. 문서를 열어 판단해 주세요.":"자동으로 추가하지 않습니다. 필요하면 원문을 열어 직접 편집해 주세요."}</p>`}<button class="gbtn" data-jev-open="${esc(p.id)}">원문 확인</button></div>`;
+  }).join("");
+  results.querySelectorAll("[data-jev-open]").forEach(b=>b.onclick=()=>workspaceOpen(b.dataset.jevOpen));
+  results.querySelectorAll("[data-jev-append]").forEach(b=>b.onclick=()=>applyJevSupplement(b.dataset.jevAppend));
+}
+function requestJevSupplement(){
+  const context=JEV_CONTEXT;
+  if(!jevEvidenceCurrent(context)||!VAULT_REVISION||!JEV_NOTE.trim()||JEV_NOTE.length>2000||(jevSupplementCurrent(JEV_SUPPLEMENT)&&JEV_SUPPLEMENT.status==="pending"))return;
+  const c=JEV_SUPPLEMENT={...context,note:JEV_NOTE,candidates:context.candidates.map(p=>({...p,text:p.body})),requestID:"jev-supplement-"+(++JEV_SEQUENCE),status:"pending",error:"",assessments:[]};
+  // Never silently truncate a document when looking for contradictions or duplicates.
+  if(c.candidates.some(p=>!p.body||p.body.length+p.title.length>12000)){
+    c.status="done";c.error="빈 문서 또는 비교 길이를 넘는 문서가 있습니다. 원문에서 직접 확인해 주세요.";paintJevSupplement();return;
+  }
+  post("judgeEvidence",{purpose:"supplement",requestID:c.requestID,note:c.note,revision:VAULT_REVISION,
+    candidates:c.candidates.map(p=>({id:p.id,revision:VAULT_REVISION,text:p.body}))});
+  paintJevSupplement();
+}
+function onJevSupplement(result){
+  const c=JEV_SUPPLEMENT;
+  if(!jevSupplementCurrent(c)||result?.requestID!==c.requestID)return;
+  const answers=result.assessments;
+  const valid=Array.isArray(answers)&&answers.length===c.candidates.length&&new Set(answers.map(a=>a.id)).size===answers.length&&answers.every(a=>c.candidates.some(p=>p.id===a.id)&&Object.hasOwn(JEV_RELATIONS,a.label));
+  c.status="done";c.error=result.error||(!valid?"판단 결과를 확인하지 못했습니다. 다시 시도해 주세요.":"");
+  c.assessments=c.error?[]:answers;paintJevSupplement();
+}
+function applyJevSupplement(id){
+  const c=JEV_SUPPLEMENT;
+  if(!jevSupplementCurrent(c)||c.status!=="done"||!c.assessments.some(a=>a.id===id&&a.label==="supplement"))return false;
+  const run=()=>{
+    // Re-check after an asynchronous save of any other editor draft.
+    if(!jevSupplementCurrent(c)||JEV_SUPPLEMENT!==c)return false;
+    const p=c.candidates.find(p=>p.id===id);
+    if(!openWorkspaceDocument(id))return false;
+    const body=document.getElementById("bo");
+    if(!body||body.value!==p.body){onIndexNotice("본문이 바뀌었습니다. 다시 비교해 주세요.");return false}
+    const insertion=(p.body.endsWith("\n\n")?"":p.body.endsWith("\n")?"\n":"\n\n")+c.note;
+    if(typeof ClonieMarkdownEditor==="undefined"||!ClonieMarkdownEditor.appendText(body,insertion)){
+      onIndexNotice("편집기를 준비하지 못했습니다. 메모를 직접 복사해 주세요.");return false;
+    }
+    // The editor input event pins the baseline and uses ordinary autosave/conflict recovery.
+    c.status="applied";c.assessments=[];JEV_SUPPLEMENT=null;
+    editorManualSave();
+    return true;
+  };
+  if(!leaveEditorAllowed(run))return false;
+  return run();
+}
+
 function canvasRankBox(q,P,res,how,green,amber,sunId){
   const box=document.getElementById("cvrank");if(!box)return;
   const scope=sunId?`${sunId} · 하위 포함`:"저장소 전체";
-  let rows=[];
+  let rows=[],content="";
   const head=`<h4 class="result-heading">질문 결과 <small>${esc(scope)}</small></h4>${SESSION_REVIEW_OPEN?"":`<div class="cq">${esc(q)}</div>`}`;
   if(how!=="뜻"){
-    box.innerHTML=head+`<div class="cvnone">검색 준비 중</div>`;
+    content=`<div class="cvnone">검색 준비 중</div>`;
   }else{
-    rows=res.filter(x=>!CANV?.focusPath||(PATHS[x.p.id]||"").startsWith(CANV.focusPath+"/")).slice(0,CV_TOP);
+    rows=res.filter(x=>(!CANV?.focusPath||(PATHS[x.p.id]||"").startsWith(CANV.focusPath+"/"))&&(!x.jevRanked||P.empty||x.c!=="r")).slice(0,CV_TOP);
     const measured=rows.some(x=>x.c!=="n"&&Number.isFinite(x.s));
-    box.innerHTML=head+(!rows.length?`<div class="cvnone">문서 없음</div>`:!measured?`<div class="cvnone">이 범위의 문서는 검색 준비 중입니다.</div>`
+    content=(!rows.length?`<div class="cvnone">문서 없음</div>`:!measured?`<div class="cvnone">이 범위의 문서는 검색 준비 중입니다.</div>`
       :P.empty?`<p class="result-low">직접 관련된 자료를 찾지 못했어요.</p><details><summary>관련도가 낮은 결과 보기</summary>${canvasResultRows(rows,true)}</details>`
       :canvasResultRows(rows,true));
   }
+  prepareJevEvidence(q,rows);
+  box.innerHTML=head+jevRankStatus()+content+jevSupplementControls();
   bindCanvasResults(box,rows);
+  paintJevEvidence();paintJevSupplement();
   box.classList.add("show");
 }
 function displayExcerpt(source){
@@ -6191,14 +7251,14 @@ function canvasResultRows(rows,preview,related){
     // Markdown comments carry import provenance, not text for the result preview.
     // Clean only the display excerpt; source documents and search passages stay intact.
     const excerpt=displayExcerpt((x.passage&&x.passage.sourceText)||x.p.body||"");
-    return `<div class="result-row"><button class="cvrow${i===0?" lead":""}${preview?" preview-row":""}" data-result="${i}"><span class="dot ${x.c==="n"?"hmn":x.c}"></span><span class="preview-copy"><span class="t">${esc(x.p.title)}</span><span class="preview-path">${esc(PATHS[x.p.id]||"")}</span>${preview?`<span class="preview-excerpt">${esc(excerpt)}</span>`:""}</span></button><button class="gbtn result-document-open" data-result-open="${i}" aria-label="${esc(x.p.title)} 문서 열기">문서 열기</button></div>`;
+    return `<div class="result-row"><button class="cvrow${i===0?" lead":""}${preview?" preview-row":""}" data-result="${i}"><span class="dot ${x.c==="n"?"hmn":x.c}"></span><span class="preview-copy"><span class="t">${esc(x.p.title)}</span><span class="preview-path">${esc(PATHS[x.p.id]||"")}</span>${!related?`<span class="jev-label" data-jev-result="${esc(x.p.id)}"></span>`:""}${preview?`<span class="preview-excerpt">${esc(excerpt)}</span>`:""}</span></button><button class="gbtn result-document-open" data-result-open="${i}" data-result-document="${esc(x.p.id)}" aria-label="${esc(x.p.title)} 문서 열기">문서 열기</button></div>`;
   }).join("");
 }
 
 function bindCanvasResults(box,rows){
   box.querySelectorAll("[data-result-open]").forEach(el=>{
     if(el.dataset.resultOpen===undefined)return;
-    el.onclick=()=>{const id=rows[+el.dataset.resultOpen]?.p.id;if(workspaceFile(id))workspaceOpen(id)};
+    el.onclick=()=>{const id=rows[+el.dataset.resultOpen]?.p.id;if(workspaceFile(id))workspaceOpen(id,flowFocusRequest(el))};
   });
   box.querySelectorAll("[data-result]").forEach(el=>el.onclick=ev=>{
     const id=rows[+el.dataset.result]?.p.id;if(!workspaceFile(id))return;
@@ -6232,7 +7292,7 @@ function canvasNeighborPlan(id){
   /* 선택한 문서의 관련 탐색은 전체 저장소다. 항성·폴더 질문의 범위는 `canvasPaint` 경로에서
      별도로 좁히며, 여기서는 행성 기준의 의미적 이어짐을 구조 경계로 자르지 않는다. */
   const sunId=sunOfFragment(L.tree,id);
-  const nb=hmNear(p,null),by={};
+  const nb=jevRankRows(p.title,hmNear(p,null,JEV_PREVIEW?8:HM_NEAR),id),by={};
   nb.forEach((x,k)=>{by[x.p.id]={c:x.c,s:x.s,k:k}});
   /* ★ **이어진 것 = 켜지는 것.** 빨강은 무반응이라 줄에서도 빠진다 (#75 5 · design.md §2) —
      안 빼면 순위 상자가 「이어진 것 셋」이라며 아무 데도 안 빛나는 셋을 적는다. */
@@ -6296,6 +7356,7 @@ function canvasNeighborBox(p,P){
   if(!box.relatedPages||box.relatedPages.vault!==SYS.vault)box.relatedPages={vault:SYS.vault,limits:new Map()};
   const pages=box.relatedPages.limits,limit=pages.get(p.id)||CV_TOP,rows=P.nb.slice(0,limit);
   box.innerHTML=`<h4 class="result-heading">관련 자료 <small>저장소 전체에서</small></h4><div class="result-basis">기준 문서 · ${esc(p.title)}</div><button id="relatedbasis" class="result-open">기준 문서 열기</button>`
+    +jevRankStatus()
     +(rows.length?canvasResultRows(rows,true,true):`<div class="cvnone">현재 기준으로 관련 자료를 찾지 못했어요.</div>`)
     +(rows.length<P.nb.length?`<button id="relatedmore" class="result-more">더 보기</button>`:"");
   bindCanvasResults(box,rows);
@@ -6309,6 +7370,7 @@ function canvasNeighborBox(p,P){
 
 /* 질문을 놓는다 — 글자·벡터·표식·입력 칸까지. 파동은 안 건드린다(부르는 쪽이 정한다) */
 function canvasDropQuestion(){
+  clearJevEvidence();
   CANVQ="";CQV=null;
   const q=document.getElementById("cvq");if(q)q.value="";
   const tag=document.getElementById("cvhow");if(tag){tag.className="cvhow";tag.textContent=""}
@@ -6334,18 +7396,24 @@ function canvasRelightSel(){
 }
 /* 다시 그린 뒤 불을 되살리는 자리 하나 — 질문이 먼저, 그 다음 고른 별 */
 function canvasRelight(){
+  if(WORKSPACE_SIDEBAR==="changes"){canvasLightsOff();document.getElementById("cvrank")?.classList.remove("show");return}
+  if(WORKSPACE_SIDEBAR==="records"&&SESSION_MAP_SNAPSHOT){sessionPaintSnapshot();return}
+  if(WORKSPACE_SIDEBAR==="files"&&GALAXY.pending)return galaxyPanel();
   if(CANV&&CANV.relatedID)return canvasPaintEntry(CANV.relatedID)||canvasPaintFrom(CANV.relatedID,{wave:false});
   if(CANVQ.trim())return canvasAsk(CANVQ,{wave:false});
+  if(galaxyVisible())return galaxyPanel(GALAXY.group);
   canvasRelightSel();
 }
 /* 점을 눌렀다 — **오른쪽 판만 갈아끼운다.** 화면을 통째로 다시 그리면 방금 켠 불과
    사람이 옮긴 배치가 날아간다(`paintHomeList` 가 왼쪽 칸만 고쳐 쓰는 것과 같은 규율). */
 function canvasSelect(id,opt){
+  if(SESSION_SELECTING)return;
+  retryFailedJevRank();
   if(!leaveEditorAllowed(()=>canvasSelect(id,opt)))return;
   const file=workspaceFile(id);if(!file)return;
   const i=DOC.fragments.findIndex(p=>p.id===id);
   canvasRemember();
-  const parent=file.path.split("/").slice(0,-1).join("/"),sameScope=parent===WORKSPACE_SCOPE;
+  const parent=file.path.split("/").slice(0,-1).join("/"),sameScope=galaxyVisible()||parent===WORKSPACE_SCOPE;
   if(!sameScope)workspaceEnterFolder(parent);
   const L=canvasUniverse();
   const keepCamera=sameScope||!!(opt&&opt.preserveCamera),savedVT=keepCamera?Object.assign({},L.vt):null;
@@ -6354,6 +7422,7 @@ function canvasSelect(id,opt){
   L.viewport=viewport?.width>0&&viewport?.height>0?{w:viewport.width,h:viewport.height}:null;
   sel=i<0?null:i;WORKSPACE_SELECTED_ID=id;revealWorkspaceFile(id);
   /* 문서는 전체 관련 탐색의 기준이다. 이전 질문은 뒤로 돌아갈 맥락으로 보존한다. */
+  SESSION_MAP_SNAPSHOT=null;
   L.relatedID=id;L.follow=null;L.glide=null;
   const fixed=document.getElementById("workspacequery");if(fixed)fixed.value="";
   canvasAskClose();
@@ -6368,7 +7437,30 @@ function canvasSelect(id,opt){
      그러면 「고른 것이 왼쪽 어디인가」를 사람이 찾아야 한다 — 우주→트리 방향의 포커스다. */
   treeScrollSel();
 }
+// Reuse the file camera feel without invoking its retrieval behavior.
+function canvasContextCamera(){return {scale:CANV?.glide?.targetScale||CANV?.follow?.scale||CANV?.vt?.k||1,tracking:CANV?.glide?.id||CANV?.follow?.id}}
+function canvasResumeContextCamera(id,previous){
+  if(previous.tracking===id&&(CANV?.glide?.id===id||CANV?.follow?.id===id))return;
+  canvasGlideTo(id,previous.scale);canvasActivateSystem(id);canvasWake();
+}
+// One activation contract for pointer, accessibility and keyboard in contextual tabs.
+function canvasActivateContextDocument(id){
+  if(SESSION_SELECTING)return true;
+  if(WORKSPACE_SIDEBAR==="files")return false;
+  if(WORKSPACE_SIDEBAR==="changes"){
+    const matches=CHANGES.filter(x=>proposalNodeID(x)===id);
+    const proposal=matches.find(x=>x.id===CHANGE_SELECTED)||matches[0];
+    if(proposal){selectDocumentChange(proposal.id);return true}
+  }
+  // Records reopen the current Markdown while retaining the saved question/candidates.
+  // A changes planet without a pending proposal may be read without starting retrieval.
+  const camera=canvasContextCamera();
+  workspaceOpen(id);
+  if(workspaceSelectedID()===id&&PANE.r>0)canvasResumeContextCamera(id,camera);
+  return true;
+}
 function canvasNavigateFile(id){
+  if(SESSION_SELECTING)return false;
   if(!leaveEditorAllowed(()=>canvasNavigateFile(id)))return false;
   if(stackView==="settings"){stackView="edit";stackRender()}
   const currentID=workspaceSelectedID();
@@ -6400,6 +7492,7 @@ function treeScrollSel(q){
    ⚠ 우주에서 눌렀을 때 트리의 그 폴더를 **편다**(`treeReveal`) — 접힌 채로 강조하면
      강조된 줄이 화면에 없다. */
 function workspaceEnterFolder(path){
+  if(path)GALAXY.active=false;
   const old=CANV,anchor=old?.nodes.find(n=>n.path===path&&n.kind==="sun"),vt=old?Object.assign({},old.vt):null;
   WORKSPACE_SCOPE=path||"";
   const L=canvasUniverse();
@@ -6411,9 +7504,9 @@ function canvasScopeFolder(path){
   if(stackView!=="edit"){stackView="edit";stackRender()}
   if(path&&!VAULT_FOLDERS.includes(path)&&!vaultRows(canvasUniverse().tree,{}).some(r=>r.folder&&r.path===path))return;
   const changed=path!==WORKSPACE_SCOPE;
-  canvasRemember();canvasAskClose();paneApply("r",0);
+  canvasRemember();GALAXY.active=false;if(WORKSPACE_SIDEBAR!=="records")SESSION_MAP_SNAPSHOT=null;canvasAskClose();paneApply("r",0);
   const L=workspaceEnterFolder(path);L.relatedID=null;L.follow=null;L.glide=null;sel=null;WORKSPACE_SELECTED_ID=null;
-  LZIP=treeReveal(LZIP,path);canvasLightsOff();
+  LZIP=treeReveal(LZIP,path);canvasLightsOff();if(WORKSPACE_SIDEBAR==="records"&&SESSION_MAP_SNAPSHOT)sessionPaintSnapshot();
   if(path){const board=document.getElementById("cvb"),r=board?.getBoundingClientRect();if(r?.width)canvasGlideTo(L.focusID,canvasScopeScale(L,L.focusID,r.width,r.height))}else canvasFit(true);
   if(changed&&!cvReduced()&&!document.hidden)L.els?.root?.animate?.([{opacity:.4},{opacity:1}],{duration:180,easing:"ease-out"});
   paintHomeList();paintCanvasNavigation();treeScrollSel('.hmit.fold.scoped');
@@ -6431,13 +7524,34 @@ function canvasScopeScale(L,id,w,h){
   const box=canvasBox();
   return Math.max(.03,Math.min(1.25,(w-72)/box.w,(h-72)/box.h));
 }
-function canvasScopeSun(id,folderPath){const n=CANV?.by[id];if(n)canvasScopeFolder(folderPath||n.path||"")}
+function canvasScopeSun(id,folderPath){
+  const n=CANV?.by[id];if(!n)return;
+  if(n.semantic){
+    if(!leaveEditorAllowed(()=>canvasScopeSun(id,folderPath)))return;
+    canvasRemember();paneApply("r",0);canvasDropQuestion();canvasLightsOff();CANV.relatedID=null;
+    sel=null;WORKSPACE_SELECTED_ID=null;
+    const query=document.getElementById("workspacequery");if(query)query.value="";
+    canvasGlideTo(id,Math.min(1.15,480/(Math.max(...CANV.nodes.filter(p=>p.parent===id).map(p=>p.ring))+60)/2));
+    GALAXY.group=id;galaxyPanel(id);paintCanvasNavigation();return;
+  }
+  canvasScopeFolder(folderPath||n.path||"");
+}
+function canvasViewport(){
+  const L=CANV||{},board=document.getElementById("cvb"),bounds=board?.getBoundingClientRect?.();
+  return bounds?.width>0&&bounds?.height>0?{w:bounds.width,h:bounds.height}:L.viewport?{...L.viewport}:CANVAS_RESIZE?.viewport?{...CANVAS_RESIZE.viewport}:null;
+}
+function canvasReconcileViewport(){
+  const L=CANV,from=L?.viewport,to=canvasViewport();if(!L||!from||!to)return false;
+  const dx=(to.w-from.w)/2,dy=(to.h-from.h)/2;L.viewport=to;
+  if(!dx&&!dy)return false;
+  L.vt.x+=dx;L.vt.y+=dy;canvasApplyVT();return true;
+}
 /* 위치·보기·질문은 한 번의 방문으로 복원한다. 상위 경로 이동과 방문 이력은 별개다. */
 function canvasContext(){
   const L=CANV||{},list=document.getElementById("leftlist");
-  return {id:L.focusID||null,path:L.focusPath||null,scoped:L.scoped||null,follow:L.follow||null,
+  return {galaxy:galaxyVisible(),galaxyGroup:GALAXY.group,id:L.focusID||null,path:L.focusPath||null,scoped:L.scoped||null,follow:L.follow||null,
     vt:Object.assign({},L.vt),relatedID:L.relatedID||null,query:CANVQ,queryVector:CQV,
-    selectedID:workspaceSelectedID(),
+    selectedID:workspaceSelectedID(),recordSnapshot:SESSION_MAP_SNAPSHOT,
     find:LFIND,zip:Object.assign({},LZIP),scroll:list?list.scrollTop||0:0,pane:PANE.r,
     documentReturn:PANE.r>0?DOCUMENT_RETURN:null};
 }
@@ -6448,11 +7562,15 @@ function canvasRemember(){
 }
 function canvasRestore(frame){
   if(!CANV||!frame)return;
+  SESSION_MAP_SNAPSHOT=frame.recordSnapshot||null;
+  GALAXY.active=!!frame.galaxy&&!!GALAXY.record;
+  GALAXY.group=frame.galaxyGroup||null;
   const L=workspaceEnterFolder(frame.path||"");
   canvasAskClose();
   L.focusID=frame.id||null;L.focusPath=frame.path||null;L.scoped=frame.scoped||null;
   L.follow=frame.follow||null;L.glide=null;L.relatedID=frame.relatedID||null;
   if(frame.vt)L.vt=Object.assign({},frame.vt);
+  if(frame.viewport!==undefined)L.viewport=frame.viewport?{...frame.viewport}:null;
   if(frame.query!==undefined){CANVQ=frame.query;CQV=frame.queryVector||null}
   if(frame.find!==undefined)LFIND=frame.find;
   if(frame.zip)LZIP=Object.assign({},frame.zip);
@@ -6466,6 +7584,7 @@ function canvasRestore(frame){
   const list=document.getElementById("leftlist");if(list&&frame.scroll!==undefined)list.scrollTop=frame.scroll;
 }
 function canvasGoBack(){
+  if(CHANGES_OPEN){closeDocumentChange();return}
   if(SESSION_REVIEW_OPEN){closeSessionRecordDetails();return}
   // Linked documents are individual visits. Close returns to the original result,
   // while Back first retraces documents opened from that result.
@@ -6486,6 +7605,14 @@ function paintWorkspaceQueryContext(){
   const cols=document.getElementById("cols");if(cols)cols.classList.toggle("query-context",workspaceQueryContextActive());
   const results=document.getElementById("cvrank");if(results){const occupied=PANE.r>0||SESSION_REVIEW_OPEN;results.hidden=occupied;results.inert=occupied;results.setAttribute("aria-hidden",String(occupied))}
 }
+function paintGalaxyControl(orb){
+  orb.style.display=WORKSPACE_SCOPE?"none":"";
+  const interactive=WORKSPACE_SIDEBAR==="files";
+  const label=interactive?(GALAXY.pending?"갤럭시 정렬 중":"갤럭시 정렬"):"전체 저장소 갤럭시";
+  orb.setAttribute("role",interactive?"button":"img");orb.setAttribute("tabindex",interactive?"0":"-1");
+  orb.setAttribute("aria-busy",String(interactive&&!!GALAXY.pending));orb.setAttribute("aria-label",label);
+  orb.style.cursor=interactive?"pointer":"default";const title=orb.querySelector?.("title");if(title)title.textContent=label;
+}
 function paintCanvasNavigation(){
   paintWorkspaceQueryContext();
   const el=document.getElementById("cvnav"),L=CANV;if(!el||!L)return;
@@ -6494,6 +7621,11 @@ function paintCanvasNavigation(){
   const showHome=parts.length||L.relatedID||PANE.r>0;
   el.innerHTML=(drag?.preview?`<span class="move-browse-label">이동할 위치</span>`:"")+`<nav id="workspace-crumbs" class="workspace-crumbs" aria-label="${drag?.preview?"이동할 위치":"현재 위치"}">${showHome?`<button id="cvhome" aria-label="전체 저장소" title="전체 저장소" ${parts.length?"":'aria-current="location"'}>전체 저장소</button>`:""}`
     +parts.map((part,i)=>`<b class="crumb-separator" aria-hidden="true">›</b><button data-cvfolder="${esc(parts.slice(0,i+1).join("/"))}" title="${esc(parts.slice(0,i+1).join("/"))}" ${i===parts.length-1?'aria-current="location"':""}>${esc(part)}</button>`).join("")+`</nav>`;
+  if(WORKSPACE_SIDEBAR==="files"&&GALAXY.record){
+    el.innerHTML+=`<button id="galaxy-view" class="galaxy-view">${galaxyVisible()?"폴더 배치로":"정렬된 보기"}</button>`;
+    const toggle=document.getElementById("galaxy-view");if(toggle)toggle.onclick=galaxyVisible()?galaxyFolderView:galaxyArrange;
+  }
+  if(L.els?.orb)paintGalaxyControl(L.els.orb);
   const home=document.getElementById("cvhome");if(home)home.onclick=canvasGoHome;
   const crumbs=document.getElementById("workspace-crumbs");if(crumbs)crumbs.scrollLeft=crumbs.scrollWidth;
   el.querySelectorAll("[data-cvfolder]").forEach(button=>button.onclick=()=>canvasScopeFolder(button.dataset.cvfolder));
@@ -6524,6 +7656,11 @@ function canvasPaintPanel(){
      표준오류에 적고 돌아온다) 이 화면은 「재는 중」에 머문다. 라이브 검색이 `QVEC` 를 영영
      못 받는 것과 같은 자리이고, 그때 지도가 틀린 순위를 내는 것보다 낫다. */
 function canvasAsk(q,opt){
+  if(SESSION_SELECTING)return;
+  if(opt?.log||SESSION_MAP_SNAPSHOT?.query!==(q||""))SESSION_MAP_SNAPSHOT=null;
+  if(SESSION_MAP_SNAPSHOT){CANVQ=q||"";sessionPaintSnapshot();return}
+  if(opt?.log)retryFailedJevRank();
+  if(CANVQ!==(q||""))clearJevEvidence();
   if(!VAULT_CONNECTED)return;
   if(CANV&&(CANVQ!==(q||"")||CANV.relatedID))canvasRemember();
   if(CANV)CANV.relatedID=null;
@@ -6617,14 +7754,24 @@ function canvasBindPane(){
   if(fixed)fixed.onkeydown=ev=>{if(ev.key==="Enter"&&!ev.isComposing&&ev.keyCode!==229){ev.preventDefault();ask()}};
   if(submit)submit.onclick=ask;
   if(typeof ResizeObserver!=="undefined"){
-    if(CANVAS_RESIZE)CANVAS_RESIZE.disconnect();
-    let size="";CANVAS_RESIZE=new ResizeObserver(entries=>{const r=entries[0]?.contentRect,key=r&&`${r.width}:${r.height}`;if(key&&key!==size){size=key;if(mode==="stack"&&stackView==="edit"){canvasFit();canvasWake()}}});
-    CANVAS_RESIZE.observe(document.getElementById("cvb"));
+    const board=document.getElementById("cvb"),rect=board.getBoundingClientRect();
+    // A remounted observer always delivers once, even when the viewport did not
+    // change. Keep the last measured size so it cannot overwrite a restored camera.
+    const state={size:rect.width>0&&rect.height>0?CANVAS_RESIZE?.size||"":"",viewport:CANVAS_RESIZE?.viewport||null,observer:null};
+    CANVAS_RESIZE?.observer.disconnect();
+    state.observer=new ResizeObserver(entries=>{
+      if(CANVAS_RESIZE!==state||document.getElementById("cvb")!==board)return;
+      const r=entries[0]?.contentRect;if(!(r?.width>0&&r.height>0))return;
+      const key=`${r.width}:${r.height}`;
+      if(key!==state.size){state.size=key;if(mode==="stack"&&stackView==="edit"){canvasFit();canvasWake()}}
+      state.viewport={w:r.width,h:r.height};
+    });
+    CANVAS_RESIZE=state;state.observer.observe(board);
   }
   /* ★ 창이 커지면 다시 맞춘다 — **없으면 지도가 칸 한구석에 오그라든 채로 남는다**
      (`실측`: 목업에서 창을 키우자 점 구름이 왼쪽 위에 몰린 채 그대로였다).
      ⚠ **대입이다.** 여러 번 렌더해도 손잡이가 하나뿐이고, 다른 화면에 가면 스스로 비킨다. */
-  onresize=()=>{if(mode==="stack"&&stackView==="edit"){canvasFit();canvasWake()}};
+  onresize=()=>{if(mode==="stack"&&stackView==="edit"){canvasFit();canvasWake();if(CHANGES_OPEN&&CHANGE_VIEW==="edit")resizeProposalEditor()}};
   /* ★ 창이 숨으면 루프도 잔다 (#75 1). ⚠ **대입이다** — 여러 번 렌더해도 손잡이가 하나다.
      ⚠ 깨우는 자리를 여기 하나로 두고, 자는 판정은 프레임 안에서 매번 다시 한다. */
   try{document.onvisibilitychange=canvasVisibilityChanged;canvasVisibilityChanged()}catch(e){}
@@ -6749,6 +7896,7 @@ function workspaceMoveTarget(row,folder){
   return {type:"move",folder,path:[folder,row.path.split("/").pop()].filter(Boolean).join("/")};
 }
 function workspaceCanvasEntry(node){
+  if(node?.semantic)return null;
   if(!node?.path)return null;
   if(node.kind==="sun")return {path:node.path,folder:true,id:node.id};
   if(node.kind!=="planet")return null;
@@ -6876,8 +8024,8 @@ function canvasBindBoard(){
     const g=ev.target.closest?ev.target.closest(".cvn"):null;
     const n=g?L.by[g.dataset.f]:null;
     L.drag={sx:ev.clientX,sy:ev.clientY,lastX:ev.clientX,lastY:ev.clientY,moved:0,node:n,
-            row:workspaceCanvasEntry(n),
-            groupable:n?.kind==="planet"&&workspaceFile(n.id)?.p.entry?.manageable!==false,held:false,
+            row:canvasProposal(n?.id)?null:workspaceCanvasEntry(n),
+            groupable:!n?.semantic&&n?.kind==="planet"&&workspaceFile(n.id)?.p.entry?.manageable!==false,held:false,
             oa:n?n.ang:0,ox:L.vt.x,oy:L.vt.y};
     if(L.drag.row){L.drag.timer=setTimeout(()=>canvasHoldOrbit(L),300);g?.focus?.({preventScroll:true})}
     try{board.setPointerCapture(ev.pointerId)}catch(e){}
@@ -6935,6 +8083,7 @@ function canvasBindBoard(){
          들어왔을 때만 트리가 안 펴지는 식으로 조용히 어긋난다. */
       if(d.node.kind==="sun"||d.node.kind==="center")canvasScopeSun(d.node.id);
       else if(d.node.kind==="planet"||d.node.kind==="moon"){
+        if(canvasActivateContextDocument(d.node.id))return;
         const tick=performance.now(),double=L.lastClick&&L.lastClick.id===d.node.id&&tick-L.lastClick.at<350;
         L.lastClick={id:d.node.id,at:tick};
         if(double)workspaceOpen(d.node.id);else canvasNavigateFile(d.node.id);
@@ -7029,7 +8178,7 @@ function ingestRender(){
           <span style="flex:1"></span><span class="foot" id="iprv">이 맥 밖으로 나가지 않아요</span></div>
       </div>
       <div id="ierr"></div><div id="ingesttrouble" class="wb" role="status" hidden></div><div id="ibar"></div><div id="cands"></div><div id="isum"></div>
-    </div>`;
+    </div>${workspaceNoticeFooter()}`;
   /* ★ **설정에 잠깐 다녀온 사람의 글을 되돌린다** (#65 P3-4). 위에서 화면을 새로 지었으니
      붙여넣던 글은 방금 사라졌다 — 자리표를 든 사람에게만 그것을 도로 앉힌다.
      ⚠ **한 번만이다.** 여기서 자리표를 비운다 — 안 비우면 다음에 이 화면을 여는 사람에게
@@ -7055,6 +8204,7 @@ function ingestRender(){
      **무반응·무안내**였다 — 왼쪽 칸에서만 되는 동작이라는 것을 알 길이 없다. */
   bindDropTarget("ingest");
   paintIngestTrouble();
+  paintWorkspaceFooter();
 }
 /* ★ 「이 화면이 공통 지능을 걸어도 되나」 — **순수 함수라 `node --test` 가 잠근다**
    (2026-09-02, 리뷰 발견 ①).
@@ -7891,8 +9041,6 @@ function paintSys(){
     if(dot)dot.className="mkdot "+p[0];
     if(txt)txt.textContent=p[1];
   }
-  const vp=document.getElementById("setvault");
-  if(vp)vp.textContent=SYS.vault||"앱에서만 보여요";
   const heading=document.getElementById("vaultheading");if(heading&&SYS.vault)heading.textContent=SYS.vault.split("/").filter(Boolean).pop();
   paintPicking("vaultmenu","vault");   /* 제자리 고쳐쓰기라 잠금도 여기서 따라온다 (#80 1) */
 }
@@ -7975,36 +9123,51 @@ function presetPick(list,url,type){
 }
 /* 주소의 **자리**만 — 뒷길(`/v1`)이 있고 없고는 같은 서버다. 못 읽는 글자는 빈 자리다. */
 function urlOrigin(u){try{return new URL(u).origin}catch(e){return ""}}
-let MCP_COPY_KIND="setup",MCP_CLIENT="";
-function onMCPAction(ok){const e=document.getElementById("mcpstatus");if(e)e.textContent=ok?(MCP_COPY_KIND==="record"?"기록 요청을 복사했습니다. 연결한 AI 대화에 붙여넣으세요.":(MCP_CLIENT==="codex"||MCP_CLIENT==="claude"?"연결 명령을 복사했습니다. 터미널에서 실행한 뒤 AI 대화에서 자료를 찾아보세요.":"설정을 복사했습니다. 사용할 AI 앱에 추가하세요.")):"복사하지 못했습니다. 저장소 연결을 확인하고 다시 시도해 주세요."}
-function openAIConnectionScreen(){
-  if(mode!=="stack"||!leaveEditorAllowed(openAIConnectionScreen))return;
-  enterFlow("connection");post("probeSystem");
+let REMOTE_CONNECTION={phase:"unavailable",vaultPath:"",consentID:"",allowProposals:true,canDisconnect:false,message:""};
+let REMOTE_REQUESTED=false,REMOTE_ALLOW=true;
+function setRemoteConnectionState(value){
+  let state;try{state=typeof value==="string"?JSON.parse(value):value}catch(e){return}
+  if(!state||!["unavailable","noVault","ready","authenticating","connecting","connected","stopping","failed"].includes(state.phase))return;
+  if(state.consentID!==REMOTE_CONNECTION.consentID)REMOTE_ALLOW=state.allowProposals!==false;
+  REMOTE_CONNECTION=state;paintRemoteConnection();
 }
-function aiConnectionRender(){
-  releaseMarkdownEditors();app.innerHTML=`${flowHeader("외부 AI에서 사용")}<main id="flowbody" class="flowbody"><section class="flowsection">
-    <h2>쓰던 AI와 내 저장소 연결하기</h2>
-    <p class="flowhint">Codex·Claude Code와 쓰던 IDE의 AI가 내 Markdown 자료를 참고하고, 요청에 따라 문서를 추가하거나 고치도록 연결합니다.</p>
-    <div class="flowrow"><span>연결할 저장소</span><span id="setvault">${esc(SYS.vault||"현재 저장소")}</span></div>
-    <label for="mcpclient">사용할 도구</label><select id="mcpclient"><option value="">선택하세요</option><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="json">다른 IDE·CLI (JSON 설정)</option></select>
-    <p id="mcp-instructions" class="flowhint"></p><div class="flowactions"><button class="gbtn p" id="mcpsetup" disabled>연결 설정 복사</button></div><p id="mcpstatus" class="flowhint" role="status"></p>
-    <section class="connectionrecord"><h3>AI로 저장소 가꾸기</h3><p class="flowhint">연결한 AI 대화에 붙여넣어 필요한 내용을 문서로 남깁니다.</p><button class="gbtn" id="mcprecord">기록 요청 복사</button></section>
-  </section></main>`;
-  bindFlowHeader();
-  document.getElementById("mcpsetup").onclick=()=>{if(!MCP_CLIENT)return;MCP_COPY_KIND="setup";post("openSystem",{what:"mcpSetup",client:MCP_CLIENT})};
-  const client=document.getElementById("mcpclient");client.value=MCP_CLIENT;client.onchange=()=>{MCP_CLIENT=client.value;document.getElementById("mcpstatus").textContent="";paintMCPInstructions()};paintMCPInstructions();
-  document.getElementById("mcprecord").onclick=()=>{MCP_COPY_KIND="record";post("openSystem",{what:"mcpRecord"})};
+function openRemoteConnection(){
+  if(mode!=="stack")return false;
+  REMOTE_REQUESTED=true;openSettingsScreen();paintRemoteConnection();
+  document.getElementById("remote-connection")?.scrollIntoView?.({block:"nearest"});
+  return true;
 }
-function paintMCPInstructions(){
-  const info=document.getElementById("mcp-instructions"),button=document.getElementById("mcpsetup");
-  if(!info||!button)return;
-  button.disabled=!MCP_CLIENT;
-  button.textContent=MCP_CLIENT==="json"?"연결 설정 복사":MCP_CLIENT?"연결 명령 복사":"연결 설정 복사";
-  info.textContent=MCP_CLIENT==="codex"?"Codex CLI가 설치된 터미널에서 복사한 명령을 실행하세요.":MCP_CLIENT==="claude"?"Claude Code가 설치된 터미널에서 실행하세요. 이 사용자 계정의 모든 프로젝트에 연결합니다.":MCP_CLIENT==="json"?"로컬 MCP 서버를 지원하는 도구의 연결 설정에 추가하세요.":"사용할 IDE·CLI를 선택하면 연결 방법을 안내합니다.";
+function remoteConnectionHTML(){
+  const s=REMOTE_CONNECTION;
+  if(s.phase==="unavailable")return REMOTE_REQUESTED?'<h2>ChatGPT 연결</h2><p class="preferencehint">이 버전은 ChatGPT 연결을 아직 제공하지 않습니다.</p>':"";
+  if(s.phase==="noVault")return '<h2>ChatGPT 연결</h2><p class="preferencehint">먼저 사용할 자료 폴더를 선택해 주세요.</p><button class="gbtn" id="remote-vault">폴더 선택</button>'+(s.canDisconnect?'<button class="gbtn" id="remote-disconnect">연결 해제·로그아웃</button>':"");
+  const busy=["authenticating","connecting","stopping"].includes(s.phase),connected=s.phase==="connected";
+  const status={authenticating:"로그인 중…",connecting:"Mac 연결 중…",stopping:"연결 해제 중…",connected:"이 Mac에서 요청을 받을 준비가 됐습니다."}[s.phase]||"";
+  return `<h2>ChatGPT 연결</h2>
+    <p class="preferencehint">${esc(s.vaultPath||"")}</p>
+    <p class="preferencehint">이 Mac이 연결된 동안 ChatGPT가 요청한 자료를 읽을 수 있습니다. 조회한 내용은 ChatGPT로 전달됩니다.</p>
+    <div class="preferencerow"><label for="remote-proposals">변경 제안 허용</label><input type="checkbox" id="remote-proposals" ${REMOTE_ALLOW?"checked":""} ${busy||connected?"disabled":""}></div>
+    <p class="preferencehint">제안은 Clonie에서 승인한 뒤 문서에 저장됩니다.</p>
+    <p class="preferencehint" role="status">${esc(s.message||status)}</p>
+    <div class="preferencerow">
+      ${!busy&&!connected?'<button class="gbtn" id="remote-connect">접근 허용하고 연결</button>':""}
+      ${busy?`<button class="gbtn" id="remote-cancel" ${s.phase==="stopping"?"disabled":""}>취소</button>`:""}
+      ${!busy&&(connected||s.canDisconnect)?'<button class="gbtn" id="remote-disconnect">연결 해제·로그아웃</button>':""}
+    </div>`;
 }
-
+function paintRemoteConnection(){
+  const section=document.getElementById("remote-connection");if(!section)return;
+  section.innerHTML=remoteConnectionHTML();section.hidden=!section.innerHTML;
+  const bind=(id,fn)=>{const element=document.getElementById(id);if(element)element.onclick=fn};
+  const toggle=document.getElementById("remote-proposals");if(toggle)toggle.onchange=()=>{REMOTE_ALLOW=toggle.checked};
+  bind("remote-connect",()=>post("remoteConnection",{action:"connect",consentID:REMOTE_CONNECTION.consentID,allowProposals:REMOTE_ALLOW}));
+  bind("remote-disconnect",()=>post("remoteConnection",{action:"disconnect"}));
+  bind("remote-cancel",()=>post("remoteConnection",{action:"cancel"}));
+  bind("remote-vault",()=>post("openSystem",{what:"vault"}));
+}
 function settingsRender(){
   releaseMarkdownEditors();app.innerHTML=`${flowHeader("설정").replace('id="flowback"','id="setback"')}<main id="settingspane" aria-label="설정"><div id="setbody" class="preferences">
+    <section class="preferencegroup" id="remote-connection" aria-label="ChatGPT 연결" hidden></section>
     <section class="preferencegroup" aria-labelledby="appearance-title"><h2 id="appearance-title">화면</h2>
       <div class="preferencerow"><label for="setuniverse">우주 표현</label><select id="setuniverse"><option value="current">기본</option><option value="depth">부드러운 입체</option><option value="pixel">픽셀</option></select></div>
       <div class="preferencerow"><label for="settextscale">글자 크기</label><select id="settextscale"><option value="1">기본</option><option value="1.15">크게</option><option value="1.3">더 크게</option><option value="1.5">가장 크게</option></select></div>
@@ -8013,7 +9176,7 @@ function settingsRender(){
       <div class="preferencerow"><label id="key-label" for="key-toggle">창 보이기·숨기기</label><button class="gbtn setkey" id="key-toggle" aria-describedby="keymsg-toggle">—</button></div>
       <p class="preferencehint" id="keymsg-toggle" role="status"></p>
     </section>
-  </div></main>`;
+  </div></main>${workspaceNoticeFooter()}`;
   const back=document.getElementById("setback");
   back.onclick=returnFromFlow;
   document.getElementById("flowhide").onclick=()=>post("closeWindow");
@@ -8026,7 +9189,7 @@ function settingsRender(){
   key.onclick=()=>{if(SYS.shortcutAvailability==="qaDisabled")return;RECSLOT=RECSLOT?null:"toggle";RECMOD=null;RECCLASH=null;SYS.failed=null;paintSys()};
   key.onblur=()=>{RECSLOT=null;RECMOD=null;RECCLASH=null;paintSys()};
   for(const e of [universe,scale])e.onfocus=()=>{RECSLOT=null;RECMOD=null;RECCLASH=null;paintSys()};
-  paintSys();paintAppearanceSettings();post("probeSystem");
+  paintSys();paintAppearanceSettings();paintRemoteConnection();paintWorkspaceFooter();post("probeSystem");
 }
 
 /* ★ 창 손잡이 둘이 되돌아온다 (#61 B). Swift 가 창이 뜰 때 한 번, 그리고 설정에서 바뀔 때마다.
@@ -8214,26 +9377,29 @@ const HM_NEAR=4;    /* 이웃 상한 — 고른 조각까지 다섯 줄이면 �
    ★ `kin` = **같은 항성 안의 조각 id 표**(#74 B4). 주면 그 밖은 후보에서 빠진다 —
      이웃이 항성을 건너뛰면 「폴더 = 중심체」라는 그림이 그 순간 거짓말이 된다.
      안 주면(항성을 못 찾는 볼트) 전 판 그대로 갤럭시 전체에서 고른다. */
-function hmNear(p,kin){
+function hmNear(p,kin,limit=HM_NEAR){
   return (DOC.fragments||[]).filter(x=>x.id!==p.id&&!isSeed(x))
     .filter(x=>!kin||Object.prototype.hasOwnProperty.call(kin,x.id))
     .map(x=>{
-      const c=passagePairScore(p,x,VEC);
+      const hit=passagePairHit(p,x,VEC),c=hit.s;
       return c===null
         ?{p:x,s:sim(p.title+" "+p.body,x.title+" "+x.body),c:"n"}
-        :{p:x,s:c,c:eris(c/SIM_G_DIRECT)};
+        :{p:x,s:c,c:eris(c/SIM_G_DIRECT),passage:hit.passage};
     })
-    .filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,HM_NEAR);
+    .filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,limit);
 }
 
 /* 문서 두 개의 이웃 점수도 passage 쌍의 최댓값이다. 한 passage만 든 기존 꾸러미는
    `frags`로 같은 결과를 내므로, 옛 화면 fixture가 새 계약 때문에 무채색이 되지 않는다. */
 function passagePairScore(a,b,vec){
+  return passagePairHit(a,b,vec).s;
+}
+function passagePairHit(a,b,vec){
   const P=((vec||{}).passages||{}),aa=P[a&&a.id]||[],bb=P[b&&b.id]||[];
-  let best=null;
-  aa.forEach(x=>bb.forEach(y=>{const score=cosv(x.v,y.v);if(score!==null&&(best===null||score>best))best=score}));
-  if(best!==null)return best;
-  return cosv(((vec||{}).frags||{})[a&&a.id],((vec||{}).frags||{})[b&&b.id]);
+  let best=null,passage=null;
+  aa.forEach(x=>bb.forEach(y=>{const score=cosv(x.v,y.v);if(score!==null&&(best===null||score>best)){best=score;passage=y}}));
+  if(best!==null)return {s:best,passage};
+  return {s:cosv(((vec||{}).frags||{})[a&&a.id],((vec||{}).frags||{})[b&&b.id]),passage:null};
 }
 DOC=load();
 render();

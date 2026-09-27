@@ -184,12 +184,16 @@ public struct SessionRecord: Codable, Equatable, Sendable {
     public var startedAt: Double
     public var endedAt: Double?
     public var state: SessionState
+    /// Input selection fixed when preparation starts. Missing in older records means system audio.
+    public var captureSystemAudio: Bool?
     /// Whole-record review, separate from capture lifecycle. Missing means open.
     public var reviewStatus: String?
     public var utterances: [SessionUtterance]
     public var retrievals: [SessionRetrieval]
     /// Explicit user review state keyed by question ID; absent entries remain open.
     public var questionReviews: [String: String]
+    /// User-selected questions to revisit; separate from completion and retrieval quality.
+    public var markedQuestions: [String: Bool]
     public var drafts: [SessionDraft]
     public var analysisStatus: String
     public var analysisMessage: String?
@@ -198,20 +202,23 @@ public struct SessionRecord: Codable, Equatable, Sendable {
     public init(schemaVersion: Int = SessionRecord.currentSchemaVersion,
                 id: String = UUID().uuidString.lowercased(), vaultPath: String,
                 startedAt: Double, endedAt: Double? = nil, state: SessionState,
+                captureSystemAudio: Bool? = nil,
                 utterances: [SessionUtterance] = [], retrievals: [SessionRetrieval] = [],
                 drafts: [SessionDraft] = [], analysisStatus: String = "notStarted",
                 analysisMessage: String? = nil, events: [SessionLifecycleEvent] = [],
-                questionReviews: [String: String] = [:], reviewStatus: String? = nil) {
+                questionReviews: [String: String] = [:], markedQuestions: [String: Bool] = [:], reviewStatus: String? = nil) {
         self.schemaVersion = schemaVersion
         self.id = id
         self.vaultPath = vaultPath
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.state = state
+        self.captureSystemAudio = captureSystemAudio
         self.reviewStatus = reviewStatus
         self.utterances = utterances
         self.retrievals = retrievals
         self.questionReviews = questionReviews
+        self.markedQuestions = markedQuestions
         self.drafts = drafts
         self.analysisStatus = analysisStatus
         self.analysisMessage = analysisMessage
@@ -268,9 +275,17 @@ public struct SessionRecord: Codable, Equatable, Sendable {
         }
     }
 
+    @discardableResult public mutating func markQuestion(id: String, marked: Bool) -> Bool {
+        guard !id.isEmpty,
+              utterances.contains(where: { ($0.who == "them" || $0.questionID == $0.id) && $0.id == id }) ||
+              retrievals.contains(where: { ($0.questionID ?? $0.id) == id }) else { return false }
+        if marked { markedQuestions[id] = true } else { markedQuestions.removeValue(forKey: id) }
+        return true
+    }
+
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, id, vaultPath, startedAt, endedAt, state, reviewStatus
-        case utterances, retrievals, drafts, analysisStatus, analysisMessage, events, questionReviews
+        case schemaVersion, id, vaultPath, startedAt, endedAt, state, captureSystemAudio, reviewStatus
+        case utterances, retrievals, drafts, analysisStatus, analysisMessage, events, questionReviews, markedQuestions
     }
 
     /// Decoding is strict about the schema version so a future app cannot be
@@ -291,10 +306,12 @@ public struct SessionRecord: Codable, Equatable, Sendable {
         self.startedAt = try container.decode(Double.self, forKey: .startedAt)
         self.endedAt = try container.decodeIfPresent(Double.self, forKey: .endedAt)
         self.state = try container.decode(SessionState.self, forKey: .state)
+        self.captureSystemAudio = try container.decodeIfPresent(Bool.self, forKey: .captureSystemAudio)
         self.reviewStatus = try container.decodeIfPresent(String.self, forKey: .reviewStatus)
         self.utterances = try container.decodeIfPresent([SessionUtterance].self, forKey: .utterances) ?? []
         self.retrievals = try container.decodeIfPresent([SessionRetrieval].self, forKey: .retrievals) ?? []
         self.questionReviews = try container.decodeIfPresent([String: String].self, forKey: .questionReviews) ?? [:]
+        self.markedQuestions = try container.decodeIfPresent([String: Bool].self, forKey: .markedQuestions) ?? [:]
         self.drafts = try container.decodeIfPresent([SessionDraft].self, forKey: .drafts) ?? []
         self.analysisStatus = try container.decodeIfPresent(String.self, forKey: .analysisStatus) ?? "notStarted"
         self.analysisMessage = try container.decodeIfPresent(String.self, forKey: .analysisMessage)

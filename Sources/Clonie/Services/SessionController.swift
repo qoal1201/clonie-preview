@@ -10,6 +10,8 @@ final class SessionController {
     var onChange: ((SessionRecord?) -> Void)?
     var onError: ((String) -> Void)?
     private var writing: Task<Bool, Never>?
+    /// Keeps transcript callbacks in memory while the preparing -> active write is acknowledged.
+    private var readinessSavePending = false
     /// Retained until disk acknowledgement; never render a failed review as completed.
     private var pendingRecordReview: (id: String, status: String)?
     private var busy = false
@@ -25,6 +27,7 @@ final class SessionController {
     private var currentQuestionOrder = 0
     private(set) var records: [SessionRecord] = []
     var capturing: Bool { record.map { [.preparing, .active, .paused, .finishing].contains($0.state) } ?? false }
+    var captureSystemAudio: Bool { record?.captureSystemAudio ?? (querySpeaker == "them") }
 
     init(vaultURL: URL) {
         self.vaultURL = vaultURL.standardizedFileURL.resolvingSymlinksInPath()
@@ -67,22 +70,55 @@ final class SessionController {
         nextQuestionOrder = 0
         currentQuestionOrder = 0
         querySpeaker = system ? "them" : "me"
-        record = SessionRecord(vaultPath: vaultURL.path, startedAt: Date().timeIntervalSince1970, state: .preparing)
+        record = SessionRecord(vaultPath: vaultURL.path, startedAt: Date().timeIntervalSince1970,
+                               state: .preparing, captureSystemAudio: system)
         guard await persist().value else { record = nil; onChange?(nil); return false }
         return true
     }
 
-    /// Permission or device-open success alone does not prove that any input is arriving.
-    func captureDidReceiveInput() {
-        guard record?.state == .preparing else { return }
+    /// All requested capture lanes have started. Publish active only after that transition is durable.
+    /// The predicate rejects a late acknowledgement after capture stopped or preparation was cancelled.
+    @MainActor func captureDidBecomeReady(stillReady: @MainActor () -> Bool = { true }) async -> Bool {
+        if readinessSavePending { return true }
+        if record?.state == .active { return true }
+        guard let current = record, current.state == .preparing else { return false }
+
+        readinessSavePending = true
+        var ready = current
+        let event = SessionLifecycleEvent(kind: "inputsConnected", time: Date().timeIntervalSince1970)
+        ready.state = .active
+        ready.events.append(event)
+
+        // Queue with ordinary writes, but do not publish or replace the in-memory preparing record yet.
+        let previous = writing
+        let task = Task { @MainActor [weak self, store] in
+            _ = await previous?.value
+            do {
+                try await store.save(ready)
+                return true
+            } catch {
+                self?.onError?("세션 기록을 저장하지 못했습니다. 창을 유지하고 다시 시도해 주세요: \(error.localizedDescription)")
+                return false
+            }
+        }
+        writing = task
+        let saved = await task.value
+        readinessSavePending = false
+        guard saved else { return false }
+
+        guard stillReady(), record?.id == ready.id, record?.state == .preparing else {
+            // The candidate write may have won just before a stop callback. Restore the latest
+            // preparing snapshot; a concurrent finish already owns its own queued terminal write.
+            if record?.id == ready.id, record?.state == .preparing { _ = persist() }
+            return false
+        }
         record?.state = .active
-        record?.events.append(SessionLifecycleEvent(kind: "inputReceiving", time: Date().timeIntervalSince1970))
-        _ = persist()
+        record?.events.append(event)
+        _ = persist() // Includes transcript callbacks buffered while the readiness write was pending.
+        return true
     }
 
     func ingest(who: String, epoch: Int, result: SpeechTranscriptionResult) {
-        // A real transcription callback also supplies input evidence if it beats the PCM meter callback.
-        if record?.state == .preparing, resumeEpochFloor.map({ epoch > $0 }) ?? true { captureDidReceiveInput() }
         guard let r = record, [.preparing, .active, .finishing].contains(r.state) else { return }
         let id = "\(epoch)-\(who)-\(result.segmentID)"
         let existing = r.utterances.first { $0.id == id }
@@ -120,7 +156,7 @@ final class SessionController {
             revision: SessionTranscriptRevision(revision: result.revision, text: result.text,
                 isFinal: result.isFinal, time: Date().timeIntervalSince1970,
                 startTime: result.startTime, endTime: result.endTime), questionID: questionID)
-        _ = persist()
+        if !readinessSavePending { _ = persist() }
     }
 
     @MainActor @discardableResult
@@ -164,13 +200,13 @@ final class SessionController {
     func retrieval(_ value: SessionRetrieval) {
         guard capturing else { return }
         record?.upsertRetrieval(value)
-        _ = persist()
+        if !readinessSavePending { _ = persist() }
     }
 
     func event(_ kind: String, detail: String? = nil) {
         guard capturing else { return }
         record?.events.append(SessionLifecycleEvent(kind: kind, time: Date().timeIntervalSince1970, detail: detail))
-        _ = persist()
+        if !readinessSavePending { _ = persist() }
     }
 
     @MainActor func select(id: String) async {
@@ -187,6 +223,7 @@ final class SessionController {
         guard await flush() else { return }
         do {
             record = try await store.load(id: id)
+            querySpeaker = record?.captureSystemAudio == false ? "me" : "them"
             currentQuestionID = nil
             latestIngestEpoch = nil
             resumeEpochFloor = nil
@@ -202,6 +239,21 @@ final class SessionController {
         guard !capturing else { return }
         record?.correctUtterance(id: id, text: text, time: Date().timeIntervalSince1970)
         _ = persist()
+    }
+
+    private var pendingQuestionMark: (sessionID: String, questionID: String, marked: Bool)?
+    private var markingQuestion = false
+
+    @MainActor func markQuestion(id: String, marked: Bool) async {
+        guard !markingQuestion, let snapshot = record,
+              snapshot.state != .preparing, snapshot.state != .finishing else { return }
+        var checked = snapshot
+        guard checked.markQuestion(id: id, marked: marked) else { return }
+        markingQuestion = true
+        pendingQuestionMark = (snapshot.id, id, marked)
+        _ = await persist().value
+        markingQuestion = false
+
     }
 
     @discardableResult
@@ -290,6 +342,8 @@ final class SessionController {
         guard var snapshot = record else { return Task { true } }
         let review = pendingRecordReview.flatMap { $0.id == snapshot.id ? $0 : nil }
         if let review { snapshot.reviewStatus = review.status }
+        let mark = pendingQuestionMark.flatMap { $0.sessionID == snapshot.id ? $0 : nil }
+        if let mark { snapshot.markQuestion(id: mark.questionID, marked: mark.marked) }
         onChange?(record)
         let previous = writing
         let task = Task { @MainActor [weak self, store] in
@@ -299,6 +353,15 @@ final class SessionController {
                 if let self {
                     self.records.removeAll { $0.id == snapshot.id }
                     self.records.insert(snapshot, at: 0)
+                    if let mark {
+                        if self.record?.id == mark.sessionID {
+                            self.record?.markQuestion(id: mark.questionID, marked: mark.marked)
+                        }
+                        if self.pendingQuestionMark?.sessionID == mark.sessionID,
+                           self.pendingQuestionMark?.questionID == mark.questionID,
+                           self.pendingQuestionMark?.marked == mark.marked { self.pendingQuestionMark = nil }
+                        self.onChange?(self.record)
+                    }
                     if let review {
                         if self.record?.id == review.id { self.record?.reviewStatus = review.status }
                         if self.pendingRecordReview?.id == review.id,

@@ -46,15 +46,18 @@ public final class TextEmbedder {
     /// 이 설계의 요점이다 — 살아 있으면 부르는 쪽이 점수를 믿어도 된다.
     public convenience init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        computeUnits: MLComputeUnits = .all
+        computeUnits: MLComputeUnits = .cpuOnly
     ) throws {
         let status = EmbeddingModelStore.status(environment: environment)
         guard let manifest = status.manifest else { throw EmbeddingError.modelUnavailable(status) }
         try self.init(manifest: manifest, computeUnits: computeUnits)
     }
 
+    // The bundled variable-length model repeatedly rebuilds GPU execution plans when buckets
+    // change on the measured M1 Pro/macOS 27 path. CPU avoids that multi-second transition
+    // cost. Keep the explicit override for diagnostics; app and MCP share this default.
     public init(manifest: EmbeddingModelStore.Manifest,
-                computeUnits: MLComputeUnits = .all) throws {
+                computeUnits: MLComputeUnits = .cpuOnly) throws {
         self.manifest = manifest
         self.tokenizer = try UnigramTokenizer(contentsOf: manifest.tokenizerURL)
 

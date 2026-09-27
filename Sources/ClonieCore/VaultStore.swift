@@ -364,7 +364,7 @@ public final class VaultStore {
         }
     }
 
-    private func performSaveLocked(_ document: CueDocument, expecting revision: VaultRevision,
+    func performSaveLocked(_ document: CueDocument, expecting revision: VaultRevision,
                                    newPaths: [String: String], writeMetadata: Bool,
                                    recordDocumentChanges: Bool) throws -> VaultSaveResult {
         try ensureVaultExists()

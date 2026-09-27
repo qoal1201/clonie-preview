@@ -1,4 +1,5 @@
 import WebKit
+import CryptoKit
 import AVFoundation
 import AppKit
 import ClonieCore
@@ -6,6 +7,33 @@ import ClonieCloud
 import ClonieDocuments
 
 class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
+    private struct JevBridgeCandidate {
+        let id: String
+        let revision: String
+        let text: String
+        let excerpts: [String]?
+        let requiresFullBody: Bool
+    }
+
+    private struct JevSourceBinding {
+        let id: String
+        let revision: String
+        let title: String
+        let body: String
+    }
+
+    private struct JevPendingRequest {
+        let token: UUID
+        let requestID: String
+        let startedAt: TimeInterval
+        var task: Task<Void, Never>?
+    }
+
+    // A restarted preview can only lower the remaining allowance, never raise it above ten.
+    private static let maximumJevNetworkAttempts = min(10, max(0,
+        Int(ProcessInfo.processInfo.environment["CLONIE_JEV_PREVIEW_LIMIT"] ?? "10") ?? 10))
+    private static var jevNetworkAttempts = 0
+
     let view: WKWebView
     private var appliedWindowMode: String?
     private var windowTransition = WindowTransitionPolicy()
@@ -42,23 +70,44 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     private var terminationToken: String?
     /// 화면에는 불투명한 문자열만 주고, 실제 리비전은 네이티브 안에 둔다 (#84).
     /// 여러 `evaluateJavaScript`가 엇갈려도 화면이 받은 문서와 기준선이 같은 한 벌이어야 한다.
-    private var vaultRevisions: [String: VaultRevision] = [:]
-    private var vaultRevisionOrder: [String] = []
-    /// 화면에서 아직 저장하지 않은 파일의 옛 기준선. 전체 볼트 판이 아니라 해당 파일만 든다.
-    /// `pinVaultRevisions`가 매번 현재 집합으로 갈아끼워 저장·취소 뒤에는 남지 않는다.
-    private var pinnedVaultRevisions: [String: VaultRevision] = [:]
+    private var vaultRevisions = VaultRevisionRegistry()
     /// 볼트를 다시 묶은 뒤 늦게 돌아온 옛 큐의 콜백을 버리는 세대다.
     private var vaultGeneration = 0
     /// 내용 그래프 (#32, ADR 0003 §3-①). 저장 순간 조각을 임베딩해 사이드카에 쌓고,
     /// 아주 가까운 조각이 이미 있으면 **기존 알림 띠**로 한 줄 말한다.
     /// ⚠ 볼트가 없으면 색인도 없다 — 사이드카는 볼트 안에 산다. 그래서 `store` 를 따라간다.
     private var graph: ContentGraph?
+    /// `asked` 기록 저장처럼 색인 입력이 그대로인 문서 전달은 진행 중인 색인을 취소하거나
+    /// 준비된 벡터를 버리지 않는다. 성공한 입력과 진행 중 입력을 나눠 실패 재시도도 지킨다.
+    private var indexSnapshots = ContentIndexSnapshotTracker()
     /// 면접관 관의 **굳은 글자**가 마지막으로 어디까지였나 (#34). 질의 벡터를 언제 만들지
     /// 가르는 데만 쓴다 — 어절마다 만들면 큐가 밀린다.
     private var lastConfirmedQuery = ""
     private var queryUsesSystemAudio = true
     private let speechSetup = InterviewEars()
     private var speechPreparing = false
+    /// Invalidates an in-flight persisted start when the user leaves preparation.
+    private var sessionStartGeneration = 0
+    private var preparationCancelPending = false
+    private var jevPendingRequest: JevPendingRequest?
+    private var galaxyTask: Task<Void, Never>?
+    private var galaxyRequestID: String?
+    private var galaxyToken = UUID()
+    private var preparedReranks: PreparedJevRerankStore?
+    private static let preparedRerankPolicy = "rerank-source-spans-v1"
+    private struct PreparedRankContext {
+        let query: String
+        let sourceID: String?
+        let scope: String?
+        let corpusFingerprint: String
+    }
+    private static func preparedCorpusFingerprint(_ revision: VaultRevision) -> String {
+        let rows = revision.files.sorted { $0.key < $1.key }.map {
+            [$0.key, $0.value.relativePath, $0.value.fingerprint]
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: rows) else { return "" }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
 
     init(frame: NSRect = .zero) {
         let configuration = WKWebViewConfiguration()
@@ -67,11 +116,12 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         view.setValue(false, forKey: "drawsBackground")
         view.navigationDelegate = self
         // Every registered message has a consumer in the current Clonie workspace.
-        for name in ["loadModels", "copyText", "closeWindow", "probeSystem", "saveShortcut", "openSystem", "resizeWindow", "saveDocument", "vaultAction", "changeAction", "terminationReady", "prepareSpeechModel", "pinVaultRevisions", "startListening", "stopListening", "sessionAction", "importDocuments", "embedDraft", "pickIngestFiles", "draftFragment", "tidyQuestion", "detectCli", "saveCliConfig", "saveBackend", "setWindowStyle"] {
+        for name in ["loadModels", "copyText", "closeWindow", "probeSystem", "remoteConnection", "saveShortcut", "openSystem", "resizeWindow", "saveDocument", "vaultAction", "changeAction", "terminationReady", "prepareSpeechModel", "pinVaultRevisions", "startListening", "stopListening", "sessionAction", "importDocuments", "embedDraft", "pickIngestFiles", "draftFragment", "tidyQuestion", "judgeEvidence", "arrangeGalaxy", "cancelGalaxyArrangement", "detectCli", "saveCliConfig", "saveBackend", "setWindowStyle"] {
             configuration.userContentController.add(self, name: name)
         }
         vault = store.map { VaultIO(store: $0, requireExistingRoot: true) }
         graph = store.map { ContentGraph(sidecarURL: $0.sidecarURL) }
+        preparedReranks = store.map { PreparedJevRerankStore(vaultURL: $0.vaultURL) }
         view.loadHTMLString(chatHTML(), baseURL: nil)
         startVaultWatch()
         setupSessions()
@@ -93,15 +143,21 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     /// **개념 매개** 갈래가 걷혀서, 지금 이 벡터를 읽는 것은 화면의 **준비도 줄**과 연습의
     /// 「준비된 답변이 없다」뿐이다 — 둘 다 「질문 ↔ 조각」을 내용 직접 자로 잰다.
     /// 인코딩은 그대로 양쪽 `query: ` 다(`ContentIndexer` 가 안다).
-    private func indexFragments(_ document: CueDocument) {
-        graph?.index(fragments: document.fragments, questions: document.questions) { [weak self] line in
-            self?.view.evaluateJavaScript("onIndexNotice(\(jsLiteral(line)))",
-                                          completionHandler: nil)
-        } onVectors: { [weak self] json in
+    private func indexFragments(_ document: CueDocument, snapshot: ContentIndexSnapshot) {
+        guard let graph else {
+            indexSnapshots.markFailed(snapshot)
+            return
+        }
+        graph.index(fragments: document.fragments, questions: document.questions) { [weak self] json in
             self?.view.evaluateJavaScript("receiveVectors(\(jsLiteral(json)))",
                                           completionHandler: nil)
         } onState: { [weak self] state in
-            self?.view.evaluateJavaScript("onIndexState(\(jsLiteral(state)))", completionHandler: nil)
+            guard let self else { return }
+            if state == "ready" { self.indexSnapshots.markReady(snapshot) }
+            else if state == "error" || state == "unavailable" {
+                self.indexSnapshots.markFailed(snapshot)
+            }
+            self.view.evaluateJavaScript("onIndexState(\(jsLiteral(state)))", completionHandler: nil)
         }
     }
 
@@ -121,6 +177,8 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
 
     /// 사용자가 설정창에서 **다른 폴더를 연결**했다. 저장소와 감시를 그리로 옮기고 화면을 새로 채운다.
     func rebindVault() {
+        cancelGalaxyArrangement()
+        cancelJevEvidenceRequest()
         importer = nil
         watcher?.stop()
         watcher = nil
@@ -128,10 +186,10 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         //   갈아끼워진 뒤에 옛 폴더로 앉거나, 권한 창에 걸린 채 남는다.
         vault?.flush()
         vaultGeneration += 1
-        vaultRevisions.removeAll()
-        vaultRevisionOrder.removeAll()
-        pinnedVaultRevisions.removeAll()
+        indexSnapshots.reset()
+        vaultRevisions.reset()
         store = VaultLocation.makeStore()
+        preparedReranks = store.map { PreparedJevRerankStore(vaultURL: $0.vaultURL) }
         vault = store.map { VaultIO(store: $0, requireExistingRoot: true) }
         // 자리를 옮겼으니 옛 볼트의 사고는 이제 남의 이야기다 — 띠를 걷는다.
         clearVaultTrouble()
@@ -145,6 +203,7 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         startVaultWatch()
         setupSessions()
         sendDocument(kind: "load")
+        sendJevPreviewReady()
     }
 
     private var changingSessionVault = false
@@ -170,7 +229,13 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                 if controller.capturing, !(await controller.finish(ears: self.ears)) { return }
                 guard await controller.flush() else { return }
             }
-            do { try VaultLocation.set(url); self.rebindVault() }
+            do {
+                let access = (NSApp.delegate as? AppDelegate)?.remoteConnection?.access
+                await access?.stop(signOut: false)
+                try VaultLocation.set(url)
+                await access?.selectVault(VaultLocation.selected)
+                self.rebindVault()
+            }
             catch { self.sendSessionError(error.localizedDescription) }
         }
     }
@@ -189,7 +254,9 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             guard let b = message.body as? [String: Any],
                   let w = (b["w"] as? NSNumber)?.doubleValue,
                   let h = (b["h"] as? NSNumber)?.doubleValue else { return }
-            applyMode((b["mode"] as? String) ?? "stack",
+            let mode = (b["mode"] as? String) ?? "stack"
+            if mode != "stack" { cancelJevEvidenceRequest(); cancelGalaxyArrangement() }
+            applyMode(mode,
                       content: NSSize(width: w, height: h))
         case "sessionAction":
             if let body = message.body as? [String: Any] { handleSessionAction(body) }
@@ -200,6 +267,7 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             //   `resizeWindow` 가 크기 옆에 `mode` 를 얹은 것과 같은 모양). 연습 모드는
             //   묻는 것이 앱이라 상대 목소리가 없고, 시스템 오디오를 열면 화면 기록 권한만
             //   괜히 묻게 된다. 짐이 없거나 낡은 화면이면 **둘 다 연다** — 면접이 기본값이다.
+            cancelJevEvidenceRequest()
             let earsBody = message.body as? [String: Any]
             startInterviewEars(system: (earsBody?["system"] as? NSNumber)?.boolValue ?? true)
         case "stopListening":
@@ -227,27 +295,19 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                   let revisionID = body["revision"] as? String,
                   let requestID = (body["requestID"] as? NSNumber)?.intValue,
                   let vault = vault else { return }
-            guard var revision = vaultRevisions[revisionID] else {
+            guard vaultRevisions.revision(for: revisionID) != nil else {
                 failDocumentSave(requestID)
                 sendDocument(kind: "reload")
                 return
             }
             let overrideIDs = (body["revisionOverrides"] as? [String: Any]) ?? [:]
+            let revision: VaultRevision
             do {
-                let grouped = Dictionary(grouping: overrideIDs.compactMap { id, value -> (String, String)? in
-                    guard let token = value as? String else { return nil }
-                    return (token, id)
-                }, by: \.0)
-                guard grouped.values.reduce(0, { $0 + $1.count }) == overrideIDs.count else {
+                let overrides = overrideIDs.compactMapValues { $0 as? String }
+                guard overrides.count == overrideIDs.count else {
                     throw VaultRevisionError.differentVault(expected: "invalid-token", actual: "current-vault")
                 }
-                for (token, rows) in grouped {
-                    guard let editingRevision = vaultRevisions[token] ?? pinnedVaultRevisions[token] else {
-                        throw VaultRevisionError.differentVault(expected: "expired-token", actual: "current-vault")
-                    }
-                    revision = try revision.preservingFileBaselines(
-                        for: Set(rows.map(\.1)), from: editingRevision)
-                }
+                revision = try vaultRevisions.resolveForSave(base: revisionID, overrides: overrides)
             } catch {
                 FileHandle.standardError.write(Data("[cue] 저장 실패(리비전): \(error)\n".utf8))
                 failDocumentSave(requestID)
@@ -303,14 +363,10 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             // reload 수가 아니라 아직 저장하지 않은 파일 수를 따른다.
             guard let body = message.body as? [String: Any],
                   let requested = body["revisions"] as? [String: Any] else { return }
-            var next: [String: VaultRevision] = [:]
-            for (token, value) in requested {
-                guard let ids = value as? [String], !ids.isEmpty,
-                      let source = vaultRevisions[token] ?? pinnedVaultRevisions[token]
-                else { continue }
-                next[token] = source.selectingFileBaselines(for: Set(ids))
-            }
-            pinnedVaultRevisions = next
+            vaultRevisions.pin(requested.compactMapValues { value in
+                guard let ids = value as? [String] else { return nil }
+                return Set(ids)
+            })
         case "embedDraft":
             // ★ **화면이 벡터를 물어보는 통로** (#33, ADR 0003 §3-②). 아직 저장 안 된 글자 —
             //   치고 있는 조각 초안, 방금 붙여넣은 자소서 문항 — 는 `receiveVectors` 꾸러미에
@@ -356,6 +412,12 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                   let id = b["id"] as? String,
                   let text = b["text"] as? String else { return }
             tidyQuestion(id: id, text: text)
+        case "judgeEvidence":
+            if let body = message.body as? [String: Any] { judgeEvidence(body) }
+        case "cancelGalaxyArrangement":
+            cancelGalaxyArrangement()
+        case "arrangeGalaxy":
+            if let body = message.body as? [String: Any] { arrangeGalaxy(body) }
         case "detectCli":
             // ★ 공식 CLI 감지 (#61 B) — **비동기다.** 파일이 있나는 공짜지만 로그인은
             //   남의 프로세스를 띄워야 알고(`실측`: 0.16~0.3초), 그건 주 스레드가 기다릴 일이 아니다.
@@ -494,6 +556,12 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             // ★ **열 때마다 다시 잰다.** 사람이 시스템 설정에서 권한을 켜고 돌아오는 것이
             //   이 화면의 동선이라, 한 번 잰 값을 들고 있으면 **켠 뒤에도 꺼져 보인다**.
             sendSystemState()
+        case "remoteConnection":
+            guard message.frameInfo.isMainFrame, let body = message.body as? [String: Any],
+                  let window = view.window else { return }
+            Task { @MainActor in
+                (NSApp.delegate as? AppDelegate)?.remoteConnection?.handle(body, window: window)
+            }
         case "saveShortcut":
             // ⚠ **저장은 Swift 가 정한다** — 화면은 조합만 보낸다. 걸리지 않는 조합은
             //   저장 안 되고, 답(`setSystemState`)에 실린 옛 값이 그대로 화면에 다시 앉는다.
@@ -509,29 +577,6 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             //   Core 문지기가 실제 파일과 symlink 경계를 다시 확인한다.
             guard let body = message.body as? [String: Any],
                   let what = body["what"] as? String else { return }
-            if what == "mcpSetup" || what == "mcpRecord" {
-                var copied = false
-                defer {
-                    view.evaluateJavaScript("onMCPAction(\(copied ? "true" : "false"))", completionHandler: nil)
-                }
-                guard let root = store?.vaultURL else { return }
-                let text: String
-                if what == "mcpSetup" {
-                    guard body["client"] == nil || body["client"] is String else { return }
-                    let command = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/clonie-mcp").path
-                    guard let setup = try? MCPConnectionSetup.text(
-                        client: body["client"] as? String, command: command, vaultPath: root.path
-                    ) else { return }
-                    text = setup
-                } else {
-                    guard let resource = Bundle.main.resourceURL?.appendingPathComponent("skills/clonie-session-record/SKILL.md"),
-                          let skill = try? String(contentsOf: resource, encoding: .utf8) else { return }
-                    text = "현재 대화에서 다음에 다시 쓸 내용을 연결된 Clonie 저장소에 기록해 주세요. 아래 작업 규칙을 적용해 주세요.\n\n" + skill
-                }
-                NSPasteboard.general.clearContents()
-                copied = NSPasteboard.general.setString(text, forType: .string)
-                return
-            }
             if what == "webLink" {
                 guard let raw = body["url"] as? String,
                       let url = URL(string: raw),
@@ -954,6 +999,8 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     /// - Parameter system: 시스템 오디오(상대 목소리) 관도 열까. 연습 모드는 `false` —
     ///   묻는 것이 앱이라 상대가 없다 (#36). 마이크 관은 **언제나** 연다.
     func startInterviewEars(system: Bool = true) {
+        cancelGalaxyArrangement()
+        cancelJevEvidenceRequest()
         queryUsesSystemAudio = system
         lastConfirmedQuery = ""
         if ears == nil {
@@ -1069,10 +1116,34 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         if let data = try? JSONEncoder().encode(state), let json = String(data: data, encoding: .utf8) {
             view.evaluateJavaScript("onCaptureState(\(json))", completionHandler: nil)
         }
-        if !state.receiving.isEmpty { sessions?.captureDidReceiveInput() }
+        if state.phase == "active" {
+            // Preview capture uses the same ears but has no preparing session to promote.
+            guard let controller = sessions, controller.record?.state == .preparing else { return }
+            let generation = owner.captureGeneration
+            let recordID = controller.record?.id
+            Task { @MainActor [weak self, weak owner] in
+                guard let self, let owner, self.ears === owner, self.sessions === controller,
+                      controller.record?.id == recordID else { return }
+                let activated = await controller.captureDidBecomeReady {
+                    self.ears === owner && self.sessions === controller &&
+                    owner.captureGeneration == generation && !self.preparationCancelPending
+                }
+                guard !activated, self.ears === owner, self.sessions === controller,
+                      controller.record?.id == recordID, owner.captureGeneration == generation else { return }
+                owner.stopEars()
+            }
+            return
+        }
+        let message = state.failed.sorted(by: { $0.key < $1.key }).map(\.value).joined(separator: " ")
+        if !state.failed.isEmpty, let controller = sessions, controller.record?.state == .preparing {
+            // A half-open preparation must not keep collecting. Retain the preparing record and
+            // let the user retry explicitly after fixing the failed lane.
+            controller.event("inputUnavailable", detail: message)
+            owner.stopEars()
+            return
+        }
         guard state.phase == "failed" else { return }
         let generation = owner.captureGeneration
-        let message = state.failed.sorted(by: { $0.key < $1.key }).map(\.value).joined(separator: " ")
         if let controller = sessions, controller.capturing {
             let recordID = controller.record?.id
             Task { @MainActor [weak self, weak owner] in
@@ -1166,6 +1237,589 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         view.evaluateJavaScript("setCloudDrafter(\(jsLiteral(json)))", completionHandler: nil)
     }
 
+    // MARK: - Jev 근거 판정 개발 미리보기
+
+    /// 연결 설정과 허용 볼트가 맞는지만 알린다. 실제 인증·유료 권한은 서버 응답에서 판정한다.
+    /// 현재 모드·녹음·호출 상한은 요청 순간 다시 검사하며 자격 증명은 JS로 보내지 않는다.
+    private func sendJevPreviewReady() {
+        view.evaluateJavaScript("onJevPreviewReady(\(jevConnection() == nil ? "false" : "true"))",
+                                completionHandler: nil)
+    }
+
+    private func jevConnection() -> JevConnection? {
+        guard let store else { return nil }
+        return .preview(environment: ProcessInfo.processInfo.environment, vaultURL: store.vaultURL)
+    }
+
+    private func sendGalaxy(_ payload: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return }
+        view.evaluateJavaScript("onGalaxyArrangement(\(json))", completionHandler: nil)
+    }
+
+    private func cancelGalaxyArrangement() {
+        galaxyToken = UUID()
+        galaxyTask?.cancel(); galaxyTask = nil
+        if let requestID = galaxyRequestID {
+            sendGalaxy(["requestID": requestID, "error": "정렬을 중단했어요. 다시 눌러 시작할 수 있어요."])
+        }
+        galaxyRequestID = nil
+    }
+
+    private func galaxyRecordPayload(_ record: GalaxyArrangement) -> Any? {
+        guard let data = try? JSONEncoder().encode(record) else { return nil }
+        return try? JSONSerialization.jsonObject(with: data)
+    }
+
+    private func arrangeGalaxy(_ body: [String: Any]) {
+        guard let requestID = body["requestID"] as? String, !requestID.isEmpty else { return }
+        guard let revisionID = body["revision"] as? String,
+              let expected = vaultRevisions.revision(for: revisionID), let vault else {
+            sendGalaxy(["requestID": requestID, "error": "자료의 현재 상태를 확인하지 못했어요. 저장소를 다시 열어 주세요."]); return
+        }
+        guard appliedWindowMode == "stack", sessions?.capturing != true, ears?.running != true else {
+            sendGalaxy(["requestID": requestID, "error": "저장소 화면에서 녹음하지 않을 때 정렬할 수 있어요."]); return
+        }
+        cancelGalaxyArrangement()
+        let token = UUID(), generation = vaultGeneration
+        galaxyToken = token; galaxyRequestID = requestID
+        let fingerprint = Self.preparedCorpusFingerprint(expected)
+        func finish(_ error: String) {
+            guard self.galaxyToken == token else { return }
+            self.galaxyRequestID = nil; self.galaxyTask = nil
+            self.sendGalaxy(["requestID": requestID, "error": error])
+        }
+        vault.perform({ store -> (VaultWorkspace, GalaxyArrangement?) in
+            let workspace = try store.loadWorkspace()
+            guard Self.preparedCorpusFingerprint(workspace.revision) == fingerprint else { throw GalaxyArrangementError.invalidData }
+            let saved = try GalaxyArrangementStore(root: store.vaultURL).load(fingerprint: fingerprint,
+                model: JevEvidenceWire.model, documentIDs: Set(workspace.document.fragments.map(\.id)))
+            return (workspace, saved)
+        }, onTrouble: { _ in }) { [weak self] result in
+            guard let self, self.galaxyToken == token, generation == self.vaultGeneration else { return }
+            guard case .success(let (workspace, cached)) = result else {
+                finish("자료 또는 저장된 정렬을 확인하지 못했어요. 저장소를 다시 열어 확인해 주세요."); return
+            }
+            if let cached, let payload = self.galaxyRecordPayload(cached) {
+                self.galaxyRequestID = nil
+                self.sendGalaxy(["requestID": requestID, "revision": revisionID, "record": payload, "reused": true]); return
+            }
+            guard let connection = self.jevConnection() else {
+                finish("이 실행에는 Jev 정렬 연결이 준비되지 않았어요. 기존 폴더와 검색은 계속 사용할 수 있어요."); return
+            }
+            let fragments = workspace.document.fragments
+            let ids = Set(fragments.map(\.id))
+            guard (2...GalaxyArrangement.maximumDocuments).contains(fragments.count),
+                  let anchorIDs = body["anchorIDs"] as? [String], (1...6).contains(anchorIDs.count),
+                  Set(anchorIDs).count == anchorIDs.count, Set(anchorIDs).isSubset(of: ids), anchorIDs.count < ids.count else {
+                finish("첫 정렬은 Markdown 2~64개와 준비된 의미 색인이 필요해요."); return
+            }
+            let byID = Dictionary(uniqueKeysWithValues: fragments.map { ($0.id, $0) })
+            let anchors = anchorIDs.compactMap { byID[$0] }.map {
+                JevGalaxyWire.Document(id: $0.id, title: $0.title, text: $0.body)
+            }
+            let documents = fragments.filter { !anchorIDs.contains($0.id) }.sorted { $0.id < $1.id }.map {
+                JevGalaxyWire.Document(id: $0.id, title: $0.title, text: $0.body)
+            }
+            let requests: [JevGalaxyWire.Prepared]
+            do {
+                requests = try stride(from: 0, to: documents.count, by: JevGalaxyWire.batchSize).map { offset in
+                    try JevGalaxyWire.prepare(documents: Array(documents[offset..<min(documents.count, offset + JevGalaxyWire.batchSize)]), anchors: anchors, connection: connection)
+                }
+            } catch { finish("정렬할 자료를 준비하지 못했어요."); return }
+            guard Self.jevNetworkAttempts + requests.count <= Self.maximumJevNetworkAttempts else {
+                finish("이번 실행에 남은 Jev 호출로 전체 정렬을 마칠 수 없어요."); return
+            }
+            // Reserve the entire bounded batch before sending; concurrent search cannot overspend it.
+            Self.jevNetworkAttempts += requests.count
+            self.sendGalaxy(["requestID": requestID, "completed": 0, "total": documents.count])
+            self.galaxyTask = Task { [weak self] in
+                do {
+                    let assignments = try await withThrowingTaskGroup(of: [JevGalaxyWire.Assignment].self) { group in
+                        for request in requests {
+                            group.addTask {
+                                try Task.checkCancellation()
+                                let data = try await JevEvidenceService.fetch(request.request)
+                                return try JevGalaxyWire.parse(data, for: request)
+                            }
+                        }
+                        var rows: [JevGalaxyWire.Assignment] = []
+                        for try await batch in group {
+                            rows += batch
+                            let count = rows.count
+                            await MainActor.run {
+                                guard let self, self.galaxyToken == token else { return }
+                                self.sendGalaxy(["requestID": requestID, "completed": count, "total": documents.count])
+                            }
+                        }
+                        return rows
+                    }
+                    try Task.checkCancellation()
+                    let record = GalaxyArrangement(fingerprint: fingerprint, model: JevEvidenceWire.model,
+                        anchorIDs: anchorIDs, assignments: assignments.sorted { $0.documentID < $1.documentID }.map {
+                            GalaxyAssignment(documentID: $0.documentID, group: $0.group,
+                                              probabilities: $0.probabilities, confidence: $0.confidence)
+                        })
+                    await MainActor.run {
+                        guard let self, self.galaxyToken == token, generation == self.vaultGeneration,
+                              self.appliedWindowMode == "stack", self.sessions?.capturing != true, self.ears?.running != true else { return }
+                        vault.perform({ store -> GalaxyArrangement in
+                            let current = try store.loadWorkspace()
+                            guard Self.preparedCorpusFingerprint(current.revision) == fingerprint else { throw GalaxyArrangementError.invalidData }
+                            try GalaxyArrangementStore(root: store.vaultURL).save(record, documentIDs: Set(current.document.fragments.map(\.id)))
+                            return record
+                        }, onTrouble: { _ in }) { [weak self] saved in
+                            guard let self, self.galaxyToken == token, generation == self.vaultGeneration else { return }
+                            guard case .success(let record) = saved, let payload = self.galaxyRecordPayload(record) else {
+                                finish("자료가 바뀌었거나 정렬을 저장하지 못했어요. 이전 배치를 유지합니다."); return
+                            }
+                            self.galaxyRequestID = nil; self.galaxyTask = nil
+                            self.sendGalaxy(["requestID": requestID, "revision": revisionID, "record": payload, "reused": false])
+                        }
+                    }
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    await MainActor.run { finish(connection.failureMessage(for: error)) }
+                }
+            }
+        }
+    }
+
+    private func restoreGalaxyArrangement(revision: VaultRevision, revisionID: String) {
+        guard let vault else { return }
+        let generation = vaultGeneration
+        vault.perform({ store in
+            try GalaxyArrangementStore(root: store.vaultURL).load(fingerprint: Self.preparedCorpusFingerprint(revision),
+                model: JevEvidenceWire.model, documentIDs: Set(revision.files.keys))
+        }, onTrouble: { _ in }) { [weak self] result in
+            guard let self, generation == self.vaultGeneration,
+                  case .success(let record?) = result, let payload = self.galaxyRecordPayload(record) else { return }
+            self.sendGalaxy(["restore": true, "revision": revisionID, "record": payload])
+        }
+    }
+
+    private func judgeEvidence(_ body: [String: Any]) {
+        guard let requestID = body["requestID"] as? String, !requestID.isEmpty else { return }
+        cancelJevEvidenceRequest()
+        let purposeName = body["purpose"] as? String ?? "evidence"
+        guard let purpose = JevEvidenceWire.Purpose(rawValue: purposeName) else {
+            sendJevEvidence(requestID: requestID, error: "지원하지 않는 판정입니다.")
+            return
+        }
+        let supplement = purpose == .supplement
+        let rerank = purpose == .rerank
+        let sourceID: String?
+        if let rawSourceID = body["sourceID"] {
+            guard rerank, let value = rawSourceID as? String,
+                  !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                sendJevEvidence(requestID: requestID,
+                                error: "확인할 자료가 올바르지 않아요. 다시 검색해 주세요.")
+                return
+            }
+            sourceID = value
+        } else {
+            sourceID = nil
+        }
+
+        guard let connection = jevConnection() else {
+            sendJevEvidence(requestID: requestID,
+                            error: "이 개발 미리보기는 현재 저장소에서 사용할 수 없어요.")
+            return
+        }
+        guard appliedWindowMode == "stack", sessions?.capturing != true, ears?.running != true else {
+            sendJevEvidence(requestID: requestID,
+                            error: "저장소 화면에서 녹음하지 않을 때만 근거를 확인할 수 있어요.")
+            return
+        }
+        guard Self.jevNetworkAttempts < Self.maximumJevNetworkAttempts else {
+            sendJevEvidence(requestID: requestID,
+                            error: "이번 실행의 근거 확인 횟수를 모두 사용했어요.")
+            return
+        }
+        guard let query = body[supplement ? "note" : "query"] as? String,
+              !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              query.count <= JevEvidenceWire.maximumQueryLength,
+              let revisionID = body["revision"] as? String,
+              let expectedRevision = vaultRevisions.revision(for: revisionID),
+              let candidateRows = body["candidates"] as? [[String: Any]],
+              (1...JevEvidenceWire.maximumCandidateCount).contains(candidateRows.count)
+        else {
+            sendJevEvidence(requestID: requestID,
+                            error: "확인할 자료가 올바르지 않아요. 다시 검색해 주세요.")
+            return
+        }
+
+        var ids = Set<String>()
+        var candidates: [JevBridgeCandidate] = []
+        candidates.reserveCapacity(candidateRows.count)
+        for row in candidateRows {
+            guard let id = row["id"] as? String,
+                  !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  ids.insert(id).inserted,
+                  let candidateRevisionID = row["revision"] as? String,
+                  candidateRevisionID == revisionID,
+                  let candidateRevision = vaultRevisions.revision(for: candidateRevisionID),
+                  candidateRevision.selectingFileBaselines(for: [id]) ==
+                    expectedRevision.selectingFileBaselines(for: [id]),
+                  let text = row["text"] as? String,
+                  !text.isEmpty,
+                  text.count <= JevEvidenceWire.maximumCandidateTextLength else {
+                sendJevEvidence(requestID: requestID,
+                                error: "확인할 자료가 올바르지 않아요. 다시 검색해 주세요.")
+                return
+            }
+            let excerpts = row["excerpts"] as? [String]
+            if row["excerpts"] != nil {
+                guard purpose == .rerank, let excerpts,
+                      (1...3).contains(excerpts.count),
+                      excerpts.allSatisfy({ !$0.isEmpty && $0.count <= 12_000 }) else {
+                    sendJevEvidence(requestID: requestID, error: "확인할 자료가 올바르지 않아요. 다시 검색해 주세요.")
+                    return
+                }
+            }
+            candidates.append(JevBridgeCandidate(id: id, revision: candidateRevisionID, text: text,
+                                                 excerpts: excerpts, requiresFullBody: supplement))
+        }
+
+        guard let vault else {
+            sendJevEvidence(requestID: requestID,
+                            error: "저장소의 최신 내용을 확인하지 못했어요. 다시 시도해 주세요.")
+            return
+        }
+        let generation = vaultGeneration
+        let boundIDs = ids.union(sourceID.map { [$0] } ?? [])
+        let expectedBaselines = expectedRevision.selectingFileBaselines(for: boundIDs)
+        let token = UUID()
+        jevPendingRequest = JevPendingRequest(
+            token: token,
+            requestID: requestID,
+            startedAt: ProcessInfo.processInfo.systemUptime,
+            task: nil
+        )
+
+        vault.perform({ try $0.loadWorkspace() }, onTrouble: { _ in }) { [weak self] loadResult in
+            guard let self, self.jevPendingRequest?.token == token else { return }
+            guard generation == self.vaultGeneration,
+                  self.appliedWindowMode == "stack",
+                  self.sessions?.capturing != true,
+                  self.ears?.running != true else {
+                self.finishJevEvidence(token: token,
+                                       error: "화면이나 자료가 바뀌어 판정을 중단했어요. 다시 검색해 주세요.")
+                return
+            }
+            guard case .success(let workspace) = loadResult else {
+                self.finishJevEvidence(token: token,
+                                       error: "저장소의 최신 내용을 확인하지 못했어요. 다시 시도해 주세요.")
+                return
+            }
+            guard self.jevWorkspaceMatches(workspace,
+                                           candidates: candidates,
+                                           sourceID: sourceID,
+                                           source: nil,
+                                           expectedBaselines: expectedBaselines) else {
+                self.finishJevEvidence(token: token,
+                                       error: "자료가 바뀌었어요. 다시 검색해 주세요.")
+                return
+            }
+
+            let selectedSource: JevSourceBinding?
+            if let sourceID,
+               let fragment = workspace.document.fragments.first(where: { $0.id == sourceID }) {
+                selectedSource = .init(id: sourceID, revision: revisionID,
+                                       title: fragment.title, body: fragment.body)
+            } else {
+                selectedSource = nil
+            }
+
+            let rankContext = rerank ? PreparedRankContext(query: query, sourceID: sourceID,
+                scope: body["scope"] as? String,
+                corpusFingerprint: Self.preparedCorpusFingerprint(workspace.revision)) : nil
+            let prepared: JevEvidenceWire.PreparedRequest
+            do {
+                let wireCandidates: [JevEvidenceWire.Candidate] = candidates.map { candidate in
+                    .init(id: candidate.id, revision: candidate.revision, text: candidate.excerpts.flatMap {
+                              JevEvidenceWire.rerankExcerpt(body: workspace.document.fragments.first(where: { $0.id == candidate.id })?.body ?? "", excerpts: $0)
+                          } ?? candidate.text,
+                          title: workspace.document.fragments.first(where: { $0.id == candidate.id })?.title ?? "")
+                }
+                switch purpose {
+                case .evidence:
+                    prepared = try JevEvidenceWire.prepare(query: query, candidates: wireCandidates,
+                                                           connection: connection)
+                case .supplement:
+                    prepared = try JevEvidenceWire.prepareSupplement(note: query,
+                                                                     candidates: wireCandidates,
+                                                                     connection: connection)
+                case .rerank:
+                    let wireSource = selectedSource.map {
+                        JevEvidenceWire.Candidate(id: $0.id, revision: $0.revision,
+                                                  text: $0.body, title: $0.title)
+                    }
+                    prepared = try JevEvidenceWire.prepareRerank(query: query,
+                                                                 selectedSource: wireSource,
+                                                                 candidates: wireCandidates,
+                                                                 connection: connection)
+                }
+            } catch {
+                self.finishJevEvidence(token: token,
+                                       error: "확인할 자료가 올바르지 않아요. 다시 검색해 주세요.")
+                return
+            }
+
+            guard Self.jevNetworkAttempts < Self.maximumJevNetworkAttempts else {
+                self.finishJevEvidence(token: token,
+                                       error: "이번 실행의 근거 확인 횟수를 모두 사용했어요.")
+                return
+            }
+            Self.jevNetworkAttempts += 1
+            let attempt = Self.jevNetworkAttempts
+            let task = Task { [weak self] in
+                let networkStartedAt = ProcessInfo.processInfo.systemUptime
+                var responseData: Data?
+                do {
+                    let data = try await JevEvidenceService.fetch(prepared.urlRequest)
+                    responseData = data
+                    let result = try JevEvidenceWire.parseResponse(data, for: prepared)
+                    let networkElapsed = max(0, Int(((ProcessInfo.processInfo.systemUptime - networkStartedAt) * 1_000).rounded()))
+                    if Task.isCancelled {
+                        Self.printJevReceipt(attempt: attempt, status: "cancelled",
+                                             elapsedMilliseconds: networkElapsed)
+                        return
+                    }
+                    Self.printJevReceipt(attempt: attempt, status: "validated",
+                                         result: result, elapsedMilliseconds: networkElapsed)
+                    await MainActor.run {
+                        self?.verifyAndDeliverJevEvidence(
+                            result,
+                            token: token,
+                            generation: generation,
+                            candidates: candidates,
+                            sourceID: sourceID,
+                            source: selectedSource,
+                            expectedBaselines: expectedBaselines,
+                            preparedContext: rankContext,
+                            vault: vault
+                        )
+                    }
+                } catch {
+                    let networkElapsed = max(0, Int(((ProcessInfo.processInfo.systemUptime - networkStartedAt) * 1_000).rounded()))
+                    let cancelled = Task.isCancelled
+                    let failure = Self.safeJevFailure(error)
+                    let shape = responseData.map {
+                        JevEvidenceWire.safeResponseDiagnostics($0, for: prepared)
+                    }
+                    Self.printJevReceipt(attempt: attempt,
+                                         status: cancelled ? "cancelled" : "failed",
+                                         failureCategory: failure.category,
+                                         httpStatus: failure.httpStatus,
+                                         responseShape: shape,
+                                         elapsedMilliseconds: networkElapsed)
+                    guard !cancelled else { return }
+                    await MainActor.run {
+                        self?.finishJevEvidence(
+                            token: token,
+                            error: connection.failureMessage(for: error)
+                        )
+                    }
+                }
+            }
+            guard var pending = self.jevPendingRequest, pending.token == token else {
+                task.cancel()
+                return
+            }
+            pending.task = task
+            self.jevPendingRequest = pending
+        }
+    }
+
+    private func verifyAndDeliverJevEvidence(_ result: JevEvidenceWire.Result,
+                                             token: UUID,
+                                             generation: Int,
+                                             candidates: [JevBridgeCandidate],
+                                             sourceID: String?,
+                                             source: JevSourceBinding?,
+                                             expectedBaselines: VaultRevision,
+                                             preparedContext: PreparedRankContext?,
+                                             vault: VaultIO) {
+        guard jevPendingRequest?.token == token else { return }
+        guard generation == vaultGeneration,
+              appliedWindowMode == "stack",
+              sessions?.capturing != true,
+              ears?.running != true else {
+            finishJevEvidence(token: token,
+                              error: "화면이나 자료가 바뀌어 판정을 중단했어요. 다시 검색해 주세요.")
+            return
+        }
+        vault.perform({ try $0.loadWorkspace() }, onTrouble: { _ in }) { [weak self] loadResult in
+            guard let self, self.jevPendingRequest?.token == token else { return }
+            guard generation == self.vaultGeneration,
+                  self.appliedWindowMode == "stack",
+                  self.sessions?.capturing != true,
+                  self.ears?.running != true else {
+                self.finishJevEvidence(token: token,
+                                       error: "화면이나 자료가 바뀌어 판정을 중단했어요. 다시 검색해 주세요.")
+                return
+            }
+            guard case .success(let workspace) = loadResult,
+                  self.jevWorkspaceMatches(workspace,
+                                           candidates: candidates,
+                                           sourceID: sourceID,
+                                           source: source,
+                                           expectedBaselines: expectedBaselines) else {
+                self.finishJevEvidence(token: token,
+                                       error: "자료가 바뀌어 판정을 버렸어요. 다시 검색해 주세요.")
+                return
+            }
+            if let context = preparedContext,
+               context.corpusFingerprint == Self.preparedCorpusFingerprint(workspace.revision),
+               let cache = self.preparedReranks {
+                do {
+                    let values = try result.assessments.map { assessment -> PreparedJevRerankCandidate in
+                        guard let file = workspace.revision.files[assessment.candidateID],
+                              let score = assessment.score else { throw CocoaError(.coderInvalidValue) }
+                        return try PreparedJevRerankCandidate(id: assessment.candidateID,
+                            path: file.relativePath, revision: file.fingerprint, score: score)
+                    }
+                    let record = try PreparedJevRerankRecord(query: context.query,
+                        sourceID: context.sourceID, scope: context.scope,
+                        corpusFingerprint: context.corpusFingerprint,
+                        modelVersion: JevEvidenceWire.model, policyVersion: Self.preparedRerankPolicy,
+                        candidates: values)
+                    Task {
+                        do { try await cache.save(record); print("[clonie-prepared] saved") }
+                        catch { print("[clonie-prepared] save-unavailable") }
+                    }
+                } catch { print("[clonie-prepared] invalid-record") }
+            }
+            self.finishJevEvidence(token: token, result: result)
+        }
+    }
+
+    private func jevWorkspaceMatches(_ workspace: VaultWorkspace,
+                                     candidates: [JevBridgeCandidate],
+                                     sourceID: String?,
+                                     source: JevSourceBinding?,
+                                     expectedBaselines: VaultRevision) -> Bool {
+        let ids = Set(candidates.map(\.id)).union(sourceID.map { [$0] } ?? [])
+        guard workspace.revision.selectingFileBaselines(for: ids) == expectedBaselines else {
+            return false
+        }
+        if let sourceID {
+            guard let fragment = workspace.document.fragments.first(where: { $0.id == sourceID }) else {
+                return false
+            }
+            if let source, (source.id != sourceID || fragment.body != source.body ||
+                            fragment.title != source.title) {
+                return false
+            }
+        }
+        for candidate in candidates {
+            guard let fragment = workspace.document.fragments.first(where: { $0.id == candidate.id }),
+                  (candidate.requiresFullBody
+                    ? fragment.body == candidate.text
+                    : (fragment.body.contains(candidate.text) || fragment.title == candidate.text)) else {
+                return false
+            }
+            if let excerpts = candidate.excerpts,
+               JevEvidenceWire.rerankExcerpt(body: fragment.body, excerpts: excerpts) == nil { return false }
+        }
+        return true
+    }
+
+    private func cancelJevEvidenceRequest(notify: Bool = true) {
+        guard let pending = jevPendingRequest else { return }
+        jevPendingRequest = nil
+        pending.task?.cancel()
+        if notify {
+            sendJevEvidence(requestID: pending.requestID,
+                            error: "화면이 바뀌어 근거 확인을 중단했어요. 다시 시도해 주세요.")
+        }
+    }
+
+    private func finishJevEvidence(token: UUID,
+                                   result: JevEvidenceWire.Result? = nil,
+                                   error: String? = nil) {
+        guard let pending = jevPendingRequest, pending.token == token else { return }
+        jevPendingRequest = nil
+        pending.task?.cancel()
+        if let result {
+            let elapsed = max(0, Int(((ProcessInfo.processInfo.systemUptime - pending.startedAt) * 1_000).rounded()))
+            sendJevEvidence(requestID: pending.requestID, result: result,
+                            elapsedMilliseconds: elapsed)
+        } else {
+            sendJevEvidence(requestID: pending.requestID,
+                            error: error ?? "Jev 판정을 받지 못했어요. 다시 시도해 주세요.")
+        }
+    }
+
+    private func sendJevEvidence(requestID: String,
+                                 result: JevEvidenceWire.Result? = nil,
+                                 elapsedMilliseconds: Int? = nil,
+                                 error: String? = nil) {
+        var payload: [String: Any] = ["requestID": requestID]
+        if let error {
+            payload["error"] = error
+        } else if let result {
+            payload["assessments"] = result.assessments.map { assessment in
+                var value: [String: Any] = [
+                    "id": assessment.candidateID,
+                    "revision": assessment.revision,
+                    "confidence": assessment.confidence
+                ]
+                if let label = assessment.label { value["label"] = label.rawValue }
+                if let score = assessment.score { value["score"] = score }
+                return value
+            }
+            payload["model"] = result.model
+            payload["usage"] = ["inputTokens": result.usage.inputTokens,
+                                "outputTokens": result.usage.outputTokens]
+            payload["elapsedMilliseconds"] = elapsedMilliseconds ?? 0
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8) else { return }
+        view.evaluateJavaScript("onJevEvidence(\(json))", completionHandler: nil)
+    }
+
+    /// 로컬 QA가 실제 호출 수·지연·타입 응답만 확인하는 영수증. 후보 ID·질의·본문·키·
+    /// 원 오류·응답 본문은 어떤 상태에서도 출력하지 않는다.
+    private static func printJevReceipt(attempt: Int,
+                                        status: String,
+                                        result: JevEvidenceWire.Result? = nil,
+                                        failureCategory: String? = nil,
+                                        httpStatus: Int? = nil,
+                                        responseShape: String? = nil,
+                                        elapsedMilliseconds: Int) {
+        let model = result == nil ? "-" : (result?.model == JevEvidenceWire.model ? JevEvidenceWire.model : "other")
+        let input = result?.usage.inputTokens ?? 0
+        let output = result?.usage.outputTokens ?? 0
+        let judgments = result?.assessments.map {
+            if let label = $0.label { return label.rawValue }
+            if let score = $0.score { return String(format: "%.3f", score) }
+            return "-"
+        }.joined(separator: ",") ?? "-"
+        let failure = failureCategory ?? "-"
+        let http = httpStatus.map(String.init) ?? "-"
+        let shape = responseShape ?? "-"
+        let line = "[clonie-jev] attempt=\(attempt) status=\(status) failure=\(failure) http_status=\(http) model=\(model) elapsed_ms=\(elapsedMilliseconds) input_tokens=\(input) output_tokens=\(output) judgments=\(judgments) shape={\(shape)}\n"
+        FileHandle.standardOutput.write(Data(line.utf8))
+    }
+
+    private static func safeJevFailure(_ error: Error) -> (category: String, httpStatus: Int?) {
+        if let wire = error as? JevEvidenceWire.WireError {
+            return ("wire_\(String(describing: wire))", nil)
+        }
+        if let service = error as? JevEvidenceService.Failure {
+            switch service {
+            case .invalidResponse: return ("service_invalid_response", nil)
+            case .rejected(let statusCode): return ("service_rejected", statusCode)
+            case .responseTooLarge: return ("service_response_too_large", nil)
+            }
+        }
+        if error is URLError { return ("transport", nil) }
+        if error is CancellationError { return ("cancelled", nil) }
+        return ("unknown", nil)
+    }
+
     /// ★ **시스템 상태 한 벌** — 창 단축키 · 권한 둘 · 볼트 경로 (2026-08-31 설정 통합).
     ///
     /// 전엔 `setShortcut`·`setCaptureShortcut` 둘이 나갔는데 **화면 쪽이 빈 스텁**이라 답이
@@ -1179,6 +1833,7 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     ///
     /// - Parameter failedSlot: 방금 고른 조합이 **안 걸린** 자리. 화면이 그 줄에만 한 줄 세운다.
     func sendSystemState(failedSlot: GlobalHotKey.Slot? = nil) {
+        sendRemoteConnectionState()
         let app = NSApp.delegate as? AppDelegate
         let keys = GlobalHotKey.Slot.allCases.map { slot -> String in
             let reg = app?.shortcutRegistered(slot) ?? false
@@ -1273,15 +1928,31 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     /// ⚠ `init` 에서 부르면 안 된다 — `loadHTMLString` 은 비동기라 그 시점엔 `receiveDocument`
     /// 가 아직 없고, `evaluateJavaScript` 는 **조용히 실패한다.** 그래서 navigation delegate 다.
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // 이전 JS 문서의 요청은 새 문서로 결과를 넘기지 않는다.
+        cancelGalaxyArrangement()
+        cancelJevEvidenceRequest(notify: false)
+        // 새 JS 문서는 벡터를 하나도 들고 있지 않다. 같은 볼트·같은 입력이어도 다시 보내야 한다.
+        indexSnapshots.reset()
         sendDocument()
         sendSystemState()
         // 「더 좋은 정리」의 켤 수 있나 (#51). 여기서 미는 이유는 `sendDocument` 와 같다 —
         // `init` 시점엔 `setCloudDrafter` 가 아직 없고 `evaluateJavaScript` 는 조용히 실패한다.
         sendCloudReady()
+        sendJevPreviewReady()
         sendAccessibilityPreferences()
         sendWindowStyle()
         sendSessionState()
+        (NSApp.delegate as? AppDelegate)?.showPendingRemoteConnection()
 
+    }
+
+    func sendRemoteConnectionState() {
+        Task { @MainActor in
+            guard let state = (NSApp.delegate as? AppDelegate)?.remoteConnection?.access.state,
+                  let data = try? JSONEncoder().encode(state),
+                  let json = String(data: data, encoding: .utf8) else { return }
+            view.evaluateJavaScript("setRemoteConnectionState(\(json))", completionHandler: nil)
+        }
     }
 
     /// Send on every load and when macOS display options change; WSTYLE stays user-owned.
@@ -1349,18 +2020,6 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         }
     }
 
-    /// 실제 리비전을 네이티브에 보관하고 화면에는 짧게 사는 표만 보낸다.
-    private func rememberVaultRevision(_ revision: VaultRevision) -> String {
-        let id = UUID().uuidString
-        vaultRevisions[id] = revision
-        vaultRevisionOrder.append(id)
-        // 화면이 잠깐 늦게 돌려주는 표를 위해 여러 판을 두되, 큰 baseline을 끝없이 들지는 않는다.
-        while vaultRevisionOrder.count > 32 {
-            vaultRevisions.removeValue(forKey: vaultRevisionOrder.removeFirst())
-        }
-        return id
-    }
-
     private func deliverDocument(_ loaded: LoadResult, revision: VaultRevision,
                                  kind: String, requestID: Int?,
                                  savedRevision: VaultRevision? = nil, workspace: VaultWorkspace? = nil,
@@ -1369,8 +2028,11 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             if let requestID { failDocumentSave(requestID) }
             return
         }
-        let revisionID = rememberVaultRevision(revision)
+        let indexSnapshot = ContentIndexSnapshot(document: loaded.document)
+        let indexChanged = indexSnapshots.begin(indexSnapshot)
+        let revisionID = vaultRevisions.remember(revision)
         var metadata: [String: Any] = ["kind": kind, "revision": revisionID]
+        metadata["indexChanged"] = indexChanged
         if let vaultAction { metadata["vaultAction"] = vaultAction }
         if let workspace {
             metadata["folders"] = workspace.folders
@@ -1389,11 +2051,12 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         }
         if let savedRevision {
             metadata["savedRevision"] = savedRevision == revision
-                ? revisionID : rememberVaultRevision(savedRevision)
+                ? revisionID : vaultRevisions.remember(savedRevision)
         }
         if let requestID { metadata["requestID"] = requestID }
         guard let data = try? JSONSerialization.data(withJSONObject: metadata),
               let meta = String(data: data, encoding: .utf8) else {
+            if indexChanged { indexSnapshots.markFailed(indexSnapshot) }
             if let requestID { failDocumentSave(requestID) }
             return
         }
@@ -1403,63 +2066,104 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         view.evaluateJavaScript(
             "receiveDocument(\(jsLiteral(json)),\(notice.map(jsLiteral) ?? "null"),\(meta))",
             completionHandler: nil)
+        restorePreparedReranks(revision: revision, revisionID: revisionID)
+        restoreGalaxyArrangement(revision: revision, revisionID: revisionID)
         handleChangeAction(["action": "list"])
         // 볼트를 읽을 때 색인해야 옵시디언에서 더한 조각도 그래프에 앉는다.
-        indexFragments(loaded.document)
+        if indexChanged { indexFragments(loaded.document, snapshot: indexSnapshot) }
+    }
+
+    private func restorePreparedReranks(revision: VaultRevision, revisionID: String) {
+        guard let cache = preparedReranks else { return }
+        let generation = vaultGeneration
+        let fingerprint = Self.preparedCorpusFingerprint(revision)
+        Task { [weak self] in
+            let records = (try? await cache.loadAll()) ?? []
+            let valid = records.filter {
+                $0.corpusFingerprint == fingerprint && $0.modelVersion == JevEvidenceWire.model &&
+                $0.policyVersion == Self.preparedRerankPolicy && $0.candidates.allSatisfy { candidate in
+                    revision.files[candidate.id]?.fingerprint == candidate.revision &&
+                    revision.files[candidate.id]?.relativePath == candidate.path
+                }
+            }
+            guard let data = try? JSONEncoder().encode(valid),
+                  let json = String(data: data, encoding: .utf8) else { return }
+            await MainActor.run {
+                guard let self, generation == self.vaultGeneration else { return }
+                self.view.evaluateJavaScript("onPreparedRanks(\(jsLiteral(revisionID)),\(json))", completionHandler: nil)
+            }
+        }
     }
 
     /// 파일 정리도 기존 저장 큐와 리비전 검사를 통과한다.
     private func handleChangeAction(_ body: [String: Any]) {
         guard let vault, let action = body["action"] as? String,
-              ["list", "detail", "review", "restore"].contains(action) else { return }
+              ["list", "detail", "draft", "approve", "reject", "approveTask"].contains(action) else { return }
         let generation = vaultGeneration
         let vaultPath = store?.vaultURL.path ?? ""
         let requestID = (body["requestID"] as? NSNumber)?.intValue
         let id = body["id"] as? String ?? ""
-        let respond: ([String: Any]) -> Void = { [weak self] value in
-            guard let self, generation == self.vaultGeneration else { return }
-            var payload = value
-            payload["action"] = action; payload["vault"] = vaultPath
-            if let requestID { payload["requestID"] = requestID }
-            guard let data = try? JSONSerialization.data(withJSONObject: payload),
-                  let json = String(data: data, encoding: .utf8) else { return }
-            self.view.evaluateJavaScript("onDocumentChanges(\(json))", completionHandler: nil)
-        }
         vault.perform({ store -> [String: Any] in
-            var warning: String?
-            if action == "review" { try store.markDocumentChangeReviewed(id: id) }
-            if action == "restore" { warning = try store.restoreDocumentChange(id: id).warning }
-            let changes = try store.documentChanges()
-            func summary(_ change: VaultDocumentChange) -> [String: Any] {
-                var row: [String: Any] = ["id": change.id, "source": change.source,
-                    "fragmentID": change.fragmentID, "path": change.path, "title": change.title,
-                    "operation": change.operation.rawValue, "performedAt": change.performedAt.timeIntervalSince1970]
-                if let date = change.reviewedAt { row["reviewedAt"] = date.timeIntervalSince1970 }
-                if let date = change.restoredAt { row["restoredAt"] = date.timeIntervalSince1970 }
-                return row
+            var appliedProposalIDs: [String] = []
+            var failedProposals: [[String: String]] = []
+            if action == "draft" {
+                try store.saveProposalDraft(id: id, title: body["title"] as? String ?? "", body: body["body"] as? String ?? "")
+                return [:]
             }
-            if action == "list" { return ["items": changes.map(summary)] }
-            guard let change = changes.first(where: { $0.id == id }) else {
-                throw NSError(domain: "Clonie.ChangeHistory", code: 1,
-                              userInfo: [NSLocalizedDescriptionKey: "변경 기록을 찾을 수 없습니다. 목록을 다시 열어 주세요."])
+            if action == "approve" {
+                try store.approveProposal(id: id, title: body["title"] as? String, body: body["body"] as? String)
+                appliedProposalIDs.append(id)
             }
-            var result: [String: Any] = ["item": summary(change)]
-            if action == "detail" {
-                var detail = summary(change)
-                detail["after"] = ["title": change.after.title, "body": change.after.body]
-                if let before = change.before { detail["before"] = ["title": before.title, "body": before.body] }
-                result["detail"] = detail
+            if action == "reject" { try store.rejectProposal(id: id) }
+            var failures: [String] = []
+            if action == "approveTask" {
+                for proposal in try store.proposals().filter({ $0.taskID == id }) {
+                    do {
+                        let edits = body["edits"] as? [String: [String: String]]
+                        try store.approveProposal(id: proposal.id, title: edits?[proposal.id]?["title"], body: edits?[proposal.id]?["body"])
+                        appliedProposalIDs.append(proposal.id)
+                    }
+                    catch {
+                        let message = error.localizedDescription
+                        failures.append(proposal.fragment.title + ": " + message)
+                        failedProposals.append(["id": proposal.id, "title": proposal.fragment.title, "message": message])
+                    }
+                }
             }
-            if let warning { result["warning"] = warning }
+            func row(_ p: VaultProposal) -> [String: Any] {
+                var value: [String: Any] = ["id": p.id, "taskID": p.taskID, "taskTitle": p.taskTitle,
+                    "fragmentID": p.fragment.id, "title": p.fragment.title, "path": p.path ?? "승인 시 새 파일 생성",
+                    "operation": p.before == nil ? "create" : "update", "performedAt": p.createdAt.timeIntervalSince1970,
+                    "after": ["title": p.fragment.title, "body": p.fragment.body]]
+                if let title = p.draftTitle, let body = p.draftBody { value["draft"] = ["title": title, "body": body] }
+                if let before = p.before { value["before"] = ["title": before.title, "body": before.body] }
+                return value
+            }
+            let proposals = try store.proposals()
+            var result: [String: Any] = ["items": proposals.map(row)]
+            if action == "detail", let proposal = proposals.first(where: { $0.id == id }) { result["detail"] = row(proposal) }
+            if action == "approve" || action == "approveTask" { result["appliedProposalIDs"] = appliedProposalIDs }
+            if action == "approveTask" { result["failedProposals"] = failedProposals }
+            if !failures.isEmpty { result["warning"] = failures.joined(separator: "\n") }
             return result
         }, onTrouble: { _ in }) { [weak self] result in
             guard let self, generation == self.vaultGeneration else { return }
+            var payload: [String: Any]
             switch result {
-            case .success(let value):
-                respond(value)
-                if action == "restore" { self.sendDocument(kind: "reload") }
-            case .failure(let error): respond(["error": error.localizedDescription])
+            case .success(let value): payload = value
+            case .failure(let error): payload = ["error": error.localizedDescription]
             }
+            if (action == "approve" || action == "approveTask") && payload["appliedProposalIDs"] == nil {
+                payload["appliedProposalIDs"] = [String]()
+            }
+            if action == "approveTask" && payload["failedProposals"] == nil { payload["failedProposals"] = [[String: String]]() }
+            payload["action"] = action; payload["vault"] = vaultPath
+            if action == "draft" { payload["id"] = id; payload["sequence"] = body["sequence"] }
+            if let requestID { payload["requestID"] = requestID }
+            if let data = try? JSONSerialization.data(withJSONObject: payload), let json = String(data: data, encoding: .utf8) {
+                self.view.evaluateJavaScript("onDocumentChanges(\(json))", completionHandler: nil)
+            }
+            if action == "approve" || action == "approveTask" { self.sendDocument(kind: "reload") }
         }
     }
 
@@ -1472,7 +2176,7 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
             self?.view.evaluateJavaScript("onVaultAction(\(json))", completionHandler: nil)
         }
         guard let vault = vault, let token = body["revision"] as? String,
-              let revision = vaultRevisions[token], let action = body["action"] as? String else {
+              let revision = vaultRevisions.revision(for: token), let action = body["action"] as? String else {
             respond(["error": "폴더 상태가 바뀌었어요. 다시 읽은 뒤 시도해 주세요."]); return
         }
         let generation = vaultGeneration
@@ -1695,8 +2399,22 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         view.evaluateJavaScript("onSessionError(\(jsLiteral(message)))", completionHandler: nil)
     }
 
+    private func acknowledgePreparationCancellation(_ succeeded: Bool) {
+        guard preparationCancelPending else { return }
+        preparationCancelPending = false
+        view.evaluateJavaScript("onPreparationCancelled(\(succeeded ? "true" : "false"))", completionHandler: nil)
+    }
+
     private func handleSessionAction(_ body: [String: Any]) {
         guard !changingSessionVault, let action = body["action"] as? String, let controller = sessions else { return }
+        let preparationGeneration: Int?
+        if ["start", "retryPreparation", "cancelPreparation"].contains(action) {
+            sessionStartGeneration += 1
+            preparationGeneration = sessionStartGeneration
+            preparationCancelPending = action == "cancelPreparation"
+        } else {
+            preparationGeneration = nil
+        }
         Task { @MainActor [weak self] in
             guard let self, self.sessions === controller else { return }
             switch action {
@@ -1716,16 +2434,46 @@ class WKWebViewWrapper: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                 }
             case "list": self.sendSessionState()
             case "start":
+                guard let generation = preparationGeneration else { return }
                 self.stopInterviewEars() // Ends only a preview microphone test before the new session.
+                guard !self.preparationCancelPending, generation == self.sessionStartGeneration else {
+                    self.acknowledgePreparationCancellation(true)
+                    return
+                }
                 let system = body["system"] as? Bool ?? true
-                if await controller.start(system: system) { self.startInterviewEars(system: system) }
+                let started = await controller.start(system: system)
+                guard self.sessions === controller else { return }
+                if self.preparationCancelPending || generation != self.sessionStartGeneration {
+                    let settled = started ? await controller.finish(ears: nil, interrupted: true) : true
+                    self.acknowledgePreparationCancellation(settled)
+                } else if started {
+                    self.startInterviewEars(system: system)
+                }
+            case "retryPreparation":
+                guard let generation = preparationGeneration, controller.record?.state == .preparing,
+                      !self.preparationCancelPending, generation == self.sessionStartGeneration else { return }
+                self.stopInterviewEars()
+                self.startInterviewEars(system: controller.captureSystemAudio)
+            case "cancelPreparation":
+                self.stopInterviewEars()
+                guard let state = controller.record?.state, [.preparing, .active].contains(state) else { return }
+                let settled = await controller.finish(ears: nil, interrupted: true)
+                // A concurrent start owns the acknowledgement after it leaves its persistence wait.
+                if settled || controller.record?.state != .preparing {
+                    self.acknowledgePreparationCancellation(settled)
+                }
             case "pause": await controller.finish(ears: self.ears, paused: true)
             case "resume":
-                if await controller.resume() { self.startInterviewEars(system: body["system"] as? Bool ?? true) }
+                if await controller.resume() { self.startInterviewEars(system: controller.captureSystemAudio) }
             case "finish":
                 await controller.finish(ears: self.ears)
             case "select": if self.savingSessionDrafts.isEmpty, let id = body["id"] as? String { await controller.select(id: id) }
             case "review": controller.review()
+            case "markQuestion":
+                if body["sessionID"] as? String == controller.record?.id,
+                   let id = body["id"] as? String, let marked = body["marked"] as? Bool {
+                    await controller.markQuestion(id: id, marked: marked)
+                }
             case "questionReview":
                 if body["sessionID"] as? String == controller.record?.id,
                    let id = body["id"] as? String, let status = body["status"] as? String {

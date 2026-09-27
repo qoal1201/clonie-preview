@@ -14,6 +14,8 @@ public struct FragmentSummary: Codable, Equatable, Sendable {
 }
 
 public struct ListResult: Codable, Equatable, Sendable {
+    /// The root held by this MCP session, which may differ from the app's current selection.
+    public var vaultPath: String
     public var total: Int
     public var fragments: [FragmentSummary]
 }
@@ -48,7 +50,7 @@ public struct SearchResult: Codable, Equatable, Sendable {
     public var note: String?
 }
 
-public struct WriteResult: Codable, Equatable, Sendable {
+struct WriteResult: Codable, Equatable, Sendable {
     public var written: Bool
     public var id: String
     public var path: String?
@@ -85,7 +87,8 @@ public enum VaultToolError: Error, CustomStringConvertible, Equatable {
 ///
 /// ## 규칙 (ADR 0007)
 ///
-/// - **문서와 변경 기록만 쓴다.** `.clonie/embeddings.json`·`links.json` 은 읽기만. 벡터는 이 actor 안 메모리에만 산다.
+/// - **현행 MCP는 승인 대기 제안만 쓴다.** 문서 반영은 앱 승인에서 한다.
+///   `.clonie/embeddings.json`·`links.json` 은 읽기만. 벡터는 이 actor 안 메모리에만 산다.
 /// - 씨앗(`seed == true`)은 사람이 쓴 것이 아니다 — 목록·검색에 안 낸다.
 /// - 임베더는 **첫 검색 때** 연다(모델 로드는 초 단위) — 목록·읽기는 그 값을 안 문다.
 ///
@@ -93,6 +96,7 @@ public enum VaultToolError: Error, CustomStringConvertible, Equatable {
 public actor VaultTools {
     private let store: VaultStore
     private let environment: [String: String]
+    private let sourceReader: SourceReadExecutor
 
     private enum EmbedderState { case unknown, ready(TextEmbedder), missing(String) }
     private var embedderState: EmbedderState = .unknown
@@ -107,6 +111,16 @@ public actor VaultTools {
     public init(vaultURL: URL, environment: [String: String] = ProcessInfo.processInfo.environment) {
         self.store = VaultStore(vaultURL: vaultURL)
         self.environment = environment
+        self.sourceReader = SourceReadExecutor { path, offset, limit in
+            try SourceCatalog(vaultURL: vaultURL).read(path: path, offset: offset, limit: limit)
+        }
+    }
+
+    /// Internal slow/failing extraction seam; the public initializer keeps path/hash validation.
+    init(vaultURL: URL, environment: [String: String], sourceRead: @escaping SourceReadExecutor.Operation) {
+        self.store = VaultStore(vaultURL: vaultURL)
+        self.environment = environment
+        self.sourceReader = SourceReadExecutor(operation: sourceRead)
     }
 
     public struct SourceListResult: Codable {
@@ -122,8 +136,8 @@ public actor VaultTools {
         return SourceListResult(total: all.count, sources: Array(all[start..<end]), nextOffset: end < all.count ? end : nil)
     }
 
-    public func readSource(path: String, offset: Int = 0, limit: Int = 20_000) throws -> SourceCatalog.Page {
-        try SourceCatalog(vaultURL: store.vaultURL).read(path: path, offset: offset, limit: limit)
+    public func readSource(path: String, offset: Int = 0, limit: Int = 20_000) async throws -> SourceCatalog.Page {
+        try await sourceReader.read(path: path, offset: offset, limit: limit)
     }
 
     // MARK: list
@@ -133,7 +147,7 @@ public actor VaultTools {
         let load = try store.load()
         let frags = Self.humanFragments(load.document)
             .sorted { $0.updatedAt == $1.updatedAt ? $0.id < $1.id : $0.updatedAt > $1.updatedAt }
-        return ListResult(total: frags.count,
+        return ListResult(vaultPath: store.vaultURL.path, total: frags.count,
                           fragments: frags.prefix(lim).map {
                               FragmentSummary(id: $0.id, title: $0.title,
                                               path: load.paths[$0.id] ?? "", updatedAt: $0.updatedAt)
@@ -245,7 +259,51 @@ public actor VaultTools {
         return nil
     }
 
-    // MARK: write
+    public struct ProposalResult: Codable, Sendable {
+        public let written: Bool
+        public let id: String
+        public let proposalID: String
+        public let taskID: String
+        public let path: String?
+        public let note: String
+    }
+
+    public func propose(title: String, body: String, questionIds: [String] = [], id: String? = nil,
+                        path: String? = nil, revision: String? = nil, taskID: String? = nil,
+                        taskTitle: String = "") throws -> ProposalResult {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { throw VaultToolError.emptyTitle }
+        guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw VaultToolError.emptyBody }
+        let baseline: VersionedLoadResult
+        if let id {
+            guard let token = revision ?? lastRead[id], let entry = readVersions[token], entry.id == id else {
+                throw VaultToolError.invalidRevision
+            }
+            baseline = entry.load
+        } else { baseline = try store.loadVersioned() }
+        let before = id.flatMap { id in baseline.result.document.fragments.first { $0.id == id } }
+        if let id, before == nil { throw VaultToolError.notFound(id) }
+        let existingPath = id.flatMap { baseline.result.paths[$0] }
+        if let existingPath, SourceCatalog.isOriginalPath(existingPath) { throw VaultToolError.readOnlySource(existingPath) }
+        if let existingPath, let path, existingPath != path { throw VaultToolError.invalidOutputPath }
+        let known = Set(baseline.result.document.questions.map(\.id))
+        let chips = questionIds.filter { known.contains($0) }
+        var fragment = before ?? Fragment(id: Self.mintID(), title: title, body: body, questionIds: [], createdAt: Date(), updatedAt: Date())
+        fragment.title = title; fragment.body = body; fragment.seed = nil
+        if !chips.isEmpty { fragment.questionIds = chips }
+        let pending = try store.propose(fragment: fragment, before: before,
+            base: id.flatMap { baseline.revision.files[$0] }, path: existingPath ?? path,
+            taskID: taskID, taskTitle: taskTitle)
+        return ProposalResult(written: false, id: fragment.id, proposalID: pending.id,
+            taskID: pending.taskID, path: pending.path,
+            note: "승인 대기. Markdown은 아직 바뀌지 않았다. Clonie 변경 탭에서 사용자가 승인해야 반영된다. 같은 요청의 나머지 제안은 반환된 task_id(taskID)를 전달한다.")
+    }
+
+    // MARK: Legacy direct write (internal regression coverage only)
+
+    // The supported MCP write contract is `propose`. Keep this older implementation
+    // internal while its storage regression cases are migrated; other targets must not
+    // use it as an alternative to the app's explicit proposal approval.
 
     /// 새 조각을 쓰거나(`id` 없음) 있는 조각을 고친다(`id` 있음). `id` 가 있는데 그 조각이 없으면
     /// `notFound` 를 던진다. **md 만 쓴다** — `VaultStore.save` 를 그대로 타고, 그 저장은 질문이
@@ -259,7 +317,7 @@ public actor VaultTools {
     /// ⚠ 이때 돌려주는 `duplicates` 의 `light` 는 언제나 `nil` 이다 — 신호등은 그 순간의 측정인데,
     /// `nearDuplicate/simGreenDirect ≈ 1.29` 는 문턱을 통과했다는 사실 자체가 언제나 `g`라
     /// 「신호」가 아니라 상수를 돌려주는 꼴이 된다. `score`(정규화·3자리)는 그대로 남긴다.
-    public func write(title: String, body: String, questionIds: [String] = [],
+    func write(title: String, body: String, questionIds: [String] = [],
                       id: String? = nil, force: Bool = false,
                       path: String? = nil, revision: String? = nil) throws -> WriteResult {
         let t = title.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -38,7 +38,8 @@ let package = Package(
                 "ClonieEmbedding",
                 "ClonieIndex",
                 "ClonieCloud",
-                "ClonieDocuments"
+                "ClonieDocuments",
+                "ClonieMCP"
             ],
             path: "Sources/Clonie",
             linkerSettings: [

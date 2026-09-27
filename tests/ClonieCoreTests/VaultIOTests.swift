@@ -280,10 +280,23 @@ final class VaultIOTests: XCTestCase {
 
     // MARK: - 실패 판정
 
+    func testReadOnlyVolumeDoesNotSuggestPermissionRecovery() {
+        let errors = [
+            NSError(domain: NSCocoaErrorDomain, code: NSFileWriteVolumeReadOnlyError),
+            NSError(domain: NSPOSIXErrorDomain, code: Int(EROFS)),
+            NSError(domain: NSCocoaErrorDomain, code: NSFileWriteUnknownError,
+                    userInfo: [NSUnderlyingErrorKey: NSError(domain: NSPOSIXErrorDomain, code: Int(EROFS))])
+        ]
+        for error in errors {
+            XCTAssertFalse(VaultIO.isPermissionDenied(error))
+            XCTAssertEqual(VaultIO.trouble(for: error), .readOnly)
+        }
+        XCTAssertEqual(VaultIO.trouble(for: NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES))), .denied)
+    }
+
     func testPermissionErrorShapesAreAllRecognised() {
         // ⚠ 코드로만 본다 — 글자로 가르면 시스템 언어가 바뀌는 순간 죽는다.
-        for code in [NSFileWriteNoPermissionError, NSFileReadNoPermissionError,
-                     NSFileWriteVolumeReadOnlyError] {
+        for code in [NSFileWriteNoPermissionError, NSFileReadNoPermissionError] {
             XCTAssertTrue(VaultIO.isPermissionDenied(
                 NSError(domain: NSCocoaErrorDomain, code: code)), "\(code)")
         }

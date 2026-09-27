@@ -1,14 +1,14 @@
 cask "clonie" do
-  version "20260919-clonie1"
-  sha256 "735bf90ca99fe748f69b35cdeab099bb1873696840bac4713e55fcf1ab0dec14"
+  version "1.1.0"
+  sha256 "10f8b0ef6e9b8c41be6cfc4d90e834a07f74a584127af05a4ce98dd5dd5b2329"
 
-  url "https://github.com/qoal1201/clonie-preview/releases/download/preview-#{version}/Clonie-1.0.6-arm64-notarized.zip"
+  url "https://github.com/qoal1201/clonie-preview/releases/download/v#{version}/Clonie-#{version}-arm64-notarized.zip"
   name "Clonie"
   desc "Local Markdown workspace with on-device context search"
   homepage "https://github.com/qoal1201/clonie-preview"
 
   livecheck do
-    skip "Preview builds are updated manually"
+    skip "Cask is updated alongside GitHub releases"
   end
 
   depends_on arch: :arm64

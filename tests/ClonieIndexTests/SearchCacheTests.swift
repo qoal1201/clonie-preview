@@ -1,4 +1,5 @@
 import XCTest
+import ClonieCore
 @testable import ClonieIndex
 
 final class SearchCacheTests: XCTestCase {
@@ -136,5 +137,44 @@ final class SearchCacheTests: XCTestCase {
         let repeated = cache.vector(hash: "retry", preferred: nil) { calls += 1; return [0, 1] }
         XCTAssertEqual(recovered, repeated)
         XCTAssertEqual(calls, 1)
+    }
+}
+
+
+extension SearchCacheTests {
+    func testPassagePlansReuseOnlyCurrentContentAndConfiguration() {
+        let cache = ContentIndexer.SearchCache()
+        let date = Date(timeIntervalSince1970: 0)
+        var f = Fragment(id: "a", title: "제목", body: "원문", questionIds: [], createdAt: date, updatedAt: date)
+        var calls = 0
+        func run(_ fragments: [Fragment], tokens: Int = 100, revision: String = "r1") {
+            let identity = ContentIndexStore.ModelIdentity(id: "synthetic", revision: revision, dimensions: 2, passagePrefix: "passage: ", queryPrefix: "query: ")
+            _ = cache.passagePlans(fragments: fragments, model: identity, maxTokens: tokens, overlapTokens: 10) { fragment in
+                calls += 1
+                return ContentIndexer.passages(for: fragment, maxTokens: tokens, tokenCount: { $0.count })
+            }
+        }
+        run([f]); run([f]); XCTAssertEqual(calls, 1)
+        f.body = "수정한 원문"; run([f]); XCTAssertEqual(calls, 2)
+        f.title = "바뀐 제목"; run([f]); XCTAssertEqual(calls, 3)
+        run([f], tokens: 50); XCTAssertEqual(calls, 4)
+        run([f], tokens: 50, revision: "r2"); XCTAssertEqual(calls, 5)
+        run([], tokens: 50, revision: "r2")
+        run([f], tokens: 50, revision: "r2"); XCTAssertEqual(calls, 6, "삭제한 문서의 계획을 보관했다")
+    }
+
+    func testPassagePlanDisabledCacheStillReturnsFreshPlan() {
+        let cache = ContentIndexer.SearchCache(maximumEntries: 0)
+        let date = Date(timeIntervalSince1970: 0)
+        let f = Fragment(id: "a", title: "제목", body: "본문", questionIds: [], createdAt: date, updatedAt: date)
+        var calls = 0
+        for _ in 0..<2 {
+            let result = cache.passagePlans(fragments: [f], model: model, maxTokens: 100, overlapTokens: 10) {
+                calls += 1
+                return ContentIndexer.passages(for: $0, maxTokens: 100, tokenCount: { $0.count })
+            }
+            XCTAssertEqual(result["a"]?.first?.sourceText, "본문")
+        }
+        XCTAssertEqual(calls, 2)
     }
 }

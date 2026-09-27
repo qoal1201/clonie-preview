@@ -90,6 +90,7 @@ public enum VaultMutationError: Error, Equatable, Sendable, LocalizedError {
     case legacyTrashNeedsDestination(String)
     case recoveryRequired(String)
     case corruptRecord(String)
+    case incompleteProposal
 
     public var errorDescription: String? {
         switch self {
@@ -110,6 +111,7 @@ public enum VaultMutationError: Error, Equatable, Sendable, LocalizedError {
         case .legacyTrashNeedsDestination(let id): return "원래 경로 기록이 없어 복구 위치가 필요하다: \(id)"
         case .recoveryRequired(let p): return "원상복구하지 못해 휴지통에 원본을 보존했다: \(p)"
         case .corruptRecord(let p): return "조작 기록을 읽지 못했다: \(p)"
+        case .incompleteProposal: return "제안 제목과 본문을 모두 입력해 주세요."
         }
     }
 }
