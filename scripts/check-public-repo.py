@@ -21,7 +21,7 @@ def check(root: Path) -> list[str]:
 
     # These pages serve people installing and using the published app.
     # Technical source comments and legally necessary provenance are separate.
-    for name in ["README.md", "INSTALL.md", "PRIVACY.md", "SECURITY.md", "RELEASE-NOTES.md", "CONTRIBUTING.md", "CHANGELOG.md"]:
+    for name in ["README.md", "INSTALL.md", "PRIVACY.md", "SECURITY.md", "CONTRIBUTING.md", "CHANGELOG.md", "plugins/clonie/README.md"]:
         path = root / name
         if not path.is_file():
             errors.append(f"{name}: required public document missing")

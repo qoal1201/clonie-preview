@@ -16,7 +16,8 @@ class PublicationChecks(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         subprocess.run(["git", "init", "-q", str(self.root)], check=True)
-        for name in ["README", "INSTALL", "PRIVACY", "SECURITY", "RELEASE-NOTES", "CONTRIBUTING", "CHANGELOG"]:
+        for name in ["README", "INSTALL", "PRIVACY", "SECURITY", "CONTRIBUTING", "CHANGELOG", "plugins/clonie/README"]:
+            (self.root / name).parent.mkdir(parents=True, exist_ok=True)
             (self.root / (name + ".md")).write_text("# 시작하기\n")
 
     def errors(self):
@@ -30,6 +31,14 @@ class PublicationChecks(unittest.TestCase):
     def test_missing_image_blocks_publication(self):
         (self.root / "README.md").write_text("![화면](assets/missing.png)\n")
         self.assertTrue(any("missing relative link" in x for x in self.errors()))
+
+    def test_plugin_links_resolve_from_the_plugin_directory(self):
+        (self.root / "plugins/clonie/README.md").write_text("[설치](../../INSTALL.md#시작하기)\n")
+        self.assertEqual(self.errors(), [])
+
+    def test_missing_plugin_link_blocks_publication(self):
+        (self.root / "plugins/clonie/README.md").write_text("[확장](../../mcpb/manifest.json)\n")
+        self.assertTrue(any("plugins/clonie/README.md: missing relative link" in x for x in self.errors()))
 
     def test_private_path_and_internal_repo_block_publication(self):
         (self.root / "INSTALL.md").write_text("/Users/example/private\nclonie-desktop\n")
